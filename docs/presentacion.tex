@@ -1,0 +1,217 @@
+\documentclass[aspectratio=169,11pt]{beamer}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[spanish,es-noquoting]{babel}
+\usepackage{tikz,booktabs}
+\usetikzlibrary{shapes.geometric,arrows.meta,positioning,calc}
+
+\usetheme{default}
+\usecolortheme{seabird}
+\definecolor{itmazul}{RGB}{22,48,110}
+\definecolor{acento}{RGB}{0,120,160}
+\definecolor{verde}{RGB}{34,120,60}
+\definecolor{rojo}{RGB}{170,40,40}
+\setbeamercolor{structure}{fg=itmazul}
+\setbeamercolor{frametitle}{fg=white,bg=itmazul}
+\setbeamertemplate{navigation symbols}{}
+\setbeamertemplate{footline}[frame number]
+\setbeamerfont{frametitle}{size=\large}
+
+\newcommand{\sect}[1]{\textcolor{acento}{\small\textbf{[Sec.~#1]}}}
+
+\title{\textbf{Fan-out Masivo y Presencia en Tiempo Real}}
+\subtitle{ComunicaMedellín — Canal de alertas ciudadanas}
+\author{Equipo 3}
+\institute{Tópicos Avanzados de Bases de Datos · Módulo 1 · ITM}
+\date{2026}
+
+\begin{document}
+
+\begin{frame}[plain]\titlepage\end{frame}
+
+% ─────────────────────────────────────────────
+\begin{frame}{El problema}
+\begin{columns}[T]
+\begin{column}{0.55\textwidth}
+\begin{itemize}
+  \item \textbf{100.000+} suscriptores
+  \item Una alerta debe llegar \textbf{casi simultáneamente}
+  \item Guardar el mensaje en el historial de cada usuario
+  \item Saber quién está \textbf{en línea} en todo momento
+  \item Sin caerse ante un pico de tráfico
+\end{itemize}
+\vspace{6pt}
+\footnotesize\textcolor{acento}{Cierres viales · alertas climáticas · cancelación de clases}
+\end{column}
+\begin{column}{0.42\textwidth}
+\begin{tikzpicture}[scale=0.72,font=\scriptsize]
+  \node[draw,rounded corners,fill=itmazul!10,minimum width=2.2cm] (a) at (0,2.4) {1 alerta};
+  \foreach \i/\x in {1/-1.7,2/-0.55,3/0.6,4/1.75}
+    \node[draw,circle,fill=acento!15,minimum size=0.5cm] (u\i) at (\x,0) {};
+  \foreach \i in {1,2,3,4} \draw[-{Stealth[length=1.5mm]},acento] (a) -- (u\i);
+  \node at (0,-0.75) {$\times$ 100.000 dispositivos};
+\end{tikzpicture}
+\end{column}
+\end{columns}
+\end{frame}
+
+% ─────────────────────────────────────────────
+\begin{frame}{Primero las cargas, después la tecnología}
+\centering\small
+\begin{tabular}{@{}llll@{}}
+\toprule
+ & \textbf{Carga} & \textbf{Tipo} & \textbf{Sección} \\
+\midrule
+C1 & Publicar alerta & OLTP ligero & 2.1 \\
+C2 & Fan-out a 100K & Streaming & 4.2 \\
+C3 & Historial por usuario & OLTP escritura masiva & 1.3 \\
+C4 & \textbf{Presencia} & \textbf{Clave-valor} & \textbf{1.2, 1.3} \\
+\bottomrule
+\end{tabular}
+\vspace{12pt}
+\begin{block}{Lo que descubrimos}
+\small C2 y C4 \emph{parecen} lo mismo, pero exigen garantías opuestas:
+la presencia tolera desactualización; la entrega de la alerta \textbf{no tolera pérdida}.\\
+$\Rightarrow$ \textbf{Dos decisiones CAP dentro del mismo sistema.}
+\end{block}
+\end{frame}
+
+% ─────────────────────────────────────────────
+\begin{frame}{¿Por qué no basta un servidor?}
+\begin{columns}[T]
+\begin{column}{0.48\textwidth}
+\centering\textbf{Cliente-Servidor} \sect{3.2}
+\begin{tikzpicture}[scale=0.68,font=\scriptsize]
+  \node[draw,rounded corners,fill=rojo!12,minimum width=2cm,minimum height=0.8cm] (s) at (0,1.6) {servidor};
+  \foreach \x in {-1.5,-0.5,0.5,1.5}
+    \node[draw,circle,minimum size=0.35cm] at (\x,0) {};
+  \foreach \x in {-1.5,-0.5,0.5,1.5} \draw[-{Stealth[length=1.2mm]},rojo] (s) -- (\x,0.25);
+  \node[rojo] at (0,-0.7) {cuello de botella · SPOF};
+\end{tikzpicture}
+\end{column}
+\begin{column}{0.48\textwidth}
+\centering\textbf{Distribuida} \sect{3.3}
+\begin{tikzpicture}[scale=0.68,font=\scriptsize]
+  \foreach \i/\x in {1/-1.3,2/0,3/1.3}
+    \node[draw,rounded corners,fill=verde!12,minimum width=1cm,minimum height=0.6cm] (n\i) at (\x,1.6) {n\i};
+  \foreach \i/\x in {1/-1.3,2/0,3/1.3} {
+    \node[draw,circle,minimum size=0.3cm] (u\i) at (\x,0) {};
+    \draw[-{Stealth[length=1.2mm]},verde] (n\i) -- (u\i);}
+  \node[verde] at (0,-0.7) {sharding + replicación};
+\end{tikzpicture}
+\end{column}
+\end{columns}
+\vspace{10pt}
+\begin{alertblock}{}
+\small Un PostgreSQL en la nube \textbf{sigue siendo} Cliente-Servidor.
+«Estar en la nube» $\neq$ «ser distribuido» \sect{3.2 vs 3.3}.
+\end{alertblock}
+\end{frame}
+
+% ─────────────────────────────────────────────
+\begin{frame}{Arquitectura}
+\centering
+\begin{tikzpicture}[font=\scriptsize,
+  caja/.style={rounded corners=2pt,draw=itmazul!60,fill=itmazul!8,minimum height=0.75cm,align=center,inner sep=4pt},
+  motor/.style={caja,fill=acento!14,draw=acento,thick},
+  fl/.style={-{Stealth[length=2mm]},draw=itmazul!70}]
+  \node[caja,minimum width=2cm] (api) {API};
+  \node[motor,minimum width=7.4cm,below=0.55cm of api] (k)
+    {\textbf{Kafka} \sect{4.2} — particiones: norte · centro · sur};
+  \node[caja,below=0.55cm of k,xshift=-2.5cm,minimum width=1.5cm] (w1) {worker};
+  \node[caja,below=0.55cm of k,minimum width=1.5cm] (w2) {worker};
+  \node[caja,below=0.55cm of k,xshift=2.5cm,minimum width=1.5cm] (w3) {worker};
+  \node[motor,below=0.6cm of w2,xshift=-2.1cm,minimum width=4cm] (c)
+    {\textbf{Cassandra} ×3 · AP\\ \sect{1.3, 3.3}};
+  \node[motor,below=0.6cm of w2,xshift=2.5cm,minimum width=3.2cm] (ch)
+    {\textbf{ClickHouse}\\ \sect{2.4}};
+  \draw[fl] (api) -- (k);
+  \foreach \w in {w1,w2,w3} \draw[fl] (k.south) -- (\w.north);
+  \draw[fl] (w1.south) -- (c.north west);
+  \draw[fl] (w2.south) -- (c.north);
+  \draw[fl,dashed,verde] (k.east) -- ++(0.6,0) |- (ch.east);
+\end{tikzpicture}
+\vspace{4pt}
+\footnotesize Ruta operacional + ruta analítica sobre el mismo log $\Rightarrow$ Lambda \sect{4.1}
+\end{frame}
+
+% ─────────────────────────────────────────────
+\begin{frame}{Decisión CAP}
+\begin{columns}[T]
+\begin{column}{0.42\textwidth}
+\begin{tikzpicture}[font=\scriptsize,scale=0.92]
+  \def\R{1.75}
+  \coordinate (C) at (90:\R); \coordinate (A) at (210:\R); \coordinate (P) at (330:\R);
+  \fill[acento!8] (C)--(A)--(P)--cycle;
+  \draw[thick,itmazul!70] (C)--(A)--(P)--cycle;
+  \node[above] at (C) {\textbf{C}}; \node[below left] at (A) {\textbf{A}}; \node[below right] at (P) {\textbf{P}};
+  \draw[very thick,rojo] ($(C)!0.5!(A)+(-0.12,0.12)$) -- ++(0.4,-0.4);
+  \node[align=center] at (0,-0.3) {\textbf{AP}};
+\end{tikzpicture}
+\end{column}
+\begin{column}{0.55\textwidth}
+\textbf{Presencia $\rightarrow$ AP, nivel \texttt{ONE}}\\
+\footnotesize Se sacrifica C. Un desfase de 2\,s en «en línea» \textbf{no cambia ninguna decisión}.\\[6pt]
+\textbf{Historial $\rightarrow$ AP, escritura \texttt{QUORUM}}\\
+\footnotesize La alerta no se puede perder: es seguridad pública.\\[8pt]
+\scriptsize\textcolor{rojo}{Si eligiéramos CP:} durante una partición el sistema rechazaría heartbeats
+y la app mostraría a todos desconectados — parecería caída.
+\end{column}
+\end{columns}
+\end{frame}
+
+% ─────────────────────────────────────────────
+\begin{frame}{Contraste con TuBoleta}
+\centering\small
+\begin{tabular}{@{}lll@{}}
+\toprule
+ & \textbf{TuBoleta} & \textbf{ComunicaMedellín} \\
+\midrule
+Recurso & Silla A-12: finito & Mensaje: replicable \\
+Conflicto & Dos compran lo mismo & Nadie compite \\
+Si falla C & Doble venta $\rightarrow$ demanda & Presencia 2\,s vieja \\
+Decisión & \textcolor{rojo}{\textbf{CP}} (Raft) & \textcolor{verde}{\textbf{AP}} (ajustable) \\
+Motor & CockroachDB & Cassandra \\
+\bottomrule
+\end{tabular}
+\vspace{14pt}
+\begin{block}{}
+\small La consistencia fuerte cuesta latencia. Se paga cuando hay un
+\textbf{recurso en disputa}. En presencia nadie «gana» el estar en línea:
+pagar consenso sería gasto puro.
+\end{block}
+\end{frame}
+
+% ─────────────────────────────────────────────
+\begin{frame}{Demo en vivo}
+\begin{enumerate}\small
+  \item \texttt{make status} — 3 nodos, distribución de tokens
+  \item \texttt{make seed} — 10.000 usuarios concurrentes
+  \item \texttt{make demo-consistencia} — \texttt{ONE} vs \texttt{QUORUM}
+  \item \textbf{Frontend} — divergencia visible, conmutador en caliente
+  \item \texttt{make demo-fanout} — fan-out particionado por zona
+  \item \textcolor{acento}{\texttt{make demo-nodo-caido}} — AP bajo falla \emph{(extra)}
+  \item \textcolor{acento}{\texttt{make ch-demo}} — agregación columnar \emph{(extra)}
+  \item \textcolor{acento}{\texttt{make kafka-replay}} — Kappa desde offset 0 \emph{(extra)}
+\end{enumerate}
+\end{frame}
+
+% ─────────────────────────────────────────────
+\begin{frame}{Conclusiones}
+\begin{enumerate}\small
+  \item Cuatro cargas $\Rightarrow$ \textbf{dos decisiones CAP} en un mismo sistema.
+  \item La consistencia es un \textbf{parámetro por consulta}, no una propiedad global.
+  \item Sacrificamos C \textbf{donde el impacto de negocio es nulo}, no por comodidad.
+  \item Separar Cassandra (OLTP) de ClickHouse (OLAP) evita el conflicto de la \sect{2.2}.
+\end{enumerate}
+\vfill
+\centering\footnotesize\texttt{github.com/lina082/comunicamedellin-grupo3}\\
+\scriptsize Todo el stack es software libre (Apache 2.0 / MIT)
+\end{frame}
+
+\begin{frame}[plain]\centering\vfill
+{\Large\textcolor{itmazul}{\textbf{¿Preguntas?}}}\\[8pt]
+\small Equipo 3 — Módulo 1
+\vfill\end{frame}
+
+\end{document}

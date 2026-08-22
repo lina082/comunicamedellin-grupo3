@@ -1,0 +1,308 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[spanish,es-noquoting]{babel}
+\usepackage[margin=2.4cm]{geometry}
+\usepackage{graphicx,booktabs,longtable,array,xcolor,hyperref,fancyhdr,enumitem}
+\usepackage{tikz}
+\usetikzlibrary{shapes.geometric,arrows.meta,positioning,fit,backgrounds,calc}
+
+\definecolor{itmazul}{RGB}{22,48,110}
+\definecolor{acento}{RGB}{0,120,160}
+\definecolor{gris}{RGB}{242,244,247}
+\definecolor{verde}{RGB}{34,120,60}
+\definecolor{rojo}{RGB}{170,40,40}
+
+\hypersetup{colorlinks=true,linkcolor=itmazul,urlcolor=acento}
+\pagestyle{fancy}\fancyhf{}
+\lhead{\small ComunicaMedellín — Grupo 3}
+\rhead{\small Módulo 1 · ITM 2026}
+\cfoot{\small\thepage}
+
+\newcommand{\sect}[1]{\textcolor{acento}{\textbf{[Sec.~#1]}}}
+
+\title{\vspace{-1.5cm}
+  \textcolor{itmazul}{\Large\textbf{Fan-out Masivo y Presencia en Tiempo Real}}\\[4pt]
+  \large ComunicaMedellín — Canal de alertas ciudadanas\\[10pt]
+  \normalsize Tópicos Avanzados de Bases de Datos — Módulo 1}
+\author{\normalsize Equipo 3}
+\date{\normalsize Institución Universitaria ITM · 2026}
+
+\begin{document}
+\maketitle
+\thispagestyle{fancy}
+
+\begin{center}
+\begin{minipage}{0.93\textwidth}\small
+\textbf{Resumen.} Diseñamos la arquitectura de un canal de difusión con más de
+100.000 suscriptores que debe entregar alertas urgentes de forma casi simultánea
+y mantener el estado de presencia de cada usuario. Identificamos cuatro cargas de
+trabajo diferenciadas, seleccionamos un motor NoSQL AP con consistencia ajustable
+(Apache Cassandra) para la ruta operacional, un log distribuido (Apache Kafka)
+para el fan-out particionado y un motor columnar (ClickHouse) para la ruta
+analítica. Sostenemos que el sistema debe sacrificar \emph{Consistencia} en
+presencia y justificamos esa elección con el impacto de negocio, contrastándola
+con el caso TuBoleta, donde la decisión correcta es la opuesta.
+\end{minipage}
+\end{center}
+\vspace{6pt}
+
+% ============================================================
+\section{Cargas de trabajo}
+% ============================================================
+Antes de proponer tecnología identificamos qué hace el sistema. El enunciado
+describe cuatro cargas con perfiles distintos \sect{2.1}:
+
+\begin{center}\small
+\begin{tabular}{@{}p{0.5cm}p{3.3cm}p{2.4cm}p{4.6cm}p{2.4cm}@{}}
+\toprule
+\textbf{} & \textbf{Carga} & \textbf{Tipo} & \textbf{Patrón de acceso} & \textbf{Sección} \\
+\midrule
+C1 & Publicar alerta & OLTP ligero & 1 escritura, baja frecuencia & 2.1 \\
+C2 & Fan-out a 100.000 & Streaming & 1 escritura $\rightarrow$ 100K entregas & 4.2 \\
+C3 & Historial por usuario & OLTP escritura & 100K inserciones por alerta & 1.3, 2.1 \\
+C4 & Presencia (\emph{online}) & Clave-valor & $\sim$10K escrituras/s, alta rotación & 1.2, 1.3 \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\paragraph{Observación central.} C2 y C4 parecen la misma carga pero exigen
+garantías opuestas. La \textbf{presencia} (C4) tolera desactualización: si el
+estado de un usuario llega dos segundos tarde, nadie lo nota y ninguna decisión
+cambia. La \textbf{entrega de la alerta} (C3) no tolera pérdida: es información
+de seguridad pública. Esto obliga a \emph{dos decisiones CAP distintas dentro del
+mismo sistema}, y es el eje de nuestro diseño.
+
+\paragraph{Por qué no basta un servidor.} Responde la pregunta (a) del enunciado.
+Una arquitectura Cliente-Servidor \sect{3.2} concentra la entrega en un proceso:
+100.000 notificaciones salen en serie desde un mismo punto, y el servidor es a la
+vez cuello de botella y punto único de falla (SPOF, \sect{3.1}). Alojar ese
+servidor en la nube no lo cambia: sigue siendo Cliente-Servidor. Ser distribuido
+\sect{3.3} exige repartir datos y procesamiento entre nodos que cooperan mediante
+\emph{sharding} y replicación.
+
+% ============================================================
+\section{Arquitectura propuesta}
+% ============================================================
+
+\begin{figure}[h]\centering
+\begin{tikzpicture}[
+  font=\small,
+  caja/.style={rounded corners=3pt,draw=itmazul!60,fill=gris,
+               minimum height=1cm,align=center,inner sep=6pt},
+  motor/.style={caja,fill=acento!12,draw=acento,thick},
+  flecha/.style={-{Stealth[length=2.5mm]},draw=itmazul!70,thick}]
+
+\node[caja,minimum width=3.2cm] (pub) {Alcaldía\\\scriptsize publica alerta};
+\node[caja,minimum width=3.2cm,right=1.4cm of pub] (api) {API\\\scriptsize FastAPI};
+\node[motor,minimum width=8.6cm,below=0.9cm of api,xshift=-1.4cm] (kafka)
+  {\textbf{Apache Kafka} — log inmutable \sect{4.2}\\[2pt]
+   \scriptsize particiones: \texttt{norte} · \texttt{centro} · \texttt{sur} \ \ (sharding por zona, \sect{3.3})};
+
+\node[caja,below=0.9cm of kafka,xshift=-3cm,minimum width=2.1cm] (w1) {worker 1};
+\node[caja,below=0.9cm of kafka,minimum width=2.1cm] (w2) {worker 2};
+\node[caja,below=0.9cm of kafka,xshift=3cm,minimum width=2.1cm] (w3) {worker 3};
+
+\node[motor,below=1cm of w2,xshift=-2.6cm,minimum width=5cm] (cass)
+  {\textbf{Cassandra} · 3 nodos, RF=3\\
+   \scriptsize AP · \texttt{ONE}/\texttt{QUORUM} \sect{1.3, 3.3}\\
+   \scriptsize presencia + historial};
+\node[motor,below=1cm of w2,xshift=3.1cm,minimum width=4.2cm] (ch)
+  {\textbf{ClickHouse}\\\scriptsize columnar OLAP \sect{2.2, 2.4}\\
+   \scriptsize métricas agregadas};
+
+\draw[flecha] (pub) -- (api);
+\draw[flecha] (api) -- (kafka);
+\draw[flecha] (kafka.south) -- (w1.north);
+\draw[flecha] (kafka.south) -- (w2.north);
+\draw[flecha] (kafka.south) -- (w3.north);
+\draw[flecha] (w1.south) -- (cass.north west);
+\draw[flecha] (w2.south) -- (cass.north);
+\draw[flecha] (w3.south) -- ($(cass.north east)+(0,0)$);
+\draw[flecha,dashed,draw=verde!70] (kafka.east) -- ++(1.1,0) |- (ch.east)
+  node[midway,right,font=\scriptsize,text=verde!60!black,xshift=2pt]
+  {Kafka\\Engine};
+\end{tikzpicture}
+\caption{Arquitectura distribuida. La ruta operacional (Cassandra) y la analítica
+(ClickHouse) se alimentan del mismo log, configurando una arquitectura
+Lambda \sect{4.1}.}
+\end{figure}
+
+\subsection{Justificación de cada decisión}
+
+\begin{description}[leftmargin=0.9cm,style=nextline]
+\item[Apache Cassandra \sect{1.3, 3.3}]
+El módulo la clasifica como \emph{«Cassandra (AP, wide-column)»} y documenta el
+caso Netflix: arquitectura \emph{peer-to-peer} sin punto único de falla, más de un
+billón de peticiones diarias. Es el único motor del stack de referencia que ofrece
+\textbf{consistencia ajustable por consulta}, requisito literal del reto
+(\texttt{ONE} frente a \texttt{QUORUM}).
+
+\item[Modelo clave-valor \sect{1.3}]
+Responde la pregunta (b). El patrón de acceso a presencia es único: obtener el
+estado de un usuario por su identificador. No hay \textsc{join}s, ni integridad
+referencial que preservar, ni consultas por atributos secundarios. Un modelo
+normalizado 3NF \sect{2.1} añadiría costo sin aportar garantías útiles.
+
+\item[Apache Kafka \sect{4.2}]
+Log distribuido, inmutable y particionado. Responde la pregunta (d): la zona actúa
+como clave de partición, de modo que cada worker consume una partición
+independiente. Escalar consiste en añadir particiones y consumidores, no en
+agrandar un servidor.
+
+\item[ClickHouse \sect{2.2, 2.4}]
+Cassandra está optimizada para lectura por clave de partición; una agregación
+\texttt{GROUP BY} sobre 100.000 usuarios la obligaría a recorrer el clúster
+completo. Es el conflicto OLTP/OLAP de la \sect{2.2}. ClickHouse resuelve esas
+agregaciones en milisegundos, como en el caso Mercado Libre \sect{2.4}.
+
+\item[Alternativa descartada: CockroachDB \sect{1.3, 3.3}]
+Es la opción correcta para TuBoleta, no para este caso. Al ser CP con consenso
+Raft, garantiza serializabilidad en toda escritura: los nodos nunca divergen. Eso
+hace que el trade-off que debemos demostrar sea inobservable, y encarece cada
+\emph{heartbeat} de presencia sin beneficio.
+\end{description}
+
+% ============================================================
+\section{Análisis CAP}
+% ============================================================
+El teorema \sect{1.2} establece que ante una partición de red sólo pueden
+sostenerse dos de las tres propiedades. Como las particiones son inevitables en
+un sistema distribuido, la elección real es entre CP y AP.
+
+\begin{figure}[h]\centering
+\begin{tikzpicture}[font=\small]
+  \def\R{2.05}
+  \coordinate (C) at (90:\R);
+  \coordinate (A) at (210:\R);
+  \coordinate (P) at (330:\R);
+  \fill[acento!8] (C) -- (A) -- (P) -- cycle;
+  \draw[thick,draw=itmazul!70] (C) -- (A) -- (P) -- cycle;
+  \node[above=2pt] at (C) {\textbf{C}onsistencia};
+  \node[below left=1pt] at (A) {\textbf{A}vailability};
+  \node[below right=1pt] at (P) {\textbf{P}artition tol.};
+  \draw[very thick,rojo] ($(C)!0.5!(A)+(-0.15,0.15)$) -- ++(0.5,-0.5);
+  \node[align=center,font=\scriptsize] at (0,-0.35)
+    {\textbf{AP}\\ presencia\\ Cassandra};
+  \node[right=2.6cm of P,align=left,font=\scriptsize,anchor=west,yshift=1.4cm]
+    {\textcolor{rojo}{$\times$} \textbf{Se sacrifica C} en presencia.\\[4pt]
+     Un desfase de 2\,s en «en línea»\\ no altera ninguna decisión\\ de negocio.};
+\end{tikzpicture}
+\caption{Elección CAP para la carga de presencia (C4).}
+\end{figure}
+
+\subsection{Dos decisiones, no una}
+
+\noindent\textbf{Presencia (C4) $\rightarrow$ AP, nivel \texttt{ONE}.}
+Se sacrifica Consistencia. \emph{Impacto de negocio:} nulo. Nadie toma una
+decisión a partir del estado «en línea» de un tercero. En cambio, elegir CP sería
+costoso: durante una partición el sistema rechazaría \emph{heartbeats}, la
+aplicación mostraría a todos los usuarios desconectados y la percepción sería la
+de un servicio caído — peor que un dato con dos segundos de antigüedad.
+
+\noindent\textbf{Historial de alertas (C3) $\rightarrow$ AP, escritura \texttt{QUORUM}.}
+La alerta no puede perderse: comunica cierres viales y cancelaciones de clase.
+Escribir con \texttt{QUORUM} (2 de 3 réplicas) asegura durabilidad ante la caída
+de un nodo sin renunciar a la disponibilidad. El sobrecosto ($\sim$40\,ms) es
+irrelevante porque la publicación es poco frecuente.
+
+\subsection{Contraste con TuBoleta}
+
+\begin{center}\small
+\begin{tabular}{@{}p{3.1cm}p{5.2cm}p{5.2cm}@{}}
+\toprule
+ & \textbf{TuBoleta (Equipo 1)} & \textbf{ComunicaMedellín (Equipo 3)} \\
+\midrule
+Recurso & Silla A-12: finito y exclusivo & Mensaje: replicable sin límite \\
+Conflicto & Dos compradores compiten & Nadie compite \\
+Si falla C & Doble venta, contingencia legal & Presencia desfasada 2\,s \\
+Decisión & \textbf{CP} (Raft, serializable) & \textbf{AP} (eventual, ajustable) \\
+Motor & CockroachDB & Cassandra \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\noindent La consistencia fuerte cuesta latencia, y ese costo se justifica cuando
+existe un recurso en disputa. En presencia no hay disputa: nadie «gana» el estar
+en línea. Pagar consenso por cada actualización sería gasto sin contrapartida.
+
+% ============================================================
+\section{Modelo de datos}
+% ============================================================
+\begin{verbatim}
+CREATE KEYSPACE comunica WITH replication =
+  {'class':'SimpleStrategy','replication_factor':3};
+
+CREATE TABLE presencia (            -- C4: clave-valor puro
+    usuario_id  text PRIMARY KEY,   -- clave de partición: reparte por hash
+    estado      text,               -- 'online' | 'offline'
+    last_seen   timestamp,
+    zona        text,
+    dispositivo text
+);
+
+CREATE TABLE historial_usuario (    -- C3: fan-out on write
+    usuario_id text,                -- partición: historial junto por usuario
+    enviado_en timestamp,           -- clustering: recientes primero
+    alerta_id  uuid,
+    titulo     text,
+    severidad  text,
+    PRIMARY KEY ((usuario_id), enviado_en)
+) WITH CLUSTERING ORDER BY (enviado_en DESC);
+\end{verbatim}
+
+\noindent\textbf{Estrategia \emph{fan-out on write}.} Al publicar una alerta se
+escribe una fila por suscriptor. Encarece la escritura (que ocurre una vez) para
+abaratar la lectura (que ocurre 100.000 veces): cada usuario abre su historial
+leyendo una sola partición. Es el intercambio correcto dado el patrón de acceso.
+
+% ============================================================
+\section{Reto práctico}
+% ============================================================
+La demostración se ejecuta con \texttt{make}. Cada bloque cubre un punto del
+enunciado:
+
+\begin{center}\small
+\begin{tabular}{@{}p{4.6cm}p{6.2cm}p{3.4cm}@{}}
+\toprule
+\textbf{Comando} & \textbf{Qué demuestra} & \textbf{Requisito} \\
+\midrule
+\texttt{make up} & Clúster de 3 nodos operativo & Exigido \\
+\texttt{make seed} & 10.000 usuarios concurrentes & Exigido \\
+\texttt{make demo-consistencia} & \texttt{ONE} frente a \texttt{QUORUM}, dos nodos & Exigido \\
+\texttt{make demo-fanout} & Fan-out particionado por zona & Exigido \\
+\texttt{make demo-nodo-caido} & Disponibilidad con un nodo caído & \emph{Extra} \\
+\texttt{make ch-demo} & Agregaciones columnares & \emph{Extra} \\
+\texttt{make kafka-replay} & Relectura desde \emph{offset} 0 (Kappa) & \emph{Extra} \\
+\texttt{make zk-shell} & Coordinación con Zookeeper & \emph{Extra} \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\noindent La interfaz web (\texttt{make api} y \texttt{make frontend}) muestra en
+paralelo la lectura del mismo usuario desde los nodos 1 y 3, con un conmutador
+\texttt{ONE}/\texttt{QUORUM} en caliente: al pasar a \texttt{QUORUM} las
+divergencias desaparecen y la latencia media sube.
+
+% ============================================================
+\section{Conclusiones}
+% ============================================================
+\begin{enumerate}[leftmargin=*,itemsep=3pt]
+\item El caso contiene cuatro cargas y dos decisiones CAP distintas. Tratarlo con
+una única política habría sido incorrecto.
+\item La consistencia es un parámetro por consulta, no una propiedad global del
+sistema: \texttt{ONE} para presencia, \texttt{QUORUM} para entrega de alertas.
+\item El sacrificio de C se justifica por el impacto de negocio, no por
+conveniencia técnica: en presencia ese impacto es nulo, mientras que sacrificar A
+degradaría el canal justo cuando más se necesita.
+\item Separar la ruta operacional (Cassandra) de la analítica (ClickHouse) evita
+el conflicto OLTP/OLAP descrito en la \sect{2.2}.
+\end{enumerate}
+
+\vfill
+\begin{center}\footnotesize\color{gray}
+Repositorio: \texttt{github.com/lina082/comunicamedellin-grupo3} ·
+Todo el stack es software libre (Apache 2.0 / MIT).
+\end{center}
+
+\end{document}
