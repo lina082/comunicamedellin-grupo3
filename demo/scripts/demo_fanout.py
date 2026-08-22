@@ -22,7 +22,7 @@ from _common import conectar, titulo, seccion, color, ZONAS, requiere_driver  # 
 
 TOPICO = "alertas-ciudadanas"
 SUSCRIPTORES = 10_000
-BOOTSTRAP = "localhost:9092"
+BOOTSTRAP = "localhost:29092"
 
 
 def publicar_en_kafka(alerta):
@@ -39,10 +39,17 @@ def publicar_en_kafka(alerta):
         key_serializer=lambda k: k.encode(),
         acks=1,
     )
-    for zona in ZONAS:
+    for idx, zona in enumerate(ZONAS):
         msg = dict(alerta, zona_destino=zona)
-        # La clave define la particion -> una zona por particion
-        md = prod.send(TOPICO, key=zona, value=msg).get(timeout=10)
+        # Particion explicita por zona.
+        #
+        # Con key= sola, Kafka aplica murmur2(key) % num_particiones y
+        # dos zonas pueden colisionar en la misma particion (a nosotros
+        # nos paso: 'norte' y 'sur' cayeron ambas en la 0, dejando la 2
+        # vacia). Fijar la particion garantiza el reparto 1:1 que
+        # queremos mostrar: una zona = una particion = un worker.
+        md = prod.send(TOPICO, key=zona, value=msg,
+                       partition=idx).get(timeout=10)
         etiqueta = color(f"{zona:<7}", "cyan")
         print(f"    zona {etiqueta} -> particion {md.partition}  offset {md.offset}")
     prod.flush()

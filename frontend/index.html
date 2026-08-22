@@ -117,14 +117,14 @@
 </div>
 
 <script>
-const API = "http://localhost:8080";
+const API = "http://localhost:8765";
 let ws, lecturas = 0, divergencias = 0, latAcum = 0;
 
 const $ = id => document.getElementById(id);
 const fmtTs = s => s ? s.slice(11, 23) : "—";
 
 function conectar(){
-  ws = new WebSocket("ws://localhost:8080/ws");
+  ws = new WebSocket("ws://localhost:8765/ws");
   ws.onopen = () => {
     $("luz").style.background = "var(--verde)";
     $("conn").textContent = "conectado";

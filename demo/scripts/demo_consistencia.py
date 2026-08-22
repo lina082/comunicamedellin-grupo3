@@ -23,7 +23,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent))
 from _common import conectar, titulo, seccion, color, requiere_driver  # noqa: E402
 
-RONDAS = 60
+RONDAS = 150
 USUARIO = "usuario:demo:A-12"   # guiño a TuBoleta, para el contraste
 
 
@@ -37,30 +37,61 @@ def medir(sesion, consulta, nivel):
 
 
 def ronda(nivel_nombre, nivel, s_esc, s_n1, s_n3, q_esc, q_lec):
-    """Escribe en el nodo 1 y lee inmediatamente desde nodo 1 y nodo 3."""
+    """Escribe con nivel ONE y lee INMEDIATAMENTE desde dos nodos.
+
+    Metodologia (importante para defender la demo):
+
+      1. La escritura SIEMPRE se hace con ONE. Es la condicion realista:
+         100.000 usuarios reportando presencia constantemente no pueden
+         pagar consenso en cada heartbeat.
+
+      2. La escritura se CONFIRMA antes de leer. Asi la comparacion es
+         legitima: el dato ya existe, y lo unico en juego es si la
+         replica que responde lo tiene o no.
+
+      3. Las dos lecturas van en paralelo, con el nivel bajo estudio.
+
+    Esto aisla la variable correcta: el nivel de consistencia de LECTURA.
+    Con ONE puede responder una replica que aun no recibio la escritura.
+    Con QUORUM responden 2 de 3, y al menos una tiene el dato mas reciente.
+    """
+    from concurrent.futures import ThreadPoolExecutor
+    from cassandra import ConsistencyLevel
+
     divergencias, lat_n1, lat_n3 = 0, [], []
+    # La escritura siempre ONE: es el escenario real de presencia
+    q_esc.consistency_level = ConsistencyLevel.ONE
 
-    for i in range(RONDAS):
-        ahora = dt.datetime.now(dt.timezone.utc)
-        # Escritura siempre en el nodo 1, con el nivel bajo estudio
-        q_esc.consistency_level = nivel
-        s_esc.execute(q_esc, ("online", ahora, "centro", "android", "cass1", USUARIO))
+    with ThreadPoolExecutor(max_workers=2) as ex:
+        for i in range(RONDAS):
+            ahora = dt.datetime.now(dt.timezone.utc)
+            # Escritura confirmada -> el dato existe en al menos 1 replica
+            s_esc.execute(q_esc, ("online", ahora, "centro",
+                                  "android", "cass1", USUARIO))
 
-        # Lectura inmediata desde dos nodos distintos
-        l1, f1 = medir(s_n1, q_lec, nivel)
-        l3, f3 = medir(s_n3, q_lec, nivel)
-        lat_n1.append(l1)
-        lat_n3.append(l3)
+            # Lectura inmediata y simultanea desde dos nodos distintos
+            f1 = ex.submit(medir, s_n1, q_lec, nivel)
+            f3 = ex.submit(medir, s_n3, q_lec, nivel)
+            l1, fila1 = f1.result()
+            l3, fila3 = f3.result()
 
-        t1 = f1.last_seen if f1 else None
-        t3 = f3.last_seen if f3 else None
-        if t1 != t3:
-            divergencias += 1
-            if divergencias <= 3:
-                delta = abs((t1 - t3).total_seconds() * 1000) if (t1 and t3) else 0
-                print(color(
-                    f"    ronda {i+1:>3}  DIVERGENCIA  nodo1={t1}  nodo3={t3}  "
-                    f"(Δ {delta:.1f} ms)", "amarillo"))
+            lat_n1.append(l1)
+            lat_n3.append(l3)
+
+            t1 = fila1.last_seen if fila1 else None
+            t3 = fila3.last_seen if fila3 else None
+
+            # Divergencia real: los nodos difieren, o alguno no tiene
+            # todavia la escritura que acabamos de confirmar
+            desactualizado = (t1 != ahora.replace(microsecond=(ahora.microsecond // 1000) * 1000)
+                              or t3 != t1)
+            if t1 != t3:
+                divergencias += 1
+                if divergencias <= 3:
+                    delta = abs((t1 - t3).total_seconds() * 1000) if (t1 and t3) else 0
+                    print(color(
+                        f"    ronda {i+1:>3}  DIVERGENCIA  nodo1={t1}  "
+                        f"nodo3={t3}  (delta {delta:.1f} ms)", "amarillo"))
 
     p50 = st.median(lat_n1 + lat_n3)
     p95 = sorted(lat_n1 + lat_n3)[int(0.95 * len(lat_n1 + lat_n3)) - 1]

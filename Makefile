@@ -6,6 +6,7 @@ CH    := docker exec -i clickhouse clickhouse-client --user demo --password demo
 
 .PHONY: help up down clean status schema seed demo-consistencia demo-fanout \
         demo-nodo-caido ch-demo ch-seed up-zk down-zk zk-shell kafka-topics \
+        latencia-on latencia-off \
         kafka-consumer kafka-replay api frontend pdf slides logs
 
 help: ## Muestra esta ayuda
@@ -50,7 +51,15 @@ seed: ## Carga 10.000 usuarios simulados (requisito del reto)
 	python3 demo/scripts/seed_usuarios.py
 
 # ── Demos del reto practico ──────────────────────────────────
+latencia-on: ## Simula latencia entre nodos (necesario para ver divergencia)
+	@./demo/scripts/latencia_red.sh on
+
+latencia-off: ## Quita la latencia simulada
+	@./demo/scripts/latencia_red.sh off
+
 demo-consistencia: ## [RETO] Compara ONE vs QUORUM leyendo de 2 nodos
+	@./demo/scripts/latencia_red.sh on
+	@echo ""
 	python3 demo/scripts/demo_consistencia.py
 
 demo-fanout: ## [RETO] Fan-out de una alerta por particiones/zona
@@ -99,7 +108,7 @@ zk-shell: ## Shell de Zookeeper: ver brokers, controller, topicos
 
 # ── Aplicacion ───────────────────────────────────────────────
 api: ## Arranca la API (FastAPI + WebSocket)
-	cd api && python3 -m uvicorn main:app --reload --port 8080
+	cd api && python3 -m uvicorn main:app --reload --port 8765
 
 frontend: ## Sirve el frontend en http://localhost:3000
 	cd frontend && python3 -m http.server 3000

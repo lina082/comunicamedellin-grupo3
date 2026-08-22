@@ -100,7 +100,7 @@ make demo-fanout         # Fan-out particionado por zona
 ### Frontend en vivo
 
 ```bash
-make api        # terminal 1 → http://localhost:8080
+make api        # terminal 1 → http://localhost:8765
 make frontend   # terminal 2 → http://localhost:3000
 ```
 
