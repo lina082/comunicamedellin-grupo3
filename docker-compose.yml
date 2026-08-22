@@ -19,11 +19,11 @@ x-cassandra-common: &cassandra-common
     MAX_HEAP_SIZE: 512M
     HEAP_NEWSIZE: 128M
   healthcheck:
-    test: ["CMD-SHELL", "nodetool status | grep -E '^UN' || exit 1"]
+    test: ["CMD-SHELL", "nodetool info | grep -q 'Native Transport active: true' && nodetool netstats | grep -q 'Mode: NORMAL'"]
     interval: 15s
     timeout: 10s
-    retries: 20
-    start_period: 90s
+    retries: 30
+    start_period: 120s
 
 services:
   # ---------------------------------------------------------------
@@ -49,8 +49,6 @@ services:
       CASSANDRA_SEEDS: cassandra-1
     depends_on:
       cassandra-1: {condition: service_healthy}
-    # Margen anti-colision de tokens de bootstrap (ver README)
-    command: ["sh", "-c", "sleep 45 && exec docker-entrypoint.sh cassandra -f"]
     volumes: [cass2-data:/var/lib/cassandra]
 
   cassandra-3:
@@ -62,7 +60,6 @@ services:
       CASSANDRA_SEEDS: cassandra-1
     depends_on:
       cassandra-2: {condition: service_healthy}
-    command: ["sh", "-c", "sleep 45 && exec docker-entrypoint.sh cassandra -f"]
     volumes: [cass3-data:/var/lib/cassandra]
 
   # ---------------------------------------------------------------

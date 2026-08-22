@@ -167,10 +167,12 @@ Requiere una instalación completa de TeX Live (ver `docs/README-latex.md`).
 
 ## Notas de operación
 
-**El arranque tarda ~4 minutos.** Los nodos de Cassandra arrancan escalonados
-(`sleep 45` entre cada uno) a propósito: si arrancan en paralelo pueden generar
-el mismo token de bootstrap y el tercer nodo aborta con
-`Bootstrap Token collision`. El escalonamiento lo evita.
+**El arranque tarda ~4 minutos.** Los nodos de Cassandra arrancan en
+secuencia: cada uno espera a que el anterior esté completamente unido al
+clúster. Cassandra no permite que dos nodos hagan *bootstrap* a la vez
+(`cannot bootstrap while cassandra.consistent.rangemovement is true`), así que
+el `healthcheck` comprueba `Mode: NORMAL` — es decir, que el nodo terminó de
+unirse — y no solo que el proceso esté vivo.
 
 **Verificar que el clúster está completo** antes de correr las demos:
 
