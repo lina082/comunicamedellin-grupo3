@@ -165,6 +165,29 @@ Requiere una instalación completa de TeX Live (ver `docs/README-latex.md`).
 
 ---
 
+## Notas de operación
+
+**El arranque tarda ~4 minutos.** Los nodos de Cassandra arrancan escalonados
+(`sleep 45` entre cada uno) a propósito: si arrancan en paralelo pueden generar
+el mismo token de bootstrap y el tercer nodo aborta con
+`Bootstrap Token collision`. El escalonamiento lo evita.
+
+**Verificar que el clúster está completo** antes de correr las demos:
+
+```bash
+docker exec cass1 nodetool status   # deben aparecer 3 líneas 'UN'
+```
+
+`UN` significa Up/Normal. Con menos de 3, esperar un poco más.
+
+**Si algo queda inconsistente**, reiniciar de cero:
+
+```bash
+make clean && make up && make schema
+```
+
+---
+
 ## Estructura
 
 ```
