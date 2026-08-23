@@ -49,6 +49,19 @@ LIMIT 20
 FORMAT PrettyCompact;
 
 -- ------------------------------------------------------------
+-- Q3b. Curva de actividad por hora (la mas visual de todas)
+--      Muestra el pico de la tarde y el valle de la madrugada.
+-- ------------------------------------------------------------
+SELECT
+    toHour(ts) AS hora,
+    uniqExact(usuario_id) AS usuarios_activos,
+    bar(usuarios_activos, 0, 25000, 50) AS curva
+FROM comunica.presencia_eventos
+GROUP BY hora
+ORDER BY hora
+FORMAT PrettyCompact;
+
+-- ------------------------------------------------------------
 -- Q4. Compresion columnar real (dato duro para la exposicion)
 -- ------------------------------------------------------------
 SELECT

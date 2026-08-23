@@ -38,10 +38,15 @@ USE comunica;
 -- usuario_id es la clave de particion -> distribuye la carga
 -- uniformemente entre los 3 nodos por hash del token.
 CREATE TABLE IF NOT EXISTS presencia (
-    usuario_id   text PRIMARY KEY,
+    usuario_id   text PRIMARY KEY,   -- cedula: CC12345678
+    nombre       text,
+    telefono     text,
     estado       text,        -- 'online' | 'offline'
     last_seen    timestamp,
     zona         text,        -- norte | centro | sur
+    comuna       text,        -- comuna de Medellin
+    lat          double,
+    lon          double,
     dispositivo  text,
     escrito_por  text         -- nodo que atendio la escritura (util en la demo)
 ) WITH comment = 'Presencia en tiempo real. Consistencia eventual (AP).'

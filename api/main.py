@@ -61,7 +61,7 @@ def leer(nodo: str, usuario: str, nivel: str):
         return {"nodo": nodo, "error": "no disponible"}
     _, s = conexiones[nodo]
     q = SimpleStatement(
-        "SELECT usuario_id, estado, last_seen, zona, escrito_por "
+        "SELECT usuario_id, nombre, estado, last_seen, zona, comuna, escrito_por "
         "FROM presencia WHERE usuario_id=%s")
     q.consistency_level = NIVELES.get(nivel, ConsistencyLevel.ONE)
     try:
@@ -71,8 +71,10 @@ def leer(nodo: str, usuario: str, nivel: str):
         return {
             "nodo": nodo, "latencia_ms": round(ms, 2),
             "estado": f.estado if f else None,
+            "nombre": f.nombre if f else None,
             "last_seen": f.last_seen.isoformat() if f and f.last_seen else None,
             "zona": f.zona if f else None,
+            "comuna": f.comuna if f else None,
             "escrito_por": f.escrito_por if f else None,
         }
     except Exception as e:

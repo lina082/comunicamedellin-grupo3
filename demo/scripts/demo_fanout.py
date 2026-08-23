@@ -18,7 +18,8 @@ from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
-from _common import conectar, titulo, seccion, color, ZONAS, requiere_driver  # noqa
+from _common import conectar, titulo, seccion, color, requiere_driver  # noqa
+from _datos import sembrar, alerta as generar_alerta, ZONAS  # noqa
 
 TOPICO = "alertas-ciudadanas"
 SUSCRIPTORES = 10_000
@@ -95,11 +96,13 @@ def main():
     requiere_driver()
     titulo("RETO — Fan-out masivo particionado por zona")
 
+    sembrar()
+    a = generar_alerta(severidad="critica")
     alerta = {
         "alerta_id": uuid.uuid4(),
-        "titulo": "Cierre vial - Avenida Regional",
-        "cuerpo": "Cierre total por emergencia. Use rutas alternas.",
-        "severidad": "critica",
+        "titulo": a["titulo"],
+        "cuerpo": a["cuerpo"],
+        "severidad": a["severidad"],
     }
     print(f"  Alerta   : {color(alerta['titulo'], 'bold')}")
     print(f"  Severidad: {color(alerta['severidad'], 'rojo')}")

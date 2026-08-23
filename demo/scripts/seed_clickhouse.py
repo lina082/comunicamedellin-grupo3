@@ -7,7 +7,8 @@ import sys, random, datetime as dt, urllib.request
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
-from _common import titulo, color, ZONAS, DISPOSITIVOS  # noqa
+from _common import titulo, color  # noqa
+from _datos import sembrar, usuario, ZONAS, DISPOSITIVOS  # noqa
 
 CH = "http://localhost:8123/"
 AUTH = ("demo", "demo")
@@ -28,6 +29,13 @@ def ejecutar(sql, datos=None):
 def main():
     titulo(f"Generando {FILAS:,} eventos de presencia en ClickHouse")
     print(color("  Motor columnar: solo lee las columnas de la consulta.", "dim"))
+    print(color("  Usuarios generados con Faker (es_CO).", "dim"))
+
+    sembrar()
+    # Poblacion fija de 100.000 suscriptores que emiten eventos repetidos:
+    # un mismo usuario reporta presencia muchas veces al dia, que es como
+    # se comporta el caso real.
+    poblacion = [usuario(i) for i in range(25_000)]
 
     ahora = dt.datetime.now()
     insertados = 0
@@ -36,13 +44,23 @@ def main():
         n = min(LOTE, FILAS - insertados)
         filas = []
         for _ in range(n):
-            ts = ahora - dt.timedelta(seconds=random.randint(0, 86400))
+            # Curva horaria realista: mas actividad de dia que de
+            # madrugada. Sin esto todas las horas salen identicas y
+            # la grafica no dice nada.
+            h = random.choices(
+                range(24),
+                weights=[3,2,1,1,1,2,5,9,12,13,12,12,
+                         13,13,12,12,13,14,13,11,9,7,5,4])[0]
+            ts = (ahora - dt.timedelta(seconds=random.randint(0, 86400))
+                  ).replace(hour=h, minute=random.randint(0, 59),
+                            second=random.randint(0, 59))
+            u = random.choice(poblacion)
             filas.append("\t".join([
                 ts.strftime("%Y-%m-%d %H:%M:%S.%f")[:-3],
-                f"usuario:{random.randint(0, 99999):06d}",
-                random.choices(["online", "offline"], weights=[7, 3])[0],
-                random.choice(ZONAS),
-                random.choice(DISPOSITIVOS),
+                u["usuario_id"],
+                random.choices(["online", "offline"], weights=[68, 32])[0],
+                u["zona"],
+                u["dispositivo"],
                 str(random.randint(5, 900)),
             ]))
         ejecutar("INSERT INTO comunica.presencia_eventos FORMAT TabSeparated",

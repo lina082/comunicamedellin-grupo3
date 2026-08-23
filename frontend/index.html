@@ -83,16 +83,20 @@
   <div class="grid">
     <div class="nodo">
       <h2>▸ cassandra-1 · puerto 9042</h2>
+      <div class="campo"><span>nombre</span><span id="n1-nombre">—</span></div>
       <div class="campo"><span>estado</span><span id="n1-estado">—</span></div>
       <div class="campo"><span>last_seen</span><span id="n1-ts">—</span></div>
       <div class="campo"><span>zona</span><span id="n1-zona">—</span></div>
+      <div class="campo"><span>comuna</span><span id="n1-comuna">—</span></div>
       <div class="campo"><span>latencia</span><span id="n1-lat">—</span></div>
     </div>
     <div class="nodo">
       <h2>▸ cassandra-3 · puerto 9044</h2>
+      <div class="campo"><span>nombre</span><span id="n3-nombre">—</span></div>
       <div class="campo"><span>estado</span><span id="n3-estado">—</span></div>
       <div class="campo"><span>last_seen</span><span id="n3-ts">—</span></div>
       <div class="campo"><span>zona</span><span id="n3-zona">—</span></div>
+      <div class="campo"><span>comuna</span><span id="n3-comuna">—</span></div>
       <div class="campo"><span>latencia</span><span id="n3-lat">—</span></div>
     </div>
   </div>
@@ -145,9 +149,11 @@ function enviarConfig(){
 
 function pintar(d){
   for (const [k, n] of [["n1", d.nodo1], ["n3", d.nodo3]]){
+    $(`${k}-nombre`).textContent = n.nombre ?? "—";
     $(`${k}-estado`).textContent = n.estado ?? (n.error ?? "—");
     $(`${k}-ts`).textContent = fmtTs(n.last_seen);
     $(`${k}-zona`).textContent = n.zona ?? "—";
+    $(`${k}-comuna`).textContent = n.comuna ?? "—";
     $(`${k}-lat`).textContent = n.latencia_ms != null ? n.latencia_ms + " ms" : "—";
   }
   lecturas++;
