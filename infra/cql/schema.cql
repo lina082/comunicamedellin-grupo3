@@ -24,6 +24,39 @@ WITH replication = {
 
 USE comunica;
 
+-- ============================================================
+-- NOTA SOBRE NORMALIZACION Y ACID  (leer antes de la exposicion)
+-- ============================================================
+-- Este esquema NO esta normalizado y NO ofrece ACID entre filas.
+-- Es deliberado, no un descuido:
+--
+-- 1) DESNORMALIZACION (Sec. 2.2)
+--    En un modelo relacional 3NF tendriamos usuarios, comunas y
+--    zonas en tablas separadas, unidas por JOIN. Cassandra no
+--    tiene JOINs, y aunque los tuviera cruzarian datos que viven
+--    en nodos distintos. La regla de modelado aqui es "una tabla
+--    por consulta": se duplica el dato para que cada lectura
+--    toque una sola particion.
+--    Consecuencia: nombre, comuna y zona viven junto a presencia.
+--
+-- 2) BASE en vez de ACID (Sec. 1.2, 2.2)
+--    Cassandra es AP: renuncia a la C de CAP, y ACID empieza por
+--    consistencia. Lo que SI garantiza:
+--      Atomicidad  -> si, dentro de una misma particion
+--      Durabilidad -> si, con QUORUM sobrevive a un nodo caido
+--      Aislamiento -> NO entre particiones
+--      Consistencia inmediata -> NO, es eventual
+--
+-- 3) QUIEN CUIDA LA INTEGRIDAD ENTONCES
+--    El codigo. Sin FOREIGN KEY ni CHECK, el motor acepta
+--    "El Poblado / zona centro" sin protestar. Por eso la zona
+--    SIEMPRE se deriva de la comuna en _datos.py (zona_de) y el
+--    endpoint POST /presencia no toca zona ni comuna.
+--    Ese es el precio real de renunciar al modelo relacional, y
+--    conviene decirlo en voz alta en la exposicion.
+-- ============================================================
+
+
 -- ------------------------------------------------------------
 -- TABLA 1: PRESENCIA  (carga C4 - clave-valor de alta rotacion)
 -- ------------------------------------------------------------

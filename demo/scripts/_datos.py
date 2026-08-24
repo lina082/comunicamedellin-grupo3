@@ -42,6 +42,17 @@ COMUNAS = {
 }
 
 ZONAS = list(COMUNAS.keys())
+
+# Indice inverso: de comuna a su zona. La zona SIEMPRE se deriva de
+# la comuna, nunca se escribe suelta. Al desnormalizar (Cassandra no
+# tiene JOINs, Sec. 2.2) el motor ya no valida la coherencia entre
+# columnas, asi que la garantiza el codigo que escribe.
+ZONA_DE_COMUNA = {c[0]: z for z, cs in COMUNAS.items() for c in cs}
+
+
+def zona_de(comuna):
+    """Devuelve la zona a la que pertenece una comuna de Medellin."""
+    return ZONA_DE_COMUNA.get(comuna)
 DISPOSITIVOS = ["android", "ios", "web"]
 # Distribucion realista del mercado colombiano
 PESO_DISPOSITIVO = [72, 19, 9]
@@ -109,7 +120,10 @@ def usuario(indice):
     return {
         "usuario_id": _cedula_unica(),
         "nombre": fake.name(),
-        "telefono": fake.phone_number(),
+        # Formato unico +573XXXXXXXXX. Faker es_CO mezcla seis
+        # formatos distintos e incluye lineas gratuitas 018000 como
+        # si fueran celulares, y eso se ve descuidado en pantalla.
+        "telefono": f"+573{random.choice('0125')}{random.randint(0, 9_999_999):07d}",
         "zona": zona,
         "comuna": comuna,
         # Dispersion de ~1 km alrededor del centroide de la comuna

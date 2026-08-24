@@ -90,14 +90,23 @@ class Escritura(BaseModel):
 
 @app.post("/presencia")
 def escribir(e: Escritura):
+    """Actualiza la presencia de un usuario.
+
+    NO toca zona ni comuna: son atributos del suscriptor, no del
+    heartbeat. Al desnormalizar (Sec. 2.2) el motor ya no valida
+    la coherencia entre columnas -- si esta escritura cambiara la
+    zona sin cambiar la comuna, dejaria filas invalidas como
+    "El Poblado / zona centro". La integridad la sostiene el
+    codigo, que es el precio de renunciar al modelo relacional.
+    """
     _, s = conexiones["cass1"]
     q = SimpleStatement(
-        "UPDATE presencia SET estado=%s, last_seen=%s, zona=%s, "
+        "UPDATE presencia SET estado=%s, last_seen=%s, "
         "dispositivo=%s, escrito_por=%s WHERE usuario_id=%s")
     q.consistency_level = NIVELES.get(e.nivel, ConsistencyLevel.ONE)
     t0 = time.perf_counter()
     s.execute(q, (e.estado, dt.datetime.now(dt.timezone.utc),
-                  e.zona, "web", "cass1", e.usuario_id))
+                  "web", "cass1", e.usuario_id))
     return {"ok": True, "latencia_ms": round((time.perf_counter() - t0) * 1000, 2)}
 
 
