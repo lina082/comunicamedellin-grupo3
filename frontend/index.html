@@ -175,17 +175,38 @@ td.pk{color:var(--itm-2);font-weight:600}
 .link.on{stroke:var(--itm-cian);animation:fluir .6s linear infinite}
 @keyframes fluir{to{stroke-dashoffset:-20}}
 
-.disp-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(112px,1fr));
-  gap:10px;margin-top:8px}
-.disp{background:var(--bg3);border:1px solid var(--line);border-radius:9px;
-  padding:11px 10px;text-align:center;transition:all .25s;opacity:.42}
+.zona-bloque{background:var(--bg2);border:1px solid var(--line);border-radius:10px;
+  padding:14px 16px;margin-bottom:12px}
+.zona-bloque h4{margin:0 0 10px;font-size:12.5px;font-family:var(--mono);
+  color:var(--fg3);display:flex;justify-content:space-between;align-items:center;gap:10px}
+.zona-bloque h4 b{color:var(--itm-2);font-size:13px}
+.zona-bloque h4 .cnt{font-size:11.5px;color:var(--fg3)}
+.zona-bloque h4 .cnt.full{color:var(--ok);font-weight:600}
+
+.disp-grid{display:grid;gap:5px;
+  grid-template-columns:repeat(auto-fill,minmax(30px,1fr))}
+.disp-grid.detalle{grid-template-columns:repeat(auto-fill,minmax(112px,1fr));gap:10px}
+
+/* modo compacto: cuadritos */
+.disp{background:var(--bg3);border:1px solid var(--line);border-radius:5px;
+  aspect-ratio:1;display:flex;align-items:center;justify-content:center;
+  font-size:13px;opacity:.35;transition:all .2s;cursor:default}
 .disp.rx{opacity:1;border-color:var(--itm-cian);background:#DCEEFB;
-  transform:translateY(-2px)}
-.disp .ico{font-size:20px;line-height:1;margin-bottom:6px}
-.disp .nom{font-size:11px;color:var(--fg2);line-height:1.3;
-  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.disp .com{font-size:10px;color:var(--fg3);font-family:var(--mono);margin-top:3px}
-.disp .lat{font-size:10px;color:var(--itm-2);font-family:var(--mono);margin-top:4px;min-height:13px}
+  transform:scale(1.06)}
+
+/* modo detalle: tarjetas con nombre */
+.disp-grid.detalle .disp{aspect-ratio:auto;flex-direction:column;
+  padding:11px 10px;text-align:center;border-radius:9px;opacity:.42}
+.disp-grid.detalle .disp.rx{transform:translateY(-2px) scale(1)}
+.disp .ico{font-size:20px;line-height:1;margin-bottom:6px;display:none}
+.disp-grid.detalle .ico{display:block}
+.disp .nom,.disp .com,.disp .lat{display:none}
+.disp-grid.detalle .nom{display:block;font-size:11px;color:var(--fg2);
+  line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.disp-grid.detalle .com{display:block;font-size:10px;color:var(--fg3);
+  font-family:var(--mono);margin-top:3px}
+.disp-grid.detalle .lat{display:block;font-size:10px;color:var(--itm-2);
+  font-family:var(--mono);margin-top:4px;min-height:13px}
 
 .consola{background:var(--itm);color:#C9DCF2;border:1px solid var(--line);border-radius:8px;
   padding:12px 14px;font-family:var(--mono);font-size:11.5px;line-height:1.75;
@@ -254,9 +275,10 @@ td.pk{color:var(--itm-2);font-weight:600}
       <div>
         <label for="a-dest">Dispositivos</label>
         <select id="a-dest">
-          <option value="12">12</option>
-          <option value="18">18</option>
-          <option value="24">24</option>
+          <option value="12">12 · con nombres</option>
+          <option value="24">24 · con nombres</option>
+          <option value="60">60 · compacto</option>
+          <option value="100" selected>100 · compacto</option>
         </select>
       </div>
       <button class="p" id="enviar">Publicar alerta</button>
@@ -311,7 +333,7 @@ td.pk{color:var(--itm-2);font-weight:600}
     <div class="metrica"><div class="n" id="m-tasa">—</div><div class="k">entregas/s</div></div>
   </div>
 
-  <div class="disp-grid" id="dispositivos"></div>
+  <div id="dispositivos"></div>
 
   <div style="margin-top:16px">
     <label style="font-size:12.5px;color:var(--fg3);display:block;margin-bottom:6px">
@@ -512,15 +534,32 @@ function encender(caja, links = []){
   links.forEach(l => $(l)?.classList.add("on"));
 }
 
-/* dibuja las tarjetas de dispositivo, apagadas */
+/* Dibuja los dispositivos agrupados por zona, apagados.
+   Con pocos se muestran con nombre; con muchos, como cuadritos,
+   porque 100 tarjetas con texto no caben legibles en pantalla. */
+const ZONAS = ["norte", "centro", "sur"];
+let cupos = {}, puestos = {};
+
 function prepararDispositivos(n){
-  const ICONOS = ["📱","📲","☎️"];
-  $("dispositivos").innerHTML = Array.from({length: n}, (_, i) => `
-    <div class="disp" id="d${i}">
-      <div class="ico">${ICONOS[i % ICONOS.length]}</div>
-      <div class="nom">esperando…</div>
-      <div class="com">—</div>
-      <div class="lat"></div>
+  const detalle = n <= 24;
+  cupos = {}; puestos = {};
+  ZONAS.forEach((z, i) => {
+    cupos[z] = Math.floor(n / 3) + (i < n % 3 ? 1 : 0);
+    puestos[z] = 0;
+  });
+  $("dispositivos").innerHTML = ZONAS.map(z => `
+    <div class="zona-bloque">
+      <h4><span>zona <b>${z}</b></span>
+          <span class="cnt" id="cnt-${z}">0 / ${cupos[z]}</span></h4>
+      <div class="disp-grid ${detalle ? "detalle" : ""}" id="g-${z}">
+        ${Array.from({length: cupos[z]}, (_, i) => `
+          <div class="disp" id="d-${z}-${i}" title="esperando">
+            <div class="ico">📱</div>
+            <div class="nom">esperando…</div>
+            <div class="com">—</div>
+            <div class="lat"></div>
+          </div>`).join("")}
+      </div>
     </div>`).join("");
 }
 
@@ -573,18 +612,33 @@ function manejar(d){
       break;
 
     case "entrega": {
-      const el = $(`d${entregados}`);
+      const z = d.zona;
+      const i = puestos[z] ?? 0;
+      const el = $(`d-${z}-${i}`);
       if (el){
         el.classList.add("rx");
-        el.querySelector(".nom").textContent = (d.nombre || "").split(" ").slice(0,2).join(" ");
-        el.querySelector(".com").textContent = d.comuna || d.zona;
+        el.title = `${d.nombre} · ${d.comuna} · ${d.latencia_ms} ms`;
+        el.querySelector(".nom").textContent =
+          (d.nombre || "").split(" ").slice(0,2).join(" ");
+        el.querySelector(".com").textContent = d.comuna || z;
         el.querySelector(".lat").textContent = d.latencia_ms + " ms";
+        puestos[z] = i + 1;
+        const c = $(`cnt-${z}`);
+        if (c){
+          c.textContent = `${puestos[z]} / ${cupos[z]}`;
+          if (puestos[z] >= cupos[z]) c.classList.add("full");
+        }
       }
       encender("B-disp");
       lats.push(d.latencia_ms);
       entregados++;
       $("m-entregas").textContent = entregados;
-      log(`${t} <span class="d">ENTREGADO</span> ${d.nombre} · ${d.comuna} · ${d.latencia_ms} ms`);
+      // Con 100 dispositivos el log se vuelve ilegible: solo las
+      // primeras y luego un resumen cada 20.
+      if (entregados <= 6)
+        log(`${t} <span class="d">ENTREGADO</span> ${d.nombre} · ${d.comuna} · ${d.latencia_ms} ms`);
+      else if (entregados % 20 === 0)
+        log(`${t} <span class="d">${entregados} entregas</span> …`);
       break;
     }
     case "entrega_error":

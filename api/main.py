@@ -237,7 +237,11 @@ async def ws_fanout(sock: WebSocket):
             titulo = (cfg.get("titulo") or "Alerta sin titulo")[:200]
             cuerpo = (cfg.get("cuerpo") or "")[:500]
             severidad = cfg.get("severidad", "critica")
-            destinos = int(cfg.get("destinos", 12))
+            destinos = max(3, min(120, int(cfg.get("destinos", 12))))
+            # Ritmo de la animacion: con pocos dispositivos conviene
+            # verlos llegar de a uno; con 100 hay que acelerar o la
+            # demo se vuelve eterna.
+            pausa = 0.09 if destinos <= 24 else (0.045 if destinos <= 60 else 0.022)
             alerta_id = uuid.uuid4()
             t_ini = time.perf_counter()
 
@@ -279,10 +283,12 @@ async def ws_fanout(sock: WebSocket):
             _, ses = conexiones["cass1"]
             suscriptores = []
             for z in zonas:
+                # Reparto equitativo: si destinos=100, van 34/33/33
+                cupo = destinos // 3 + (1 if zonas.index(z) < destinos % 3 else 0)
                 filas = ses.execute(
                     "SELECT usuario_id, nombre, comuna, zona FROM presencia "
                     "WHERE zona=%s LIMIT %s ALLOW FILTERING",
-                    (z, max(1, destinos // 3)))
+                    (z, max(1, cupo)))
                 suscriptores += [
                     {"usuario_id": f.usuario_id, "nombre": f.nombre,
                      "comuna": f.comuna, "zona": f.zona}
@@ -315,7 +321,7 @@ async def ws_fanout(sock: WebSocket):
                         "evento": "entrega_error", "ms": ms(),
                         "usuario_id": u["usuario_id"],
                         "detalle": type(e).__name__})
-                await asyncio.sleep(0.09)
+                await asyncio.sleep(pausa)
 
             # ── 4. Registrar la alerta en el catalogo ──
             try:
