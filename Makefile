@@ -6,7 +6,7 @@ CH    := docker exec -i clickhouse clickhouse-client --user demo --password demo
 
 .PHONY: help up down clean status schema seed demo-consistencia demo-fanout \
         demo-nodo-caido ch-demo ch-seed up-zk down-zk zk-shell kafka-topics \
-        latencia-on latencia-off \
+        latencia-on latencia-off grabar-demo \
         kafka-consumer kafka-replay api frontend pdf slides logs
 
 help: ## Muestra esta ayuda
@@ -109,6 +109,9 @@ zk-shell: ## Shell de Zookeeper: ver brokers, controller, topicos
 # ── Aplicacion ───────────────────────────────────────────────
 api: ## Arranca la API (FastAPI + WebSocket)
 	cd api && python3 -m uvicorn main:app --reload --port 8765
+
+grabar-demo: ## Graba una corrida real para el modo demo de Vercel
+	python3 demo/scripts/grabar_demo.py
 
 frontend: ## Sirve el frontend en http://localhost:4173
 	cd frontend && python3 -m http.server 4173
