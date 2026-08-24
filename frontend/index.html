@@ -6,25 +6,55 @@
 <title>ComunicaMedellín · Consistencia en vivo</title>
 <style>
 :root{
-  --bg:#0B0E14; --bg2:#141922; --bg3:#1C2230;
-  --fg:#EDF1F7; --fg2:#9FADC0; --fg3:#66768C;
-  --line:#242C3A;
-  --ok:#9EE86B; --ok-d:#1E2E17;
-  --warn:#FFA347; --warn-d:#33210C;
-  --sky:#6BC5F8;
+  /* Identidad ITM: azul marino institucional + cian del swoosh */
+  --itm:#0F2B6B;          /* azul marino del logotipo */
+  --itm-2:#1B4BA8;        /* azul medio */
+  --itm-cian:#00A0E3;     /* cian del swoosh */
+
+  --bg:#F4F7FB; --bg2:#FFFFFF; --bg3:#E8EFF7;
+  --fg:#0F2B6B; --fg2:#3F5680; --fg3:#7789A6;
+  --line:#D3DFEC;
+
+  --ok:#0F7B5F; --ok-d:#DCF2EA;        /* verde institucional sobrio */
+  --warn:#C4611A; --warn-d:#FBEADC;    /* ambar para divergencia */
+  --sky:#00A0E3;
+
   --mono:"JetBrains Mono",ui-monospace,"SF Mono",Menlo,monospace;
+}
+:root[data-theme="dark"]{
+  --bg:#071230; --bg2:#0D1E44; --bg3:#132A5C;
+  --fg:#E6EEF9; --fg2:#A9BEDC; --fg3:#6E88B0;
+  --line:#1D3565;
+  --ok:#4FD1A5; --ok-d:#0A3A2E;
+  --warn:#F0954B; --warn-d:#3D2413;
+  --sky:#4FC3F7;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#071230; --bg2:#0D1E44; --bg3:#132A5C;
+    --fg:#E6EEF9; --fg2:#A9BEDC; --fg3:#6E88B0;
+    --line:#1D3565;
+    --ok:#4FD1A5; --ok-d:#0A3A2E;
+    --warn:#F0954B; --warn-d:#3D2413;
+    --sky:#4FC3F7;
+  }
 }
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--fg);
   font:15px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
 .wrap{max-width:1180px;margin:0 auto;padding:0 20px 60px}
 
-header{border-bottom:1px solid var(--line);padding:22px 0;margin-bottom:24px}
+header{border-bottom:3px solid var(--itm);padding:22px 0;margin-bottom:24px}
+header .marca{display:flex;align-items:center;gap:12px}
+header .sello{width:38px;height:38px;border-radius:8px;flex-shrink:0;
+  background:linear-gradient(135deg,var(--itm) 0%,var(--itm-2) 55%,var(--itm-cian) 100%);
+  display:flex;align-items:center;justify-content:center;
+  color:#fff;font-weight:800;font-size:13px;letter-spacing:.02em}
 header h1{margin:0;font-size:21px;letter-spacing:-.02em}
 header .sub{color:var(--fg3);font-size:13.5px;margin-top:5px}
 .dot{display:inline-block;width:8px;height:8px;border-radius:50%;
   background:var(--fg3);margin-right:7px;vertical-align:middle}
-.dot.on{background:var(--ok)}
+.dot.on{background:var(--itm-cian)}
 
 /* pestañas */
 .tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);margin-bottom:24px;
@@ -32,12 +62,12 @@ header .sub{color:var(--fg3);font-size:13.5px;margin-top:5px}
 .tab{background:none;border:0;color:var(--fg3);font:inherit;font-size:14.5px;
   padding:11px 16px;cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap}
 .tab:hover{color:var(--fg2)}
-.tab.act{color:var(--ok);border-bottom-color:var(--ok)}
+.tab.act{color:var(--itm-2);border-bottom-color:var(--itm-cian);font-weight:600}
 .tab:focus-visible{outline:2px solid var(--sky);outline-offset:-2px}
 .vista{display:none}
 .vista.act{display:block}
 
-.expl{background:var(--bg2);border:1px solid var(--line);border-left:3px solid var(--sky);
+.expl{background:var(--bg2);border:1px solid var(--line);border-left:3px solid var(--itm-cian);
   border-radius:8px;padding:14px 18px;margin-bottom:20px;font-size:14.5px;color:var(--fg2)}
 .expl b{color:var(--fg)}
 .expl code{font-family:var(--mono);font-size:12.5px;background:var(--bg3);
@@ -52,7 +82,8 @@ select,button{font:inherit;background:var(--bg3);color:var(--fg);
 select{min-width:230px;max-width:100%}
 button{cursor:pointer}
 button:hover{border-color:var(--fg3)}
-button.p{background:var(--ok-d);border-color:var(--ok);color:var(--ok);font-weight:600}
+button.p{background:var(--itm);border-color:var(--itm);color:#fff;font-weight:600}
+button.p:hover{background:var(--itm-2);border-color:var(--itm-2)}
 button:focus-visible,select:focus-visible{outline:2px solid var(--sky);outline-offset:1px}
 
 /* tarjetas de nodo */
@@ -88,7 +119,7 @@ th{background:var(--bg3);color:var(--fg3);text-align:left;padding:9px 12px;
 td{padding:8px 12px;border-bottom:1px solid var(--line);white-space:nowrap;color:var(--fg2)}
 tr:last-child td{border-bottom:0}
 tr:hover td{background:var(--bg3)}
-td.pk{color:var(--ok)}
+td.pk{color:var(--itm-2);font-weight:600}
 
 .esquema{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px}
 .tabla-card{background:var(--bg2);border:1px solid var(--line);border-radius:10px;overflow:hidden}
@@ -102,7 +133,7 @@ td.pk{color:var(--ok)}
 .col-row .t{color:var(--fg3);font-size:11.5px}
 .badge{font-size:10px;padding:2px 6px;border-radius:3px;font-family:var(--mono);
   background:var(--bg3);color:var(--fg3);margin-left:6px}
-.badge.pk{background:var(--ok-d);color:var(--ok)}
+.badge.pk{background:#DCEEFB;color:var(--itm-2);font-weight:600}
 .badge.ck{background:var(--warn-d);color:var(--warn)}
 
 /* barras de zona */
@@ -111,7 +142,7 @@ td.pk{color:var(--ok)}
 .zona-hd{display:flex;justify-content:space-between;font-size:13.5px;margin-bottom:9px}
 .zona-hd .n{font-family:var(--mono);color:var(--fg3);font-size:12.5px}
 .barra{height:9px;background:var(--bg3);border-radius:5px;overflow:hidden}
-.barra div{height:100%;background:var(--ok);border-radius:5px;transition:width .4s}
+.barra div{height:100%;background:linear-gradient(90deg,var(--itm),var(--itm-cian));border-radius:5px;transition:width .4s}
 .err{color:var(--warn);font-size:13.5px;padding:12px 0}
 .hint{color:var(--fg3);font-size:12.5px;margin-top:12px;font-family:var(--mono)}
 
@@ -138,36 +169,36 @@ td.pk{color:var(--ok)}
 .et{font-family:var(--mono);font-size:11px;fill:var(--fg3)}
 .et-b{font-family:var(--mono);font-size:12px;fill:var(--fg2)}
 .caja{fill:var(--bg3);stroke:var(--line);stroke-width:1}
-.caja.on{fill:var(--ok-d);stroke:var(--ok);stroke-width:2}
+.caja.on{fill:#DCEEFB;stroke:var(--itm-cian);stroke-width:2}
 .caja.warn{fill:var(--warn-d);stroke:var(--warn);stroke-width:2}
 .link{stroke:var(--line);stroke-width:1.5;fill:none;stroke-dasharray:5 5}
-.link.on{stroke:var(--ok);animation:fluir .6s linear infinite}
+.link.on{stroke:var(--itm-cian);animation:fluir .6s linear infinite}
 @keyframes fluir{to{stroke-dashoffset:-20}}
 
 .disp-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(112px,1fr));
   gap:10px;margin-top:8px}
 .disp{background:var(--bg3);border:1px solid var(--line);border-radius:9px;
   padding:11px 10px;text-align:center;transition:all .25s;opacity:.42}
-.disp.rx{opacity:1;border-color:var(--ok);background:var(--ok-d);
+.disp.rx{opacity:1;border-color:var(--itm-cian);background:#DCEEFB;
   transform:translateY(-2px)}
 .disp .ico{font-size:20px;line-height:1;margin-bottom:6px}
 .disp .nom{font-size:11px;color:var(--fg2);line-height:1.3;
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .disp .com{font-size:10px;color:var(--fg3);font-family:var(--mono);margin-top:3px}
-.disp .lat{font-size:10px;color:var(--ok);font-family:var(--mono);margin-top:4px;min-height:13px}
+.disp .lat{font-size:10px;color:var(--itm-2);font-family:var(--mono);margin-top:4px;min-height:13px}
 
-.consola{background:#04070C;border:1px solid var(--line);border-radius:8px;
+.consola{background:var(--itm);color:#C9DCF2;border:1px solid var(--line);border-radius:8px;
   padding:12px 14px;font-family:var(--mono);font-size:11.5px;line-height:1.75;
-  max-height:190px;overflow-y:auto;color:var(--fg2)}
-.consola .t{color:var(--fg3)}
-.consola .k{color:var(--warn)}
-.consola .c{color:var(--sky)}
-.consola .d{color:var(--ok)}
+  max-height:190px;overflow-y:auto}
+.consola .t{color:#7EA3D0}
+.consola .k{color:#FFB067}
+.consola .c{color:#5FC9F3}
+.consola .d{color:#6FE3B8}
 
 .metricas{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));
   gap:10px;margin:14px 0}
 .metrica{background:var(--bg2);border:1px solid var(--line);border-radius:8px;padding:13px 15px}
-.metrica .n{font-size:22px;font-weight:700;font-family:var(--mono);letter-spacing:-.02em}
+.metrica .n{font-size:22px;font-weight:700;font-family:var(--mono);letter-spacing:-.02em;color:var(--itm-2)}
 .metrica .k{font-size:11px;color:var(--fg3);margin-top:4px}
 
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
@@ -177,9 +208,14 @@ td.pk{color:var(--ok)}
 <div class="wrap">
 
 <header>
+  <div class="marca">
+    <div class="sello" aria-hidden="true">ITM</div>
+    <div>
   <h1>ComunicaMedellín · panel de la base de datos</h1>
   <div class="sub"><span class="dot" id="dot"></span><span id="conn">conectando…</span>
     · Cassandra 3 nodos · RF=3 · Grupo 3</div>
+    </div>
+  </div>
 </header>
 
 <div class="tabs" role="tablist">
@@ -320,7 +356,7 @@ td.pk{color:var(--ok)}
 <section class="vista" id="v-datos">
   <div class="expl">
     <b>Qué estás viendo:</b> filas reales tal como están guardadas en Cassandra.
-    La columna en <b style="color:var(--ok)">verde</b> es la <b>clave de partición</b>:
+    La primera columna, <b style="color:var(--itm-2)">resaltada</b>, es la <b>clave de partición</b>:
     su hash decide en qué nodo vive cada fila.
   </div>
   <div class="ctrl">
