@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Stack Técnico · Grupo 3</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&family=JetBrains+Mono:wght@400;500;700&display=swap">
+
+<style>
+:root{
+  --ground:#F0F4F8; --surface:#FFFFFF; --surface-2:#E4EBF2;
+  --ink:#0A1628; --ink-2:#33475C; --ink-3:#5B7C99;
+  --line:#C9D6E2; --line-2:#DCE5ED;
+  --ap:#00807D; --ap-soft:#D5EDEC;
+  --cp:#C25E14; --cp-soft:#F8E7D6;
+  --band:#0A1628; --band-ink:#E6EEF5; --band-line:#22374F;
+  --code-bg:#0E1D33; --code-ink:#D6E2EF;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --ground:#080F1B; --surface:#101C2E; --surface-2:#17263B;
+    --ink:#E8F0F7; --ink-2:#B2C5D6; --ink-3:#7E9AB3;
+    --line:#26384F; --line-2:#1C2B3F;
+    --ap:#3BC4BE; --ap-soft:#0F3634;
+    --cp:#EE9A4E; --cp-soft:#3A2413;
+    --band:#04090F; --band-ink:#DDE8F2; --band-line:#1D2E43;
+    --code-bg:#04090F; --code-ink:#C6D6E6;
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#080F1B; --surface:#101C2E; --surface-2:#17263B;
+  --ink:#E8F0F7; --ink-2:#B2C5D6; --ink-3:#7E9AB3;
+  --line:#26384F; --line-2:#1C2B3F;
+  --ap:#3BC4BE; --ap-soft:#0F3634;
+  --cp:#EE9A4E; --cp-soft:#3A2413;
+  --band:#04090F; --band-ink:#DDE8F2; --band-line:#1D2E43;
+  --code-bg:#04090F; --code-ink:#C6D6E6;
+}
+
+*{box-sizing:border-box}
+body{margin:0;background:var(--ground);color:var(--ink);
+  font-family:"Source Serif 4",Georgia,serif;font-size:17px;line-height:1.65;
+  -webkit-font-smoothing:antialiased}
+.wrap{max-width:1080px;margin:0 auto;padding:0 28px}
+.col{max-width:68ch}
+h1,h2,h3,h4,.ui{font-family:Archivo,"Helvetica Neue",Arial,sans-serif}
+h2{font-size:clamp(26px,3.4vw,36px);line-height:1.12;letter-spacing:-.02em;font-weight:600;margin:0 0 14px;text-wrap:balance}
+h3{font-size:20px;line-height:1.25;letter-spacing:-.01em;font-weight:600;margin:32px 0 10px;text-wrap:balance}
+h4{font-size:15px;font-weight:600;margin:0 0 8px}
+p{margin:0 0 16px}
+strong{font-weight:600}
+code{font-family:"JetBrains Mono",ui-monospace,monospace;font-size:.88em;background:var(--surface-2);padding:.12em .38em;border-radius:3px}
+.eyebrow{font-family:Archivo,sans-serif;font-size:11px;font-weight:600;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-3)}
+.sec{font-family:"JetBrains Mono",monospace;font-size:11.5px;color:var(--ink-3);white-space:nowrap}
+section{padding:52px 0;border-bottom:1px solid var(--line-2)}
+section:last-of-type{border-bottom:0}
+
+/* hero */
+.hero{background:var(--band);color:var(--band-ink);padding:60px 0 52px;border-bottom:1px solid var(--band-line)}
+.hero .eyebrow{color:#6E8DA8}
+.hero h1{font-size:clamp(36px,6vw,64px);line-height:1;letter-spacing:-.035em;font-weight:700;margin:16px 0 0;max-width:15ch;text-wrap:balance}
+.hero h1 em{font-style:normal;color:var(--ap)}
+.hero .lede{font-size:clamp(17px,2vw,20px);line-height:1.5;color:#A9C0D4;max-width:56ch;margin:20px 0 0}
+.totals{display:flex;flex-wrap:wrap;gap:0;margin-top:34px;border-top:1px solid var(--band-line);padding-top:22px}
+.totals > div{padding-right:38px;margin-right:38px;border-right:1px solid var(--band-line)}
+.totals > div:last-child{border-right:0;padding-right:0;margin-right:0}
+.totals .n{font-family:Archivo,sans-serif;font-size:30px;font-weight:700;letter-spacing:-.03em;line-height:1;color:var(--band-ink);font-variant-numeric:tabular-nums}
+.totals .k{font-family:Archivo,sans-serif;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:#7E9AB3;margin-top:7px}
+
+/* layer stack */
+.stack{margin:28px 0}
+.layer{background:var(--surface);border:1px solid var(--line);border-radius:8px;
+  padding:20px 22px;margin-bottom:10px;display:grid;
+  grid-template-columns:minmax(0,150px) 1fr;gap:22px;align-items:start}
+.layer:last-child{margin-bottom:0}
+.layer.l-ap{border-left:4px solid var(--ap)}
+.layer.l-cp{border-left:4px solid var(--cp)}
+.layer.l-n{border-left:4px solid var(--ink-3)}
+.layer .lname{font-family:Archivo,sans-serif;font-weight:600;font-size:16px;letter-spacing:-.01em}
+.layer .lrole{font-family:Archivo,sans-serif;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3);margin-top:5px}
+.layer .lbody{font-size:15.5px;color:var(--ink-2);line-height:1.55}
+.layer .lbody p{margin:0 0 9px}
+.layer .lbody p:last-child{margin:0}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:11px}
+.chip{font-family:"JetBrains Mono",monospace;font-size:11px;padding:3px 8px;border-radius:3px;
+  background:var(--surface-2);color:var(--ink-3);border:1px solid var(--line-2);white-space:nowrap}
+.chip.ap{background:var(--ap-soft);color:var(--ap);border-color:var(--ap)}
+.chip.cp{background:var(--cp-soft);color:var(--cp);border-color:var(--cp)}
+
+/* dataflow */
+.flow{background:var(--band);color:var(--band-ink);padding:44px 0;margin:0}
+.flow .eyebrow{color:#6E8DA8}
+.flow h3{color:var(--band-ink);margin:10px 0 20px}
+.pipe{display:flex;flex-direction:column;gap:0;font-family:"JetBrains Mono",monospace;font-size:13px}
+.pipe-step{display:flex;align-items:flex-start;gap:16px;padding:14px 0;border-bottom:1px solid var(--band-line)}
+.pipe-step:last-child{border-bottom:0}
+.pipe-step .pn{color:#6E8DA8;font-size:11px;font-weight:700;width:22px;flex-shrink:0;padding-top:3px}
+.pipe-step .pw{flex:1;min-width:0}
+.pipe-step .pt{color:var(--band-ink);font-weight:500;margin-bottom:5px}
+.pipe-step .pd{font-family:"Source Serif 4",serif;font-size:15px;color:#A9C0D4;line-height:1.5}
+.pipe-step .pt .hl{color:var(--ap)}
+.pipe-step .pt .hlc{color:var(--cp)}
+
+/* tables */
+.tw{overflow-x:auto;margin:22px 0;border:1px solid var(--line);border-radius:8px;background:var(--surface)}
+table{width:100%;border-collapse:collapse;font-size:15px}
+th{font-family:Archivo,sans-serif;font-size:11px;font-weight:600;letter-spacing:.11em;
+  text-transform:uppercase;color:var(--ink-3);text-align:left;padding:13px 16px;
+  border-bottom:1px solid var(--line);white-space:nowrap}
+td{padding:12px 16px;border-bottom:1px solid var(--line-2);vertical-align:top}
+tr:last-child td{border-bottom:0}
+td.mono,th.mono{font-family:"JetBrains Mono",monospace;font-size:13px;font-variant-numeric:tabular-nums;white-space:nowrap}
+.oss{font-family:"JetBrains Mono",monospace;font-size:11px;color:var(--ap);font-weight:700}
+
+/* ports */
+.ports{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin:22px 0}
+.port{background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:14px 16px}
+.port .pnum{font-family:"JetBrains Mono",monospace;font-size:19px;font-weight:700;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.port .plbl{font-family:Archivo,sans-serif;font-size:12px;color:var(--ink-3);margin-top:5px}
+.port.warn{border-color:var(--cp);background:var(--cp-soft)}
+.port.warn .pnum{color:var(--cp)}
+.port.warn .plbl{color:var(--cp)}
+
+/* note */
+.note{background:var(--surface);border:1px solid var(--line);border-left:3px solid var(--cp);
+  border-radius:6px;padding:18px 20px;margin:24px 0}
+.note .eyebrow{color:var(--cp);margin-bottom:7px;display:block}
+.note p{margin:0;font-size:15.5px}
+.note p + p{margin-top:10px}
+.note.ok{border-left-color:var(--ap)}
+.note.ok .eyebrow{color:var(--ap)}
+
+/* code */
+pre{background:var(--code-bg);color:var(--code-ink);padding:18px 20px;border-radius:8px;
+  overflow-x:auto;font-family:"JetBrains Mono",monospace;font-size:13px;line-height:1.6;
+  margin:18px 0;border:1px solid var(--band-line)}
+pre .c{color:#6E8DA8}
+pre .g{color:var(--ap)}
+
+/* commands */
+.cmds{border:1px solid var(--line);border-radius:8px;background:var(--surface);overflow:hidden;margin:22px 0}
+.cmd{display:grid;grid-template-columns:minmax(0,230px) 1fr;gap:18px;padding:13px 18px;
+  border-bottom:1px solid var(--line-2);align-items:baseline}
+.cmd:last-child{border-bottom:0}
+.cmd .c1{font-family:"JetBrains Mono",monospace;font-size:13px;font-weight:500;color:var(--ap)}
+.cmd .c2{font-size:15px;color:var(--ink-2)}
+.cmd.hero-cmd{background:var(--ap-soft)}
+.cmd.hero-cmd .c2{color:var(--ink)}
+
+/* rejected */
+.rej{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px;margin:22px 0}
+.rejc{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:18px;
+  border-top:3px solid var(--cp)}
+.rejc h4{margin:0 0 4px}
+.rejc .why{font-family:"JetBrains Mono",monospace;font-size:11px;color:var(--cp);
+  letter-spacing:.06em;margin-bottom:10px}
+.rejc p{font-size:14.5px;color:var(--ink-2);margin:0;line-height:1.5}
+
+footer{background:var(--band);color:#7E9AB3;padding:34px 0;font-family:Archivo,sans-serif;font-size:13.5px}
+footer a{color:var(--ap);text-decoration:none;font-family:"JetBrains Mono",monospace;font-size:13px}
+footer a:hover{text-decoration:underline}
+
+@media (max-width:720px){
+  .layer{grid-template-columns:1fr;gap:12px}
+  .cmd{grid-template-columns:1fr;gap:5px}
+  .totals > div{border-right:0;padding-right:0;margin-right:26px;margin-bottom:16px}
+  .hero{padding:44px 0 38px}
+  section{padding:40px 0}
+}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+
+<div class="hero">
+  <div class="wrap">
+    <span class="eyebrow">Grupo 3 · ComunicaMedellín · Módulo 1</span>
+    <h1>El stack, <em>pieza por pieza</em></h1>
+    <p class="lede">Cuatro servicios, todos Apache 2.0, corriendo en un portátil. Cada uno está aquí porque el enunciado o el módulo lo exigen — ninguno de adorno.</p>
+    <div class="totals">
+      <div><div class="n">4</div><div class="k">servicios</div></div>
+      <div><div class="n">~2,8 GB</div><div class="k">RAM en uso</div></div>
+      <div><div class="n">100 %</div><div class="k">open source</div></div>
+      <div><div class="n">1</div><div class="k">comando para levantar</div></div>
+    </div>
+  </div>
+</div>
+
+<div class="wrap">
+
+<section>
+  <div class="col">
+    <p class="eyebrow">Vista general</p>
+    <h2>Las cuatro capas</h2>
+    <p>El color marca la decisión CAP de cada pieza: <strong style="color:var(--ap)">teal</strong> donde priorizamos disponibilidad, <strong style="color:var(--cp)">ámbar</strong> donde priorizamos que el dato no se pierda.</p>
+  </div>
+
+  <div class="stack">
+    <div class="layer l-cp">
+      <div>
+        <div class="lname">Apache Kafka</div>
+        <div class="lrole">Transporte · fan-out</div>
+      </div>
+      <div class="lbody">
+        <p>Log inmutable y particionado. Recibe la alerta una sola vez y la reparte en tres particiones, una por zona, para que tres workers entreguen en paralelo sin pisarse.</p>
+        <p>Modo <strong>KRaft</strong>: el consenso vive dentro del broker, sin Zookeeper.</p>
+        <div class="chips">
+          <span class="chip">apache/kafka:3.9.1</span>
+          <span class="chip">KRaft</span>
+          <span class="chip">3 particiones</span>
+          <span class="chip cp">Sec. 4.2</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="layer l-ap">
+      <div>
+        <div class="lname">Apache Cassandra</div>
+        <div class="lrole">Almacenamiento · 3 nodos</div>
+      </div>
+      <div class="lbody">
+        <p>El corazón del reto. Guarda la presencia como clave-valor y el historial como wide-column. Es la única pieza que permite elegir el nivel de consistencia <strong>por consulta</strong>: <code>ONE</code>, <code>QUORUM</code> o <code>ALL</code>.</p>
+        <p>Factor de replicación 3 — cada dato vive en los tres nodos, que es lo que hace observable la diferencia entre niveles.</p>
+        <div class="chips">
+          <span class="chip">cassandra:4.1</span>
+          <span class="chip">RF=3</span>
+          <span class="chip">heap 512 M por nodo</span>
+          <span class="chip ap">Sec. 1.3 · 3.3</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="layer l-n">
+      <div>
+        <div class="lname">ClickHouse</div>
+        <div class="lrole">Analítica · OLAP</div>
+      </div>
+      <div class="lbody">
+        <p>Motor columnar para las agregaciones que Cassandra no resuelve bien: cuántos usuarios en línea por zona, efectividad del fan-out, percentiles de latencia.</p>
+        <p>Consume del tópico de Kafka con su <strong>Kafka Engine</strong> nativo — sin escribir un consumer.</p>
+        <div class="chips">
+          <span class="chip">clickhouse-server:24.3-alpine</span>
+          <span class="chip">MergeTree</span>
+          <span class="chip">Sec. 2.2 · 2.4</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="layer l-n">
+      <div>
+        <div class="lname">FastAPI + HTML</div>
+        <div class="lrole">Aplicación · demo visual</div>
+      </div>
+      <div class="lbody">
+        <p>API con WebSocket que lee el mismo usuario desde dos nodos a la vez y transmite la divergencia en vivo. El frontend es un solo archivo HTML: sin Node, sin npm, sin build.</p>
+        <div class="chips">
+          <span class="chip">fastapi ≥ 0.110</span>
+          <span class="chip">uvicorn</span>
+          <span class="chip">HTML plano</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+</div>
+
+<div class="flow">
+  <div class="wrap">
+    <span class="eyebrow">Recorrido de un dato</span>
+    <h3>Qué pasa cuando la alcaldía publica una alerta</h3>
+    <div class="pipe">
+      <div class="pipe-step">
+        <span class="pn">01</span>
+        <div class="pw">
+          <div class="pt">POST /alerta → <span class="hl">FastAPI</span></div>
+          <div class="pd">Una sola escritura entra al sistema. Aquí todavía no hay nada distribuido.</div>
+        </div>
+      </div>
+      <div class="pipe-step">
+        <span class="pn">02</span>
+        <div class="pw">
+          <div class="pt">FastAPI → <span class="hlc">Kafka</span> · partición por zona</div>
+          <div class="pd">La alerta se publica tres veces, una por zona. Norte va a la partición 0, centro a la 1, sur a la 2. Fijamos la partición explícitamente porque el hash de Kafka hacía colisionar norte y sur.</div>
+        </div>
+      </div>
+      <div class="pipe-step">
+        <span class="pn">03</span>
+        <div class="pw">
+          <div class="pt">3 workers consumen en paralelo</div>
+          <div class="pd">Cada worker toma su partición y escribe el historial de sus usuarios. Aquí es donde una escritura se convierte en cien mil.</div>
+        </div>
+      </div>
+      <div class="pipe-step">
+        <span class="pn">04</span>
+        <div class="pw">
+          <div class="pt">Workers → <span class="hlc">Cassandra</span> · nivel QUORUM</div>
+          <div class="pd">El historial va con QUORUM: la alerta es seguridad pública y no se puede perder. Aceptamos pagar latencia aquí porque se publica poco.</div>
+        </div>
+      </div>
+      <div class="pipe-step">
+        <span class="pn">05</span>
+        <div class="pw">
+          <div class="pt">Dispositivos → <span class="hl">Cassandra</span> · nivel ONE</div>
+          <div class="pd">En paralelo, los usuarios reportan presencia constantemente. Eso va con ONE: barato, y que llegue tarde no le cuesta nada al negocio.</div>
+        </div>
+      </div>
+      <div class="pipe-step">
+        <span class="pn">06</span>
+        <div class="pw">
+          <div class="pt">Kafka → <span class="hl">ClickHouse</span> · vía Kafka Engine</div>
+          <div class="pd">La ruta analítica consume el mismo log y agrega por zona y por hora. Es una arquitectura Lambda: ruta rápida y ruta analítica alimentadas por el mismo flujo.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="wrap">
+
+<section>
+  <div class="col">
+    <p class="eyebrow">Versiones exactas</p>
+    <h2>Qué corre y cuánto pesa</h2>
+    <p>Todo fijado a versión concreta. Nada de <code>:latest</code>, para que a los cuatro nos corra lo mismo.</p>
+  </div>
+  <div class="tw">
+    <table>
+      <thead><tr><th>Servicio</th><th>Imagen</th><th class="mono">RAM</th><th>Licencia</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Cassandra</strong> ×3</td><td class="mono">cassandra:4.1</td><td class="mono">~1,8 GB</td><td><span class="oss">Apache 2.0</span></td></tr>
+        <tr><td><strong>Kafka</strong></td><td class="mono">apache/kafka:3.9.1</td><td class="mono">~400 MB</td><td><span class="oss">Apache 2.0</span></td></tr>
+        <tr><td><strong>ClickHouse</strong></td><td class="mono">clickhouse-server:24.3-alpine</td><td class="mono">~500 MB</td><td><span class="oss">Apache 2.0</span></td></tr>
+        <tr><td><strong>FastAPI</strong></td><td class="mono">python 3 local</td><td class="mono">~100 MB</td><td><span class="oss">MIT</span></td></tr>
+        <tr><td><strong>Zookeeper</strong> <span class="sec">opcional</span></td><td class="mono">zookeeper:3.9</td><td class="mono">~300 MB</td><td><span class="oss">Apache 2.0</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="col">
+    <div class="note ok">
+      <span class="eyebrow">Requisito de equipo</span>
+      <p>Con <strong>8 GB de RAM</strong> corre sin problema. Los heaps de Java están recortados a propósito — 512 MB por nodo de Cassandra contra los 4 GB que trae por defecto. Es una demo, no producción.</p>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="col">
+    <h2>Puertos</h2>
+    <p>Los tres nodos de Cassandra exponen puertos distintos en el host — eso es lo que permite conectarse a uno específico y comparar qué devuelve cada uno.</p>
+  </div>
+  <div class="ports">
+    <div class="port"><div class="pnum">9042</div><div class="plbl">Cassandra · nodo 1</div></div>
+    <div class="port"><div class="pnum">9043</div><div class="plbl">Cassandra · nodo 2</div></div>
+    <div class="port"><div class="pnum">9044</div><div class="plbl">Cassandra · nodo 3</div></div>
+    <div class="port"><div class="pnum">29092</div><div class="plbl">Kafka · desde el host</div></div>
+    <div class="port"><div class="pnum">8123</div><div class="plbl">ClickHouse · HTTP</div></div>
+    <div class="port warn"><div class="pnum">8765</div><div class="plbl">API · no 8080</div></div>
+  </div>
+  <div class="col">
+    <div class="note">
+      <span class="eyebrow">Ojo con esto</span>
+      <p>La API corre en <strong>8765</strong>, no en 8080. Al probar encontramos que 8080 lo tenía tomado un Jenkins y 8090 otra aplicación. Si les falla, revisen que el puerto esté libre.</p>
+      <p>Kafka expone <strong>dos</strong> listeners: <code>kafka:9092</code> para que ClickHouse lo alcance dentro de Docker, y <code>localhost:29092</code> para los scripts que corren en su máquina.</p>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="col">
+    <p class="eyebrow">Operación</p>
+    <h2>Comandos</h2>
+    <p>Todo pasa por <code>make</code>. Escriban <code>make help</code> para ver la lista completa.</p>
+  </div>
+  <div class="cmds">
+    <div class="cmd"><span class="c1">make up</span><span class="c2">Levanta los cuatro servicios · ~4 min la primera vez</span></div>
+    <div class="cmd"><span class="c1">make schema</span><span class="c2">Crea el keyspace y las tres tablas</span></div>
+    <div class="cmd"><span class="c1">make seed</span><span class="c2">Carga los 10.000 usuarios simulados</span></div>
+    <div class="cmd hero-cmd"><span class="c1">make demo-consistencia</span><span class="c2"><strong>La demo principal.</strong> Compara ONE contra QUORUM y aplica la latencia automáticamente</span></div>
+    <div class="cmd"><span class="c1">make demo-fanout</span><span class="c2">Reparte una alerta por las tres particiones de zona</span></div>
+    <div class="cmd"><span class="c1">make demo-nodo-caido</span><span class="c2">Tumba un nodo y muestra que el sistema sigue en pie</span></div>
+    <div class="cmd"><span class="c1">make status</span><span class="c2">Estado de los 3 nodos y reparto de tokens</span></div>
+    <div class="cmd"><span class="c1">make kafka-consumer</span><span class="c2">Ver mensajes fluyendo en vivo desde la terminal</span></div>
+    <div class="cmd"><span class="c1">make ch-demo</span><span class="c2">Las consultas analíticas de ClickHouse</span></div>
+    <div class="cmd"><span class="c1">make up-zk</span><span class="c2">Perfil Zookeeper, solo para estudiar coordinación</span></div>
+    <div class="cmd"><span class="c1">make clean</span><span class="c2">Apaga todo y borra los datos</span></div>
+  </div>
+</section>
+
+<section>
+  <div class="col">
+    <h2>Instalación</h2>
+  </div>
+  <div class="col">
+<pre><span class="c"># requisitos: Docker, Docker Compose y Python 3</span>
+git clone https://github.com/lina082/comunicamedellin-grupo3
+cd comunicamedellin-grupo3
+pip install -r demo/requirements.txt
+
+<span class="c"># levantar y preparar</span>
+make up &amp;&amp; make schema &amp;&amp; make seed
+
+<span class="g"># la demo que vale el 30 % de la nota</span>
+make demo-consistencia</pre>
+  </div>
+</section>
+
+<section>
+  <div class="col">
+    <p class="eyebrow">Decisiones</p>
+    <h2>Lo que descartamos</h2>
+    <p>Saber defender esto importa tanto como el stack elegido — es donde el jurado prueba si entendimos.</p>
+  </div>
+  <div class="rej">
+    <div class="rejc">
+      <h4>CockroachDB</h4>
+      <div class="why">ES CP, NECESITAMOS AP</div>
+      <p>Usa consenso Raft: los tres nodos siempre coinciden. Eso lo hace ideal para TuBoleta, pero aquí el reto exige mostrar divergencia entre nodos — y en Cockroach esa divergencia no existe. Su licencia BSL tampoco es open source.</p>
+    </div>
+    <div class="rejc">
+      <h4>Redis</h4>
+      <div class="why">NO ES LA PIEZA QUE PIDE EL MÓDULO</div>
+      <p>El módulo lo cataloga como <em>feature store</em> para ML <span class="sec">Sec. 4.4</span>, no como base de datos distribuida. Y no permite elegir nivel de consistencia por consulta, que es justo lo que el reto pide demostrar.</p>
+    </div>
+    <div class="rejc">
+      <h4>PostgreSQL solo</h4>
+      <div class="why">ES CLIENTE-SERVIDOR</div>
+      <p>Aunque esté en la nube, sigue siendo la arquitectura de la <span class="sec">Sec. 3.2</span>: el servidor es el cuello de botella. El enunciado advierte explícitamente contra confundir “en la nube” con “distribuido”.</p>
+    </div>
+    <div class="rejc">
+      <h4>MongoDB</h4>
+      <div class="why">ES CP POR DISEÑO</div>
+      <p>El módulo lo clasifica como CP <span class="sec">Sec. 1.2</span>. Prioriza consistencia sobre disponibilidad, que es lo contrario de lo que este caso necesita.</p>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="col">
+    <p class="eyebrow">Extra</p>
+    <h2>El perfil Zookeeper</h2>
+    <p>Kafka corre en modo KRaft, que es lo moderno. Pero dejamos un segundo perfil con Zookeeper por una razón puntual: <strong>poder ver cómo funciona un servicio de coordinación distribuida</strong>.</p>
+    <p>Está en la <span class="sec">Sección 1.3</span> del módulo, junto a etcd, Raft y Paxos. Con <code>make zk-shell</code> pueden entrar y mirar:</p>
+  </div>
+  <div class="col">
+<pre>ls /brokers/ids      <span class="c"># los brokers registrados</span>
+get /controller      <span class="c"># quién ganó la elección de líder</span>
+ls /brokers/topics   <span class="c"># metadata de tópicos</span></pre>
+    <div class="note">
+      <span class="eyebrow">Dato para la exposición</span>
+      <p>Kafka 3.5 marcó Zookeeper como obsoleto y Kafka 4.0 lo eliminó del todo. Poder contar esa migración — de coordinación externa a consenso embebido vía Raft — es algo que ningún otro equipo va a mencionar.</p>
+    </div>
+  </div>
+</section>
+
+</div>
+
+<footer>
+  <div class="wrap">
+    <div style="display:flex;flex-wrap:wrap;gap:14px 40px;align-items:baseline">
+      <span>Grupo 3 · Instituto Tecnológico Metropolitano · 2026</span>
+      <a href="https://github.com/lina082/comunicamedellin-grupo3">github.com/lina082/comunicamedellin-grupo3</a>
+    </div>
+  </div>
+</footer>
+</html>

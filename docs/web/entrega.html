@@ -1,0 +1,929 @@
+<title>Fan-out Masivo y Presencia</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;0,8..60,700;1,8..60,400&family=Archivo:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap">
+
+<style>
+:root{
+  --itm:#0F2B6B; --itm-2:#1B4BA8; --itm-cian:#00A0E3;
+  --bg:#FFFFFF; --bg2:#F4F7FB; --bg3:#E8EFF7;
+  --ink:#101B33; --ink-2:#3F5680; --ink-3:#7789A6;
+  --line:#D3DFEC; --line-2:#E8EFF7;
+  --ap:#0F7B5F; --ap-soft:#DCF2EA;
+  --cp:#C4611A; --cp-soft:#FBEADC;
+  --code-bg:#0F2B6B; --code-ink:#D6E4F5;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#071230; --bg2:#0D1E44; --bg3:#132A5C;
+    --ink:#E6EEF9; --ink-2:#A9BEDC; --ink-3:#6E88B0;
+    --line:#1D3565; --line-2:#132A5C;
+    --itm:#4FC3F7; --itm-2:#6BC5F8; --itm-cian:#4FC3F7;
+    --ap:#4FD1A5; --ap-soft:#0A3A2E;
+    --cp:#F0954B; --cp-soft:#3D2413;
+    --code-bg:#04091A; --code-ink:#C6D6E6;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#071230; --bg2:#0D1E44; --bg3:#132A5C;
+  --ink:#E6EEF9; --ink-2:#A9BEDC; --ink-3:#6E88B0;
+  --line:#1D3565; --line-2:#132A5C;
+  --itm:#4FC3F7; --itm-2:#6BC5F8; --itm-cian:#4FC3F7;
+  --ap:#4FD1A5; --ap-soft:#0A3A2E;
+  --cp:#F0954B; --cp-soft:#3D2413;
+  --code-bg:#04091A; --code-ink:#C6D6E6;
+}
+
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);
+  font-family:"Source Serif 4",Georgia,serif;font-size:16.5px;line-height:1.68;
+  -webkit-font-smoothing:antialiased}
+.w{max-width:1040px;margin:0 auto;padding:0 30px}
+.col{max-width:70ch}
+h1,h2,h3,h4,.ui{font-family:Archivo,"Helvetica Neue",Arial,sans-serif}
+h2{font-size:clamp(24px,3.2vw,32px);line-height:1.14;letter-spacing:-.022em;
+  font-weight:600;margin:0 0 6px;text-wrap:balance}
+h3{font-size:19px;line-height:1.28;letter-spacing:-.012em;font-weight:600;
+  margin:32px 0 10px;text-wrap:balance}
+h4{font-size:15px;font-weight:600;margin:22px 0 7px}
+p{margin:0 0 15px}
+ul,ol{margin:0 0 15px;padding-left:22px}
+li{margin-bottom:6px}
+strong{font-weight:600}
+code{font-family:"JetBrains Mono",monospace;font-size:.85em;background:var(--bg3);
+  padding:.13em .4em;border-radius:3px;color:var(--itm-2)}
+
+.sec-ref{font-family:"JetBrains Mono",monospace;font-size:11.5px;color:var(--ink-3);
+  white-space:nowrap;background:var(--bg3);padding:2px 7px;border-radius:3px}
+
+/* portada */
+.portada{background:var(--itm);color:#EAF2FB;padding:60px 0 48px;
+  border-bottom:4px solid var(--itm-cian)}
+.portada .marca{font-family:Archivo,sans-serif;font-size:11.5px;letter-spacing:.17em;
+  text-transform:uppercase;color:#8FB4DC;margin-bottom:20px}
+.portada h1{font-size:clamp(32px,5.4vw,52px);line-height:1.02;letter-spacing:-.032em;
+  font-weight:700;margin:0;max-width:20ch;text-wrap:balance;color:#fff}
+.portada .sub{font-size:clamp(17px,2vw,20px);color:#A9C6E4;margin:18px 0 0;max-width:58ch}
+.portada .meta{display:flex;flex-wrap:wrap;gap:8px 30px;margin-top:32px;
+  padding-top:20px;border-top:1px solid rgba(255,255,255,.16);
+  font-family:Archivo,sans-serif;font-size:12.5px;color:#8FB4DC}
+.portada .meta b{color:#fff;font-weight:500}
+
+/* encabezado de criterio */
+.criterio{border-top:3px solid var(--itm);padding-top:14px;margin-bottom:26px}
+.criterio .tag{display:flex;flex-wrap:wrap;gap:10px;align-items:baseline;margin-bottom:9px}
+.criterio .n{font-family:Archivo,sans-serif;font-size:11px;font-weight:700;
+  letter-spacing:.14em;text-transform:uppercase;color:var(--itm-2)}
+.criterio .peso{font-family:"JetBrains Mono",monospace;font-size:11.5px;
+  background:var(--itm);color:#fff;padding:2px 9px;border-radius:11px}
+.criterio .pide{font-size:14.5px;color:var(--ink-2);font-style:italic;
+  max-width:76ch;margin-top:8px}
+
+section{padding:44px 0;border-bottom:1px solid var(--line-2)}
+section:last-of-type{border-bottom:0}
+
+/* tablas */
+.tw{overflow-x:auto;margin:20px 0;border:1px solid var(--line);border-radius:7px;
+  background:var(--bg2)}
+table{width:100%;border-collapse:collapse;font-size:14.5px}
+th{font-family:Archivo,sans-serif;font-size:10.5px;font-weight:600;letter-spacing:.11em;
+  text-transform:uppercase;color:var(--ink-3);text-align:left;padding:12px 15px;
+  border-bottom:1px solid var(--line);white-space:nowrap}
+td{padding:11px 15px;border-bottom:1px solid var(--line-2);vertical-align:top}
+tr:last-child td{border-bottom:0}
+td.mono,th.mono{font-family:"JetBrains Mono",monospace;font-size:12.5px;
+  font-variant-numeric:tabular-nums;white-space:nowrap}
+.ap-t{color:var(--ap);font-weight:600}
+.cp-t{color:var(--cp);font-weight:600}
+
+/* figuras */
+figure{margin:24px 0}
+figure svg{max-width:100%;height:auto;display:block}
+figcaption{font-size:13.5px;color:var(--ink-3);margin-top:11px;line-height:1.5;
+  padding-left:14px;border-left:2px solid var(--line)}
+.svg-card{background:var(--bg2);border:1px solid var(--line);border-radius:9px;
+  padding:24px 20px;overflow-x:auto}
+.svg-card svg{min-width:600px}
+
+/* nota */
+.nota{background:var(--bg2);border:1px solid var(--line);border-left:3px solid var(--itm-cian);
+  border-radius:6px;padding:16px 19px;margin:22px 0}
+.nota .et{font-family:Archivo,sans-serif;font-size:10.5px;font-weight:600;
+  letter-spacing:.13em;text-transform:uppercase;color:var(--itm-2);
+  display:block;margin-bottom:7px}
+.nota p{margin:0;font-size:15.5px}
+.nota p+p{margin-top:9px}
+.nota.warn{border-left-color:var(--cp)}
+.nota.warn .et{color:var(--cp)}
+
+/* metricas destacadas */
+.band{background:var(--itm);color:#EAF2FB;padding:40px 0;margin:34px 0}
+.band .et{font-family:Archivo,sans-serif;font-size:10.5px;font-weight:600;
+  letter-spacing:.14em;text-transform:uppercase;color:#8FB4DC}
+.band h3{color:#fff;margin:9px 0 6px;font-size:22px}
+.band p{color:#A9C6E4;max-width:62ch}
+.duelo{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:rgba(255,255,255,.16);
+  border-radius:8px;overflow:hidden;margin-top:22px}
+.duelo>div{background:var(--itm);padding:22px 20px}
+.duelo .lvl{font-family:"JetBrains Mono",monospace;font-size:12.5px;font-weight:700;
+  letter-spacing:.05em;margin-bottom:14px}
+.duelo .one .lvl{color:#6FE3B8}
+.duelo .quo .lvl{color:#FFB067}
+.met{margin-bottom:13px}
+.met .n{font-family:Archivo,sans-serif;font-size:clamp(26px,4vw,38px);font-weight:700;
+  letter-spacing:-.03em;line-height:1;font-variant-numeric:tabular-nums;color:#fff}
+.met .k{font-family:Archivo,sans-serif;font-size:10.5px;letter-spacing:.11em;
+  text-transform:uppercase;color:#8FB4DC;margin-top:5px}
+
+/* pasos del guion */
+.guion{border:1px solid var(--line);border-radius:8px;overflow:hidden;margin:22px 0;
+  background:var(--bg2)}
+.paso{display:grid;grid-template-columns:74px 118px 1fr;gap:16px;padding:14px 18px;
+  border-bottom:1px solid var(--line-2);align-items:baseline}
+.paso:last-child{border-bottom:0}
+.paso .t{font-family:"JetBrains Mono",monospace;font-size:12.5px;color:var(--itm-2);
+  font-weight:600;font-variant-numeric:tabular-nums}
+.paso .q{font-family:Archivo,sans-serif;font-size:12.5px;color:var(--ink-3)}
+.paso .d{font-size:15px}
+.paso .d b{font-weight:600}
+.paso .d em{font-style:normal;font-family:"JetBrains Mono",monospace;
+  font-size:12.5px;color:var(--ink-3);display:block;margin-top:4px}
+
+/* codigo */
+pre{background:var(--code-bg);color:var(--code-ink);padding:16px 19px;border-radius:8px;
+  overflow-x:auto;font-family:"JetBrains Mono",monospace;font-size:12.5px;line-height:1.62;
+  margin:18px 0}
+pre .c{color:#7EA3D0}
+pre .k{color:#FFB067}
+pre .s{color:#6FE3B8}
+
+/* checklist */
+.check{border:1px solid var(--line);border-radius:8px;background:var(--bg2);
+  overflow:hidden;margin:20px 0}
+.crow{display:flex;gap:14px;padding:12px 18px;border-bottom:1px solid var(--line-2);
+  align-items:baseline}
+.crow:last-child{border-bottom:0}
+.crow .st{font-family:"JetBrains Mono",monospace;font-size:10.5px;font-weight:700;
+  letter-spacing:.06em;white-space:nowrap;width:62px;flex-shrink:0}
+.crow.ok .st{color:var(--ap)}
+.crow.pend .st{color:var(--cp)}
+.crow .tx{font-size:15px}
+.crow .tx em{font-style:normal;font-family:"JetBrains Mono",monospace;
+  font-size:12px;color:var(--ink-3);display:block;margin-top:3px}
+
+/* roles */
+.roles{display:grid;grid-template-columns:repeat(auto-fit,minmax(215px,1fr));gap:13px;margin:20px 0}
+.rol{background:var(--bg2);border:1px solid var(--line);border-radius:8px;padding:17px;
+  border-top:3px solid var(--itm-cian)}
+.rol .who{font-family:Archivo,sans-serif;font-size:10.5px;font-weight:600;
+  letter-spacing:.13em;text-transform:uppercase;color:var(--ink-3)}
+.rol h4{margin:7px 0 7px}
+.rol p{font-size:14px;color:var(--ink-2);margin:0;line-height:1.5}
+
+/* preguntas */
+.qa{border-top:1px solid var(--line);margin-top:22px}
+.qa details{border-bottom:1px solid var(--line-2)}
+.qa summary{cursor:pointer;padding:15px 30px 15px 0;font-family:Archivo,sans-serif;
+  font-weight:500;font-size:16px;list-style:none;position:relative;letter-spacing:-.005em}
+.qa summary::-webkit-details-marker{display:none}
+.qa summary::after{content:"+";position:absolute;right:4px;top:50%;
+  transform:translateY(-50%);font-family:"JetBrains Mono",monospace;
+  font-size:18px;color:var(--ink-3)}
+.qa details[open] summary::after{content:"–"}
+.qa summary:hover{color:var(--itm-2)}
+.qa summary:focus-visible{outline:2px solid var(--itm-cian);outline-offset:3px;border-radius:3px}
+.qa .ans{padding:0 0 18px;font-size:15.5px;color:var(--ink-2);max-width:68ch}
+.qa .ans p{margin:0 0 11px}
+.qa .ans p:last-child{margin:0}
+
+/* svg */
+.s-l{stroke:var(--line);stroke-width:1.4;fill:none}
+.s-c{stroke:var(--itm-cian);stroke-width:1.8;fill:none}
+.s-d{stroke:var(--ink-3);stroke-width:1.4;fill:none;stroke-dasharray:4 4}
+.f-b{fill:var(--bg3)}
+.f-w{fill:var(--bg)}
+.f-c{fill:#DCEEFB}
+.f-ap{fill:var(--ap-soft)}
+.f-cp{fill:var(--cp-soft)}
+.t-n{font-family:"JetBrains Mono",monospace;font-size:11px;fill:var(--ink-2)}
+.t-s{font-family:"JetBrains Mono",monospace;font-size:9.5px;fill:var(--ink-3)}
+.t-b{font-family:Archivo,sans-serif;font-size:12px;font-weight:600;fill:var(--ink)}
+
+footer{background:var(--itm);color:#8FB4DC;padding:30px 0;
+  font-family:Archivo,sans-serif;font-size:13px}
+footer a{color:var(--itm-cian);text-decoration:none;
+  font-family:"JetBrains Mono",monospace;font-size:12.5px}
+
+@media (max-width:760px){
+  .duelo{grid-template-columns:1fr}
+  .paso{grid-template-columns:1fr;gap:5px}
+  .portada{padding:42px 0 34px}
+  section{padding:34px 0}
+}
+@media print{
+  .band,.portada{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .qa details{break-inside:avoid}
+  .qa details:not([open]) .ans{display:block}
+  section{break-inside:auto;page-break-inside:auto}
+  h2,h3{break-after:avoid}
+}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+
+<div class="portada">
+  <div class="w">
+    <div class="marca">Instituto Tecnológico Metropolitano · Tópicos Avanzados de Bases de Datos</div>
+    <h1>Fan-out masivo y presencia en tiempo real</h1>
+    <p class="sub">Arquitectura distribuida para un canal de alertas ciudadanas con más de 100.000 suscriptores.</p>
+    <div class="meta">
+      <span>Equipo <b>Grupo 3</b></span>
+      <span>Caso <b>ComunicaMedellín</b></span>
+      <span>Módulo <b>1 — Arquitecturas Avanzadas</b></span>
+      <span>Decisión CAP <b>AP</b></span>
+    </div>
+  </div>
+</div>
+
+<div class="w">
+
+<section>
+  <div class="col">
+    <h2>Resumen ejecutivo</h2>
+    <p>ComunicaMedellín debe entregar una alerta urgente a más de 100.000 dispositivos casi al mismo tiempo, guardarla en el historial de cada usuario y mantener el estado de conexión de todos ellos, sin que un pico de tráfico tumbe el sistema.</p>
+    <p>Identificamos <strong>cuatro cargas de trabajo distintas</strong> antes de elegir tecnología, y encontramos que dos de ellas —que parecen la misma— exigen decisiones CAP opuestas: la alerta <em>no puede perderse</em>, pero la presencia <em>sí puede llegar tarde</em>. Esa distinción organiza toda la arquitectura.</p>
+    <p>La solución combina <strong>Apache Kafka</strong> para repartir el fan-out por zonas, <strong>Apache Cassandra</strong> en clúster de tres nodos para el almacenamiento con consistencia ajustable por consulta, y <strong>ClickHouse</strong> para la capa analítica. Todo se ejecutó y se midió: los resultados aparecen en la sección del reto práctico.</p>
+  </div>
+</section>
+
+<!-- ══════════ CRITERIO 1 ══════════ -->
+<section>
+  <div class="criterio">
+    <div class="tag">
+      <span class="n">Criterio 1 · Diseño de arquitectura</span>
+      <span class="peso">45 %</span>
+    </div>
+    <h2>Cargas de trabajo y arquitectura</h2>
+    <p class="pide">“Identifican correctamente todas las cargas de trabajo del caso (OLTP, streaming, OLAP, batch), proponen una arquitectura completamente alineada con el enunciado y justifican cada decisión citando explícitamente la sección teórica del módulo que la sustenta.”</p>
+  </div>
+
+  <div class="col">
+    <h3>1.1 Las cuatro cargas, antes de la tecnología</h3>
+    <p>El enunciado describe un canal de difusión. Al descomponerlo aparecen cuatro patrones de acceso con perfiles distintos:</p>
+  </div>
+
+  <div class="tw">
+    <table>
+      <thead><tr><th>#</th><th>Carga</th><th>Tipo</th><th>Patrón de acceso</th><th>Sección</th></tr></thead>
+      <tbody>
+        <tr>
+          <td class="mono">C1</td>
+          <td><strong>Publicar alerta</strong></td>
+          <td>OLTP ligero</td>
+          <td>Una escritura, baja frecuencia</td>
+          <td><span class="sec-ref">2.1</span></td>
+        </tr>
+        <tr>
+          <td class="mono">C2</td>
+          <td><strong>Fan-out a 100.000</strong></td>
+          <td class="cp-t">Streaming</td>
+          <td>Una escritura → 100.000 entregas casi simultáneas</td>
+          <td><span class="sec-ref">4.2</span></td>
+        </tr>
+        <tr>
+          <td class="mono">C3</td>
+          <td><strong>Historial por usuario</strong></td>
+          <td class="cp-t">Escritura masiva</td>
+          <td>100.000 filas por alerta · lectura por clave</td>
+          <td><span class="sec-ref">1.3 · 3.3</span></td>
+        </tr>
+        <tr>
+          <td class="mono">C4</td>
+          <td><strong>Presencia</strong></td>
+          <td class="ap-t">Clave-valor</td>
+          <td>Alta rotación · tolera desactualización</td>
+          <td><span class="sec-ref">1.2 · 1.3</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="col">
+    <div class="nota">
+      <span class="et">El hallazgo que organiza el diseño</span>
+      <p>C3 y C4 escriben en la misma base de datos y parecen la misma carga. No lo son: <strong>perder una alerta de cierre vial es un fallo de seguridad pública; perder un heartbeat de presencia no le importa a nadie.</strong></p>
+      <p>Por eso el historial se escribe con <code>QUORUM</code> y la presencia con <code>ONE</code>. Son dos decisiones CAP dentro del mismo sistema.</p>
+    </div>
+
+    <h3>1.2 El patrón de acceso está invertido</h3>
+    <p>Una base de datos transaccional recibe muchas escrituras y devuelve pocas lecturas. Este caso hace lo contrario, y ahí está la dificultad: el cuello de botella no es escribir, es <strong>repartir</strong>.</p>
+  </div>
+
+  <figure>
+    <div class="svg-card">
+      <svg viewBox="0 0 620 210" role="img" aria-label="Un servidor único entrega en fila; tres particiones por zona entregan en paralelo">
+        <defs>
+          <marker id="f1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+            <path d="M0,0 L10,5 L0,10 z" fill="var(--ink-3)"/></marker>
+          <marker id="f2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+            <path d="M0,0 L10,5 L0,10 z" fill="var(--itm-cian)"/></marker>
+        </defs>
+
+        <text x="0" y="12" class="t-s">ARQUITECTURA CLIENTE-SERVIDOR · Sec. 3.2</text>
+        <rect x="0" y="22" width="96" height="34" rx="6" class="f-b s-l"/>
+        <text x="48" y="43" text-anchor="middle" class="t-n">1 servidor</text>
+        <line x1="100" y1="39" x2="158" y2="39" class="s-l" marker-end="url(#f1)"/>
+        <text x="129" y="31" text-anchor="middle" class="t-s">uno a uno</text>
+        <g>
+          <rect x="166" y="26" width="8" height="26" rx="2" class="f-b s-l"/>
+          <rect x="178" y="26" width="8" height="26" rx="2" class="f-b s-l"/>
+          <rect x="190" y="26" width="8" height="26" rx="2" class="f-b s-l"/>
+          <rect x="202" y="26" width="8" height="26" rx="2" class="f-b s-l"/>
+        </g>
+        <text x="220" y="43" class="t-s">… 99.996 más en fila</text>
+        <text x="400" y="43" class="t-s" style="fill:var(--cp)">el último espera minutos</text>
+
+        <line x1="0" y1="76" x2="620" y2="76" class="s-d"/>
+
+        <text x="0" y="100" class="t-s">ARQUITECTURA DISTRIBUIDA · Sec. 3.3</text>
+        <rect x="0" y="110" width="96" height="34" rx="6" class="f-c s-c"/>
+        <text x="48" y="131" text-anchor="middle" class="t-n">1 alerta</text>
+
+        <line x1="100" y1="127" x2="154" y2="106" class="s-c" marker-end="url(#f2)"/>
+        <line x1="100" y1="127" x2="154" y2="127" class="s-c" marker-end="url(#f2)"/>
+        <line x1="100" y1="127" x2="154" y2="148" class="s-c" marker-end="url(#f2)"/>
+
+        <rect x="160" y="92" width="104" height="28" rx="5" class="f-b s-l"/>
+        <text x="212" y="110" text-anchor="middle" class="t-n">partición 0 · norte</text>
+        <rect x="160" y="122" width="104" height="28" rx="5" class="f-b s-l"/>
+        <text x="212" y="140" text-anchor="middle" class="t-n">partición 1 · centro</text>
+        <rect x="160" y="152" width="104" height="28" rx="5" class="f-b s-l"/>
+        <text x="212" y="170" text-anchor="middle" class="t-n">partición 2 · sur</text>
+
+        <line x1="268" y1="106" x2="316" y2="106" class="s-l" marker-end="url(#f1)"/>
+        <line x1="268" y1="136" x2="316" y2="136" class="s-l" marker-end="url(#f1)"/>
+        <line x1="268" y1="166" x2="316" y2="166" class="s-l" marker-end="url(#f1)"/>
+
+        <text x="324" y="110" class="t-s">33.334 en paralelo</text>
+        <text x="324" y="140" class="t-s">33.333 en paralelo</text>
+        <text x="324" y="170" class="t-s">33.333 en paralelo</text>
+
+        <text x="470" y="140" class="t-s" style="fill:var(--ap)">todos casi al tiempo</text>
+      </svg>
+    </div>
+    <figcaption>El fan-out particionado por zona convierte una escritura en flujos paralelos e independientes. Escalar significa agregar particiones y workers, no comprar un servidor mayor.</figcaption>
+  </figure>
+
+  <div class="col">
+    <h3>1.3 Arquitectura propuesta</h3>
+  </div>
+
+  <figure>
+    <div class="svg-card">
+      <svg viewBox="0 0 620 250" role="img" aria-label="Arquitectura: la API publica en Kafka, tres workers consumen y escriben en Cassandra; ClickHouse consume el mismo log para analítica">
+        <defs>
+          <marker id="f3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+            <path d="M0,0 L10,5 L0,10 z" fill="var(--ink-3)"/></marker>
+        </defs>
+
+        <rect x="0" y="98" width="88" height="42" rx="7" class="f-b s-l"/>
+        <text x="44" y="118" text-anchor="middle" class="t-b">API</text>
+        <text x="44" y="132" text-anchor="middle" class="t-s">Alcaldía</text>
+
+        <line x1="92" y1="119" x2="126" y2="119" class="s-l" marker-end="url(#f3)"/>
+
+        <rect x="132" y="66" width="132" height="106" rx="8" class="f-cp s-l"/>
+        <text x="198" y="84" text-anchor="middle" class="t-b">Apache Kafka</text>
+        <text x="198" y="97" text-anchor="middle" class="t-s">log inmutable · Sec. 4.2</text>
+        <rect x="144" y="104" width="108" height="19" rx="4" class="f-w s-l"/>
+        <text x="198" y="117" text-anchor="middle" class="t-s">partición 0 · norte</text>
+        <rect x="144" y="126" width="108" height="19" rx="4" class="f-w s-l"/>
+        <text x="198" y="139" text-anchor="middle" class="t-s">partición 1 · centro</text>
+        <rect x="144" y="148" width="108" height="19" rx="4" class="f-w s-l"/>
+        <text x="198" y="161" text-anchor="middle" class="t-s">partición 2 · sur</text>
+
+        <line x1="268" y1="113" x2="302" y2="113" class="s-l" marker-end="url(#f3)"/>
+        <line x1="268" y1="136" x2="302" y2="136" class="s-l" marker-end="url(#f3)"/>
+        <text x="285" y="106" text-anchor="middle" class="t-s">consume</text>
+
+        <rect x="308" y="90" width="96" height="24" rx="5" class="f-b s-l"/>
+        <text x="356" y="106" text-anchor="middle" class="t-s">worker 1</text>
+        <rect x="308" y="117" width="96" height="24" rx="5" class="f-b s-l"/>
+        <text x="356" y="133" text-anchor="middle" class="t-s">worker 2</text>
+        <rect x="308" y="144" width="96" height="24" rx="5" class="f-b s-l"/>
+        <text x="356" y="160" text-anchor="middle" class="t-s">worker 3</text>
+
+        <line x1="408" y1="102" x2="446" y2="118" class="s-l" marker-end="url(#f3)"/>
+        <line x1="408" y1="129" x2="446" y2="129" class="s-l" marker-end="url(#f3)"/>
+        <line x1="408" y1="156" x2="446" y2="140" class="s-l" marker-end="url(#f3)"/>
+
+        <rect x="452" y="90" width="152" height="80" rx="8" class="f-ap s-l"/>
+        <text x="528" y="110" text-anchor="middle" class="t-b">Apache Cassandra</text>
+        <text x="528" y="124" text-anchor="middle" class="t-s">3 nodos · RF=3 · AP</text>
+        <text x="528" y="140" text-anchor="middle" class="t-s">presencia → ONE</text>
+        <text x="528" y="154" text-anchor="middle" class="t-s">historial → QUORUM</text>
+        <text x="528" y="182" text-anchor="middle" class="t-s">Sec. 1.3 · 3.3</text>
+
+        <path d="M198,176 L198,210 L452,210" class="s-d" marker-end="url(#f3)"/>
+        <text x="300" y="204" class="t-s">Kafka Engine · mismo log</text>
+
+        <rect x="452" y="196" width="152" height="38" rx="7" class="f-b s-l"/>
+        <text x="528" y="214" text-anchor="middle" class="t-b">ClickHouse</text>
+        <text x="528" y="227" text-anchor="middle" class="t-s">OLAP columnar · Sec. 2.4</text>
+      </svg>
+    </div>
+    <figcaption>El log de Kafka alimenta dos rutas independientes: la operativa hacia Cassandra y la analítica hacia ClickHouse. Es una arquitectura Lambda (Sec. 4.1) con capa de velocidad y capa analítica sobre la misma fuente.</figcaption>
+  </figure>
+
+  <div class="col">
+    <h3>1.4 Justificación de cada decisión</h3>
+  </div>
+
+  <div class="tw">
+    <table>
+      <thead><tr><th>Decisión</th><th>Fundamento</th><th>Sección</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><strong>Arquitectura distribuida</strong>, no cliente-servidor</td>
+          <td>Un servidor único es un punto de falla y un cuello de botella, esté en la nube o no. Distribuido significa sharding, replicación y consenso.</td>
+          <td><span class="sec-ref">3.2 · 3.3 · 3.4</span></td>
+        </tr>
+        <tr>
+          <td><strong>Cassandra</strong> como motor principal</td>
+          <td>Clasificada en el módulo como NoSQL <em>wide-column</em> con perfil AP y arquitectura peer-to-peer sin punto único de falla (caso Netflix). Es la única que permite ajustar la consistencia por consulta.</td>
+          <td><span class="sec-ref">1.3 · 3.3</span></td>
+        </tr>
+        <tr>
+          <td><strong>Modelo clave-valor</strong> para presencia</td>
+          <td>El patrón de acceso es único: dame el estado del usuario X. No hay JOINs ni integridad referencial que mantener; un modelo 3NF solo agregaría costo.</td>
+          <td><span class="sec-ref">1.3 · 2.1</span></td>
+        </tr>
+        <tr>
+          <td><strong>Kafka</strong> para el fan-out</td>
+          <td>Log distribuido, inmutable y particionado. Las particiones por zona reparten la entrega sin cuello de botella central y permiten reprocesar desde el offset 0.</td>
+          <td><span class="sec-ref">4.2</span></td>
+        </tr>
+        <tr>
+          <td><strong>Sharding por zona</strong></td>
+          <td>Responde la pregunta (d) del enunciado: cada zona es una partición y un worker, de modo que ningún nodo intenta notificar a los 100.000.</td>
+          <td><span class="sec-ref">3.3</span></td>
+        </tr>
+        <tr>
+          <td><strong>ClickHouse</strong> para analítica</td>
+          <td>Cassandra resuelve mal las agregaciones: un <code>GROUP BY</code> la obliga a recorrer el clúster. Motor columnar con latencia sub-segundo (caso Mercado Libre).</td>
+          <td><span class="sec-ref">2.2 · 2.4</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="col">
+    <h3>1.5 Tecnologías evaluadas y descartadas</h3>
+    <p>Los descartes son parte del diseño: cada uno se rechazó por una razón técnica concreta, no por desconocimiento.</p>
+  </div>
+
+  <div class="tw">
+    <table>
+      <thead><tr><th>Descartada</th><th>Razón</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><strong>CockroachDB</strong></td>
+          <td>Es <strong>CP</strong> con consenso Raft: los nodos siempre coinciden. Correcta para TuBoleta, donde hay un recurso en disputa; aquí impediría el reto, porque no ofrece niveles <code>ONE</code>/<code>QUORUM</code> y nunca habría divergencia que demostrar. Su licencia BSL tampoco es <em>open source</em>.</td>
+        </tr>
+        <tr>
+          <td><strong>PostgreSQL</strong> aislado</td>
+          <td>Arquitectura cliente-servidor: el servidor sigue siendo el cuello de botella, esté alojado donde esté. El enunciado advierte explícitamente contra confundir “en la nube” con “distribuido”.</td>
+        </tr>
+        <tr>
+          <td><strong>Redis</strong></td>
+          <td>El módulo lo cataloga como <em>feature store</em> en memoria para alimentar modelos, no como base de datos distribuida. No ofrece consistencia ajustable por consulta.</td>
+        </tr>
+        <tr>
+          <td><strong>MongoDB</strong></td>
+          <td>Clasificada como CP en el módulo. Prioriza consistencia sobre disponibilidad, que es lo contrario de lo que exige un canal de alertas.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="col">
+    <h3>1.6 Modelo de datos y renuncia a la normalización</h3>
+    <p>El esquema resultante <strong>no está normalizado</strong> y <strong>no ofrece ACID entre filas</strong>. Es una consecuencia directa de elegir Cassandra, no un descuido, y conviene declararlo abiertamente.</p>
+  </div>
+
+  <pre><span class="c">-- Presencia: una tabla por consulta, dato duplicado a propósito</span>
+CREATE TABLE presencia (
+    usuario_id  <span class="k">text PRIMARY KEY</span>,   <span class="c">-- cédula CC12345678</span>
+    nombre      text,
+    telefono    text,
+    estado      text,                <span class="c">-- online | offline</span>
+    last_seen   timestamp,
+    zona        text,                <span class="c">-- derivada de comuna</span>
+    comuna      text,
+    dispositivo text
+);
+
+<span class="c">-- Historial: fan-out on write, ordenado por fecha descendente</span>
+CREATE TABLE historial_usuario (
+    usuario_id  text,
+    enviado_en  timestamp,
+    alerta_id   uuid,
+    titulo      text,
+    severidad   text,
+    <span class="k">PRIMARY KEY ((usuario_id), enviado_en)</span>
+) WITH CLUSTERING ORDER BY (enviado_en <span class="s">DESC</span>);</pre>
+
+  <div class="col">
+    <div class="tw">
+      <table>
+        <thead><tr><th>Propiedad ACID</th><th>¿La tenemos?</th><th>Detalle</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Atomicidad</strong></td><td class="ap-t">Sí</td><td>Dentro de una misma partición</td></tr>
+          <tr><td><strong>Durabilidad</strong></td><td class="ap-t">Sí</td><td>Con <code>QUORUM</code> sobrevive a un nodo caído</td></tr>
+          <tr><td><strong>Aislamiento</strong></td><td class="cp-t">No</td><td>No hay transacciones entre particiones</td></tr>
+          <tr><td><strong>Consistencia inmediata</strong></td><td class="cp-t">No</td><td>Es eventual: BASE, no ACID</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="nota warn">
+      <span class="et">Lo aprendimos en carne propia</span>
+      <p>Sin <code>FOREIGN KEY</code> ni <code>CHECK</code>, el motor acepta sin protestar una fila como “El Poblado / zona centro”. Nos pasó: un endpoint actualizaba la zona sin tocar la comuna y dejó dos filas incoherentes.</p>
+      <p><strong>El precio real de renunciar al modelo relacional es que la integridad pasa del motor al código.</strong> Ahora la zona siempre se deriva de la comuna, y una auditoría sobre 3.000 filas arroja cero incoherencias.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════ CRITERIO 2 ══════════ -->
+<section>
+  <div class="criterio">
+    <div class="tag">
+      <span class="n">Criterio 2 · Análisis CAP</span>
+      <span class="peso">15 %</span>
+    </div>
+    <h2>Trade-offs de consistencia</h2>
+    <p class="pide">“Identifican con precisión qué propiedad de CAP se sacrifica y justifican la decisión con un análisis sólido del impacto real de negocio del caso.”</p>
+  </div>
+
+  <div class="col">
+    <h3>2.1 Qué se sacrifica</h3>
+    <p>Como las particiones de red son inevitables en un sistema distribuido, la elección real se reduce a <strong>CP</strong> o <strong>AP</strong>. Para este caso elegimos <strong>AP</strong>: sacrificamos <strong>consistencia inmediata</strong> y conservamos disponibilidad y tolerancia a particiones.</p>
+  </div>
+
+  <div class="tw">
+    <table>
+      <thead><tr><th>Propiedad</th><th>Decisión</th><th>Impacto de negocio</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><strong>Consistency</strong></td>
+          <td class="cp-t">Se sacrifica</td>
+          <td>Un usuario puede aparecer “en línea” con dos o tres segundos de retraso. Nadie toma una decisión con ese dato: el costo es cero.</td>
+        </tr>
+        <tr>
+          <td><strong>Availability</strong></td>
+          <td class="ap-t">Se conserva</td>
+          <td>El canal responde siempre, incluso con un nodo caído. Es lo que se necesita justamente cuando hay una emergencia.</td>
+        </tr>
+        <tr>
+          <td><strong>Partition tolerance</strong></td>
+          <td class="ap-t">Se conserva</td>
+          <td>Si se corta la red entre nodos, cada uno sigue atendiendo a su región.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="col">
+    <h3>2.2 Dos decisiones, no una</h3>
+    <p>Aplicar una sola política CAP a todo el sistema sería un error. El nivel de consistencia se elige <strong>por consecuencia de negocio</strong>:</p>
+  </div>
+
+  <div class="tw">
+    <table>
+      <thead><tr><th>Dato</th><th>Nivel</th><th>Por qué</th><th>Costo de fallar</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><strong>Presencia</strong> (C4)</td>
+          <td class="mono ap-t">ONE</td>
+          <td>Alta rotación, 100.000 usuarios reportando continuamente</td>
+          <td>Un estado desactualizado que nadie nota</td>
+        </tr>
+        <tr>
+          <td><strong>Historial de alerta</strong> (C3)</td>
+          <td class="mono cp-t">QUORUM</td>
+          <td>Se publica poco; la durabilidad importa más que la latencia</td>
+          <td>Un ciudadano no recibe un aviso de emergencia</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="col">
+    <h3>2.3 Contraste con TuBoleta</h3>
+    <p>El enunciado pide explícitamente comparar con el Equipo 1. La diferencia no es de escala, sino de <strong>naturaleza del recurso</strong>:</p>
+  </div>
+
+  <div class="tw">
+    <table>
+      <thead><tr><th></th><th>TuBoleta · Equipo 1</th><th>ComunicaMedellín · Grupo 3</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Recurso</strong></td><td>Silla A-12: finita y exclusiva</td><td>Mensaje: replicable infinitamente</td></tr>
+        <tr><td><strong>¿Hay disputa?</strong></td><td>Sí, dos compradores compiten</td><td>No, nadie compite por estar en línea</td></tr>
+        <tr><td><strong>Si falla la C</strong></td><td>Doble venta y problema legal</td><td>Un dato viejo que nadie percibe</td></tr>
+        <tr><td><strong>Decisión</strong></td><td class="cp-t">CP · consenso Raft</td><td class="ap-t">AP · consistencia ajustable</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="col">
+    <div class="nota">
+      <span class="et">El argumento en una frase</span>
+      <p>La consistencia fuerte cuesta latencia, y se paga cuando hay un recurso en disputa. En presencia no hay disputa —nadie <em>gana</em> el estar en línea— de modo que pagarla sería gasto puro.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════ CRITERIO 3 ══════════ -->
+<section>
+  <div class="criterio">
+    <div class="tag">
+      <span class="n">Criterio 3 · Reto práctico</span>
+      <span class="peso">30 %</span>
+    </div>
+    <h2>Demostración y resultados medidos</h2>
+    <p class="pide">“Ejecutan en vivo (o en video) una demo funcional y completa que cubre todos los pasos del reto, mostrando con claridad el comportamiento técnico esperado en la tecnología elegida.”</p>
+  </div>
+
+  <div class="col">
+    <h3>3.1 Lo que exige el enunciado</h3>
+  </div>
+
+  <div class="check">
+    <div class="crow ok"><span class="st">CUMPLE</span><span class="tx">Clúster local con al menos 3 nodos<em>3 nodos UN · tokens repartidos · RF=3</em></span></div>
+    <div class="crow ok"><span class="st">CUMPLE</span><span class="tx">10.000 usuarios simulados actualizando su estado<em>cargados en 1,3 s · 7.597 escrituras/s</em></span></div>
+    <div class="crow ok"><span class="st">CUMPLE</span><span class="tx">Leer desde dos nodos con consistencia baja y mostrar la diferencia<em>ONE · 149 de 150 rondas divergentes</em></span></div>
+    <div class="crow ok"><span class="st">CUMPLE</span><span class="tx">Repetir con consistencia alta y comparar latencia<em>QUORUM · 0 divergencias · 114× más lento</em></span></div>
+    <div class="crow ok"><span class="st">CUMPLE</span><span class="tx">Explicar qué nivel se elige en producción y por qué<em>ONE para presencia · QUORUM para historial</em></span></div>
+  </div>
+
+  <div class="col">
+    <h3>3.2 Metodología: por qué simulamos latencia de red</h3>
+    <p>Los tres nodos corren en la misma máquina y replican en microsegundos. Sin latencia, <code>ONE</code> nunca devuelve un dato desactualizado y <strong>la demostración no probaría nada</strong>: estaríamos midiendo el laboratorio, no el sistema.</p>
+    <p>Introducimos 250 ms con <code>tc netem</code>, la herramienta estándar de Linux para emular condiciones de red. El retardo es <strong>asimétrico</strong> a propósito:</p>
+  </div>
+
+  <div class="tw">
+    <table>
+      <thead><tr><th>Tráfico</th><th class="mono">Puerto</th><th>Retardo</th><th>Efecto</th></tr></thead>
+      <tbody>
+        <tr><td>Replicación entre nodos</td><td class="mono">7000</td><td class="mono">250 ms</td><td>El dato tarda en propagarse</td></tr>
+        <tr><td>Lecturas del cliente</td><td class="mono">9042</td><td class="mono">sin retardo</td><td>El cliente lee antes de que llegue</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="col">
+    <p>Así reproducimos el escenario contra el que <code>ONE</code> no protege. En producción esa latencia existe siempre —dos centros de datos separados—; el laboratorio la elimina artificialmente y nosotros la restituimos.</p>
+  </div>
+</section>
+</div>
+
+<div class="band">
+  <div class="w">
+    <span class="et">Resultado principal · 150 rondas sobre el clúster</span>
+    <h3>El teorema CAP, medido</h3>
+    <p>Escritura confirmada con <code style="background:rgba(255,255,255,.12);color:#C9DCF2">ONE</code>, y lectura inmediata y simultánea desde el nodo 1 y el nodo 3.</p>
+    <div class="duelo">
+      <div class="one">
+        <div class="lvl">NIVEL ONE</div>
+        <div class="met"><div class="n">99,3 %</div><div class="k">rondas divergentes · 149 de 150</div></div>
+        <div class="met"><div class="n">1,14 ms</div><div class="k">latencia P50</div></div>
+      </div>
+      <div class="quo">
+        <div class="lvl">NIVEL QUORUM</div>
+        <div class="met"><div class="n">0 %</div><div class="k">rondas divergentes · 0 de 150</div></div>
+        <div class="met"><div class="n">130,3 ms</div><div class="k">latencia P50</div></div>
+      </div>
+    </div>
+    <p style="margin-top:22px;padding-top:18px;border-top:1px solid rgba(255,255,255,.16);color:#C9DCF2;font-size:16.5px">
+      <strong style="color:#fff">QUORUM elimina la inconsistencia por completo, a costa de ser 114 veces más lento.</strong>
+      Elegimos ONE para presencia porque la inconsistencia no cuesta nada al negocio y la latencia sí.</p>
+  </div>
+</div>
+
+<div class="w">
+<section style="border-top:0;padding-top:0">
+  <div class="col">
+    <h3>3.3 Resultados complementarios</h3>
+  </div>
+
+  <div class="tw">
+    <table>
+      <thead><tr><th>Demostración</th><th>Resultado medido</th><th>Qué prueba</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><strong>Carga de suscriptores</strong></td>
+          <td class="mono">10.000 en 1,3 s<br>7.597 escrituras/s</td>
+          <td>El clúster absorbe escritura concurrente sin degradarse</td>
+        </tr>
+        <tr>
+          <td><strong>Fan-out particionado</strong></td>
+          <td class="mono">10.127 entregas/s<br>2,6× vs. secuencial</td>
+          <td>El paralelismo por zona es real, no teórico</td>
+        </tr>
+        <tr>
+          <td><strong>Reparto por zona</strong></td>
+          <td class="mono">34 / 33 / 33</td>
+          <td>Una zona por partición, una partición por worker</td>
+        </tr>
+        <tr>
+          <td><strong>Caída de un nodo</strong></td>
+          <td class="mono">ONE ✓ 3,1 ms<br>QUORUM ✓ 752 ms<br>ALL ✗ falla</td>
+          <td>AP en acción: a mayor exigencia de consistencia, menor disponibilidad</td>
+        </tr>
+        <tr>
+          <td><strong>Compresión columnar</strong></td>
+          <td class="mono">1 M filas<br>ratio 2,4:1</td>
+          <td>ClickHouse reduce I/O leyendo solo las columnas necesarias</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="col">
+    <div class="nota">
+      <span class="et">Prueba de tolerancia a fallos</span>
+      <p>Detener un nodo con <code>docker stop</code> y repetir la misma operación con tres niveles distintos produce el resultado que predice la teoría: <code>ONE</code> y <code>QUORUM</code> siguen respondiendo, <code>ALL</code> falla porque exige las tres réplicas.</p>
+      <p>Es el teorema CAP convertido en experimento reproducible.</p>
+    </div>
+
+    <h3>3.4 Guion de la demostración en vivo</h3>
+    <p>Secuencia probada de principio a fin. Los tiempos incluyen la explicación oral.</p>
+  </div>
+
+  <div class="guion">
+    <div class="paso">
+      <span class="t">0:00</span><span class="q">make status</span>
+      <span class="d"><b>El clúster está vivo</b>
+        <em>3 nodos UN, tokens repartidos, RF=3</em></span>
+    </div>
+    <div class="paso">
+      <span class="t">0:40</span><span class="q">panel web</span>
+      <span class="d"><b>Enviar una alerta como funcionario de la Alcaldía</b>
+        <em>el flujo se anima: Kafka → 3 workers → Cassandra → 100 dispositivos</em></span>
+    </div>
+    <div class="paso">
+      <span class="t">1:40</span><span class="q">pestaña Datos</span>
+      <span class="d"><b>Mostrar la fila que se acaba de crear</b>
+        <em>tabla historial_usuario · no es simulación</em></span>
+    </div>
+    <div class="paso">
+      <span class="t">2:10</span><span class="q">make demo-consistencia</span>
+      <span class="d"><b>ONE contra QUORUM, 150 rondas</b>
+        <em>99,3 % divergencia a 1,14 ms · 0 % a 130,3 ms</em></span>
+    </div>
+    <div class="paso">
+      <span class="t">3:20</span><span class="q">make demo-nodo-caido</span>
+      <span class="d"><b>Tumbar un nodo y ver que el sistema responde</b>
+        <em>el nodo pasa a DN · ONE y QUORUM siguen · ALL falla</em></span>
+    </div>
+    <div class="paso">
+      <span class="t">4:10</span><span class="q">make ch-demo</span>
+      <span class="d"><b>La consulta analítica que Cassandra no puede resolver</b>
+        <em>curva horaria por zona sobre 1 M de filas</em></span>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════ CRITERIO 4 ══════════ -->
+<section>
+  <div class="criterio">
+    <div class="tag">
+      <span class="n">Criterio 4 · Presentación</span>
+      <span class="peso">10 %</span>
+    </div>
+    <h2>Exposición y reparto</h2>
+    <p class="pide">“Exposición clara, ordenada y consistente, con diagramas de apoyo (no solo texto). Todos los integrantes participan activamente y responden con solvencia preguntas sobre cualquier parte del trabajo.”</p>
+  </div>
+
+  <div class="col">
+    <h3>4.1 Estructura de los 15 minutos</h3>
+  </div>
+
+  <div class="guion">
+    <div class="paso">
+      <span class="t">0–3 min</span><span class="q">Integrante 1</span>
+      <span class="d"><b>El problema y las cargas de trabajo</b>
+        <em>por qué un servidor único no sirve · las cuatro cargas C1–C4</em></span>
+    </div>
+    <div class="paso">
+      <span class="t">3–7 min</span><span class="q">Integrante 2</span>
+      <span class="d"><b>La arquitectura, con el diagrama en pantalla</b>
+        <em>Kafka, Cassandra, ClickHouse · qué se descartó y por qué</em></span>
+    </div>
+    <div class="paso">
+      <span class="t">7–9 min</span><span class="q">Integrante 3</span>
+      <span class="d"><b>Análisis CAP y contraste con TuBoleta</b>
+        <em>qué se sacrifica · las dos decisiones · impacto de negocio</em></span>
+    </div>
+    <div class="paso">
+      <span class="t">9–14 min</span><span class="q">Integrante 4</span>
+      <span class="d"><b>Demostración en vivo</b>
+        <em>siguiendo el guion de la sección 3.4</em></span>
+    </div>
+    <div class="paso">
+      <span class="t">14–15 min</span><span class="q">Todos</span>
+      <span class="d"><b>Cierre y conclusión</b>
+        <em>la pregunta que organiza el diseño: ¿qué podemos tener desactualizado?</em></span>
+    </div>
+  </div>
+
+  <div class="col">
+    <h3>4.2 Reparto de responsabilidades</h3>
+    <p>El reparto es para exponer. La rúbrica exige que <strong>todos</strong> puedan responder sobre <strong>cualquier</strong> parte, de modo que cada integrante debe dominar el conjunto.</p>
+  </div>
+
+  <div class="roles">
+    <div class="rol">
+      <div class="who">Integrante 1</div>
+      <h4>Problema y cargas</h4>
+      <p>¿Por qué un servidor único no resuelve el problema de fondo? ¿Qué hace distinto al patrón de fan-out?</p>
+    </div>
+    <div class="rol">
+      <div class="who">Integrante 2</div>
+      <h4>Arquitectura</h4>
+      <p>¿Por qué Cassandra y no PostgreSQL? ¿Qué es el sharding por zona? ¿Por qué se descartó CockroachDB?</p>
+    </div>
+    <div class="rol">
+      <div class="who">Integrante 3</div>
+      <h4>Análisis CAP</h4>
+      <p>¿Qué propiedad se sacrifica? ¿Por qué aquí sí y en TuBoleta no? ¿Cuál es el impacto de negocio?</p>
+    </div>
+    <div class="rol">
+      <div class="who">Integrante 4</div>
+      <h4>Demostración</h4>
+      <p>¿Por qué se simula latencia? ¿Qué ocurre si cae un nodo? ¿Qué mide cada demo?</p>
+    </div>
+  </div>
+
+  <div class="col">
+    <h3>4.3 Preguntas previsibles y sus respuestas</h3>
+  </div>
+
+  <div class="qa col">
+    <details open>
+      <summary>¿No están forzando el resultado al simular latencia con <code>tc netem</code>?</summary>
+      <div class="ans">
+        <p>No. Los tres nodos comparten una máquina y replican en microsegundos, una condición que <strong>no existe en producción</strong>, donde hay centros de datos separados por cientos de kilómetros.</p>
+        <p>El <code>netem</code> restituye la latencia que el laboratorio elimina artificialmente. Sin ella la demostración mediría el laboratorio, no el sistema.</p>
+      </div>
+    </details>
+    <details>
+      <summary>Si QUORUM elimina la divergencia, ¿por qué no usarlo siempre?</summary>
+      <div class="ans">
+        <p>Porque cuesta 130,3 ms frente a 1,14 ms. Con 100.000 usuarios reportando presencia de forma continua, es un sobrecosto permanente para eliminar un problema que no tiene costo de negocio.</p>
+        <p>Además, ante una partición de red QUORUM rechazaría escrituras: la aplicación parecería caída justo cuando más se necesita.</p>
+      </div>
+    </details>
+    <details>
+      <summary>Este modelo no está normalizado y no cumple ACID.</summary>
+      <div class="ans">
+        <p>Correcto, y es deliberado. Cassandra es AP y ACID empieza por consistencia. En un modelo 3NF harían falta tres JOINs para saber quién está en línea en una zona, y Cassandra no tiene JOINs porque cruzarían datos de nodos distintos.</p>
+        <p>Sí conservamos <strong>atomicidad</strong> dentro de una partición y <strong>durabilidad</strong> con QUORUM. Lo que se pierde es aislamiento y consistencia inmediata. El precio real es que la integridad pasa del motor al código: lo comprobamos cuando dos filas quedaron con la comuna y la zona incoherentes.</p>
+      </div>
+    </details>
+    <details>
+      <summary>¿Cuánto tardaría realmente la entrega a los 100.000?</summary>
+      <div class="ans">
+        <p>Medimos 10.127 entregas por segundo con tres workers, lo que proyecta unos <strong>9,9 segundos</strong> para los 100.000 suscriptores.</p>
+        <p>Escalar consiste en agregar particiones y workers, no en adquirir un servidor mayor. Esa es la diferencia entre la arquitectura de la Sección 3.3 y la de la Sección 3.2.</p>
+      </div>
+    </details>
+    <details>
+      <summary>¿Por qué la alerta va con QUORUM y la presencia con ONE?</summary>
+      <div class="ans">
+        <p>Porque el costo de fallar es distinto. Perder una alerta de cierre vial es un fallo de seguridad pública; perder un heartbeat de presencia no afecta a nadie.</p>
+        <p>El nivel de consistencia se elige por consecuencia de negocio, no por preferencia técnica.</p>
+      </div>
+    </details>
+  </div>
+</section>
+
+<section>
+  <div class="col">
+    <h2>Conclusiones</h2>
+    <p>El diseño de una arquitectura distribuida no consiste en elegir la tecnología más avanzada, sino en <strong>identificar qué puede fallar sin consecuencias</strong>. En este caso, dos datos que conviven en la misma base de datos exigen decisiones opuestas: la alerta no puede perderse, la presencia sí puede llegar tarde.</p>
+    <p>Las mediciones respaldan la decisión con números y no con afirmaciones: <code>QUORUM</code> elimina por completo la inconsistencia, pero cuesta 114 veces más latencia. Para un canal que debe responder durante una emergencia, ese precio no se justifica en un dato que nadie consulta para decidir.</p>
+    <p>La pregunta que organiza todo el trabajo no es <em>cómo lograr que todo esté perfecto</em>, sino <strong>qué podemos permitirnos tener desactualizado, y qué no</strong>.</p>
+  </div>
+</section>
+
+</div>
+
+<footer>
+  <div class="w">
+    <div style="display:flex;flex-wrap:wrap;gap:12px 36px;align-items:baseline">
+      <span>Grupo 3 · Instituto Tecnológico Metropolitano · 2026</span>
+      <a href="https://github.com/lina082/comunicamedellin-grupo3">github.com/lina082/comunicamedellin-grupo3</a>
+    </div>
+  </div>
+</footer>

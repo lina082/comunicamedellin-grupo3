@@ -156,12 +156,19 @@ familias y saber cuándo aplica cada una.
 
 ## Documentación
 
+| Formato | Archivo | Generar |
+|---|---|---|
+| PDF | `docs/arquitectura.pdf` — documento de entrega, 5 páginas A4 | `make pdf` |
+| PDF | `docs/presentacion.pdf` — 10 diapositivas 16:9 | `make slides` |
+| HTML | `docs/web/` — cuatro documentos, ya versionados | — |
+
 ```bash
-make pdf      # docs/arquitectura.pdf
-make slides   # docs/presentacion.pdf
+make docs     # compila los dos PDFs
 ```
 
-Requiere una instalación completa de TeX Live (ver `docs/README-latex.md`).
+Los PDF requieren una instalación completa de TeX Live (ver `docs/README-latex.md`).
+Los documentos HTML se abren con doble clic; ver
+[docs/web/README.md](docs/web/README.md) para el detalle de cada uno.
 
 ---
 
@@ -202,6 +209,11 @@ make clean && make up && make schema
 │   └── clickhouse/                 # esquema OLAP + consultas de demo
 ├── demo/scripts/                   # scripts del reto práctico
 ├── api/main.py                     # FastAPI + WebSocket
-├── frontend/index.html             # visualización en vivo (sin build)
-└── docs/                           # LaTeX: documento y diapositivas
+├── frontend/
+│   ├── index.html                  # panel en vivo (sin build)
+│   └── demo-data.json              # corrida real grabada (modo demo)
+└── docs/
+    ├── arquitectura.tex            # documento de entrega
+    ├── presentacion.tex            # diapositivas Beamer
+    └── web/                        # los mismos documentos en HTML
 ```

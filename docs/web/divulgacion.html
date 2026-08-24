@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Cien Mil Celulares</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap">
+
+<style>
+:root{
+  --bg:#0B0E14; --bg-2:#141922; --bg-3:#1C2230;
+  --fg:#EDF1F7; --fg-2:#9FADC0; --fg-3:#66768C;
+  --line:#242C3A;
+  --lime:#9EE86B; --lime-dim:#1E2E17;
+  --amber:#FFA347; --amber-dim:#33210C;
+  --sky:#6BC5F8;
+}
+:root[data-theme="light"]{
+  --bg:#FBFCFD; --bg-2:#F1F4F8; --bg-3:#E6EBF2;
+  --fg:#0B0E14; --fg-2:#4A586B; --fg-3:#7C8B9F;
+  --line:#DCE3EC;
+  --lime:#3E8F14; --lime-dim:#E7F6DC;
+  --amber:#B5620A; --amber-dim:#FCEEDD;
+  --sky:#1173B0;
+}
+@media (prefers-color-scheme:light){
+  :root:not([data-theme="dark"]){
+    --bg:#FBFCFD; --bg-2:#F1F4F8; --bg-3:#E6EBF2;
+    --fg:#0B0E14; --fg-2:#4A586B; --fg-3:#7C8B9F;
+    --line:#DCE3EC;
+    --lime:#3E8F14; --lime-dim:#E7F6DC;
+    --amber:#B5620A; --amber-dim:#FCEEDD;
+    --sky:#1173B0;
+  }
+}
+
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);
+  font-family:Inter,-apple-system,BlinkMacSystemFont,sans-serif;
+  font-size:17px;line-height:1.6;-webkit-font-smoothing:antialiased}
+.w{max-width:640px;margin:0 auto;padding:0 22px}
+h1,h2,h3,.dsp{font-family:"Bricolage Grotesque",Inter,sans-serif}
+p{margin:0 0 18px}
+strong{font-weight:600;color:var(--fg)}
+code{font-family:"JetBrains Mono",monospace;font-size:.85em;background:var(--bg-3);
+  padding:.15em .4em;border-radius:4px;color:var(--lime)}
+
+figure{margin:24px 0}
+figure svg{max-width:100%;height:auto;display:block}
+figcaption{font-size:14px;color:var(--fg-3);margin-top:12px;line-height:1.5}
+.svg-card{background:var(--bg-2);border:1px solid var(--line);border-radius:16px;padding:24px 20px}
+
+.hero{padding:70px 0 44px;border-bottom:1px solid var(--line)}
+.kicker{font-family:"JetBrains Mono",monospace;font-size:11.5px;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--lime);margin-bottom:20px}
+.hero h1{font-size:clamp(40px,10vw,66px);line-height:.94;letter-spacing:-.04em;
+  font-weight:800;margin:0;text-wrap:balance}
+.hero h1 .o{color:var(--amber)}
+.hero .sub{font-size:clamp(18px,4.4vw,21px);line-height:1.45;color:var(--fg-2);
+  margin:24px 0 0;text-wrap:pretty}
+
+section{padding:44px 0;border-bottom:1px solid var(--line)}
+section:last-of-type{border-bottom:0}
+h2{font-size:clamp(27px,6.6vw,36px);line-height:1.08;letter-spacing:-.03em;
+  font-weight:700;margin:0 0 16px;text-wrap:balance}
+h3{font-size:20px;line-height:1.25;letter-spacing:-.02em;font-weight:600;margin:0 0 8px}
+.num{font-family:"JetBrains Mono",monospace;font-size:12px;font-weight:600;
+  color:var(--fg-3);letter-spacing:.1em;margin-bottom:14px}
+
+.bigq{background:var(--bg-2);border:1px solid var(--line);border-radius:16px;padding:30px 26px}
+.bigq .q{font-family:"Bricolage Grotesque",sans-serif;font-size:clamp(22px,5vw,28px);
+  line-height:1.22;font-weight:600;letter-spacing:-.02em;margin:0;text-wrap:balance}
+.bigq .a{color:var(--fg-2);font-size:16.5px;margin:16px 0 0}
+
+.tag-pill{display:inline-block;font-family:"JetBrains Mono",monospace;font-size:11px;
+  font-weight:600;letter-spacing:.08em;padding:4px 10px;border-radius:20px;
+  background:var(--lime-dim);color:var(--lime);margin-bottom:14px}
+.tag-pill.am{background:var(--amber-dim);color:var(--amber)}
+.tag-pill.sk{background:var(--bg-3);color:var(--sky)}
+
+.pull{font-family:"Bricolage Grotesque",sans-serif;
+  font-size:clamp(23px,5.4vw,31px);line-height:1.2;letter-spacing:-.025em;
+  font-weight:600;color:var(--fg);margin:34px 0;padding-left:20px;
+  border-left:3px solid var(--lime);text-wrap:balance}
+.pull.am{border-left-color:var(--amber)}
+
+.steps{margin:22px 0}
+.step{display:grid;grid-template-columns:26px 1fr;gap:14px;
+  padding:16px 0;border-bottom:1px solid var(--line)}
+.step:last-child{border-bottom:0}
+.step .sn{font-family:"JetBrains Mono",monospace;font-size:11px;font-weight:600;
+  color:var(--fg-3);padding-top:4px}
+.step .st{font-weight:600;font-size:16.5px;margin-bottom:4px}
+.step .sd{font-size:15.5px;color:var(--fg-2);line-height:1.5}
+
+.sum{margin:24px 0;border:1px solid var(--line);border-radius:16px;
+  background:var(--bg-2);overflow:hidden}
+.sum-row{display:grid;grid-template-columns:minmax(0,124px) 1fr;gap:16px;
+  padding:16px 20px;border-bottom:1px solid var(--line);align-items:baseline}
+.sum-row:last-child{border-bottom:0}
+.sum-row .k{font-family:"JetBrains Mono",monospace;font-size:13px;font-weight:600;color:var(--lime)}
+.sum-row .k.am{color:var(--amber)}
+.sum-row .k.sk{color:var(--sky)}
+.sum-row .v{font-size:15.5px;color:var(--fg-2)}
+
+.outro{background:var(--bg-2);padding:44px 0;border-top:1px solid var(--line)}
+.outro h2{margin-bottom:12px}
+.outro p{color:var(--fg-2);font-size:16.5px}
+.tags{display:flex;flex-wrap:wrap;gap:8px;margin-top:22px}
+.tag{font-family:"JetBrains Mono",monospace;font-size:12px;color:var(--fg-3);
+  padding:6px 12px;border:1px solid var(--line);border-radius:20px}
+
+footer{padding:26px 0 40px;font-family:"JetBrains Mono",monospace;
+  font-size:12px;color:var(--fg-3);text-align:center}
+
+.svg-fg{fill:var(--fg)}
+.svg-fg2{fill:var(--fg-2)}
+.svg-fg3{fill:var(--fg-3)}
+.svg-lime{fill:var(--lime)}
+.svg-amber{fill:var(--amber)}
+.svg-sky{fill:var(--sky)}
+.s-line{stroke:var(--line)}
+.s-fg3{stroke:var(--fg-3)}
+.s-lime{stroke:var(--lime)}
+.s-amber{stroke:var(--amber)}
+.s-sky{stroke:var(--sky)}
+.f-bg3{fill:var(--bg-3)}
+.f-bg2{fill:var(--bg-2)}
+.f-limed{fill:var(--lime-dim)}
+.f-amberd{fill:var(--amber-dim)}
+.f-none{fill:none}
+.t{font-family:"JetBrains Mono",monospace;font-size:12px}
+.t-lbl{font-family:Inter,sans-serif;font-size:12px}
+.t-sm{font-family:"JetBrains Mono",monospace;font-size:10.5px}
+.t-big{font-family:"Bricolage Grotesque",sans-serif;font-size:22px;font-weight:700}
+
+@media (max-width:560px){
+  .sum-row{grid-template-columns:1fr;gap:4px}
+  .hero{padding:52px 0 36px}
+  section{padding:36px 0}
+  .svg-card{padding:18px 14px}
+}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+
+<div class="w">
+
+<div class="hero">
+  <div class="kicker">Proyecto universitario · bases de datos</div>
+  <h1>Cómo le avisas<br>a <span class="o">cien mil</span><br>celulares a la vez</h1>
+  <p class="sub">La Alcaldía tiene que avisar que se cayó un puente. Ahora mismo. A 100.000 personas. Si les mandas el mensaje uno por uno, el último se entera media hora después — cuando ya pasó todo.</p>
+</div>
+
+<section>
+  <div class="bigq">
+    <p class="q">Lo primero que uno piensa es: “compremos un servidor más grande”.</p>
+    <p class="a">Pues no. No importa qué tan buena sea la máquina — sigue siendo <em>una</em> máquina haciendo cien mil cosas en fila.</p>
+  </div>
+
+  <figure>
+    <div class="svg-card">
+      <svg viewBox="0 0 560 250" role="img" aria-label="Comparación: un servidor único entrega en fila, mientras tres nodos entregan en paralelo">
+        <defs>
+          <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+            <path d="M0,0 L10,5 L0,10 z" fill="var(--fg-3)"/>
+          </marker>
+          <marker id="ar-l" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+            <path d="M0,0 L10,5 L0,10 z" fill="var(--lime)"/>
+          </marker>
+        </defs>
+
+        <text x="0" y="14" class="t-sm svg-amber">ASÍ NO</text>
+        <rect x="0" y="26" width="86" height="34" rx="7" class="f-bg3 s-line" stroke-width="1"/>
+        <text x="43" y="47" text-anchor="middle" class="t svg-fg2">1 servidor</text>
+        <line x1="90" y1="43" x2="150" y2="43" class="s-fg3" stroke-width="1.5" marker-end="url(#ar)"/>
+        <text x="120" y="34" text-anchor="middle" class="t-sm svg-fg3">uno</text>
+        <text x="120" y="60" text-anchor="middle" class="t-sm svg-fg3">por uno</text>
+        <g class="svg-fg3">
+          <rect x="158" y="30" width="9" height="26" rx="2" class="f-bg3 s-line" stroke-width="1"/>
+          <rect x="172" y="30" width="9" height="26" rx="2" class="f-bg3 s-line" stroke-width="1"/>
+          <rect x="186" y="30" width="9" height="26" rx="2" class="f-bg3 s-line" stroke-width="1"/>
+          <rect x="200" y="30" width="9" height="26" rx="2" class="f-bg3 s-line" stroke-width="1"/>
+          <rect x="214" y="30" width="9" height="26" rx="2" class="f-bg3 s-line" stroke-width="1"/>
+        </g>
+        <text x="238" y="47" class="t-sm svg-fg3">… 99.995 más</text>
+        <text x="392" y="47" class="t-sm svg-amber">≈ 30 min</text>
+
+        <line x1="0" y1="88" x2="560" y2="88" class="s-line" stroke-width="1" stroke-dasharray="3 4"/>
+
+        <text x="0" y="118" class="t-sm svg-lime">ASÍ SÍ</text>
+        <rect x="0" y="130" width="86" height="34" rx="7" class="f-limed s-lime" stroke-width="1.5"/>
+        <text x="43" y="151" text-anchor="middle" class="t svg-lime">1 alerta</text>
+
+        <line x1="90" y1="147" x2="146" y2="122" class="s-lime" stroke-width="1.5" marker-end="url(#ar-l)"/>
+        <line x1="90" y1="147" x2="146" y2="147" class="s-lime" stroke-width="1.5" marker-end="url(#ar-l)"/>
+        <line x1="90" y1="147" x2="146" y2="172" class="s-lime" stroke-width="1.5" marker-end="url(#ar-l)"/>
+
+        <rect x="152" y="106" width="96" height="30" rx="6" class="f-bg3 s-line" stroke-width="1"/>
+        <text x="200" y="125" text-anchor="middle" class="t svg-fg2">norte</text>
+        <rect x="152" y="132" width="96" height="30" rx="6" class="f-bg3 s-line" stroke-width="1"/>
+        <text x="200" y="151" text-anchor="middle" class="t svg-fg2">centro</text>
+        <rect x="152" y="158" width="96" height="30" rx="6" class="f-bg3 s-line" stroke-width="1"/>
+        <text x="200" y="177" text-anchor="middle" class="t svg-fg2">sur</text>
+
+        <line x1="252" y1="121" x2="300" y2="121" class="s-fg3" stroke-width="1.5" marker-end="url(#ar)"/>
+        <line x1="252" y1="147" x2="300" y2="147" class="s-fg3" stroke-width="1.5" marker-end="url(#ar)"/>
+        <line x1="252" y1="173" x2="300" y2="173" class="s-fg3" stroke-width="1.5" marker-end="url(#ar)"/>
+
+        <text x="308" y="126" class="t-sm svg-fg3">33.333 al tiempo</text>
+        <text x="308" y="152" class="t-sm svg-fg3">33.333 al tiempo</text>
+        <text x="308" y="178" class="t-sm svg-fg3">33.333 al tiempo</text>
+
+        <text x="308" y="216" class="t-sm svg-lime">≈ 10 segundos · medido</text>
+      </svg>
+    </div>
+    <figcaption>Arriba: una sola máquina entrega en fila y el último espera. Abajo: la alerta se parte en tres zonas y tres trabajadores entregan al mismo tiempo.</figcaption>
+  </figure>
+</section>
+
+<section>
+  <div class="num">PIEZA 01</div>
+  <span class="tag-pill">CASSANDRA</span>
+  <h2>Tres cuadernos idénticos</h2>
+  <p style="color:var(--fg-2)">Una base de datos normal es <strong>un cuaderno</strong> donde todos escriben. Con cien mil personas escribiendo al tiempo, hay fila — y si se pierde, se perdió todo.</p>
+  <p style="color:var(--fg-2)">Cassandra son <strong>tres cuadernos idénticos</strong>. Escribes en uno y él copia a los otros dos. Y tú decides a cuántos preguntarle.</p>
+
+  <figure>
+    <div class="svg-card">
+      <svg viewBox="0 0 560 290" role="img" aria-label="Preguntar a un solo nodo responde en 1,1 milisegundos pero puede estar desactualizado; preguntar a dos responde en 130 milisegundos y siempre está correcto">
+        <defs>
+          <marker id="ar2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+            <path d="M0,0 L10,5 L0,10 z" fill="var(--fg-3)"/>
+          </marker>
+        </defs>
+
+        <text x="0" y="14" class="t-sm svg-lime">PREGÚNTALE A UNO</text>
+        <circle cx="40" cy="58" r="21" class="f-limed s-lime" stroke-width="2"/>
+        <text x="40" y="63" text-anchor="middle" class="t svg-lime">1</text>
+        <circle cx="106" cy="58" r="21" class="f-bg3 s-line" stroke-width="1"/>
+        <text x="106" y="63" text-anchor="middle" class="t svg-fg3">2</text>
+        <circle cx="172" cy="58" r="21" class="f-bg3 s-line" stroke-width="1"/>
+        <text x="172" y="63" text-anchor="middle" class="t svg-fg3">3</text>
+        <line x1="200" y1="58" x2="242" y2="58" class="s-fg3" stroke-width="1.5" marker-end="url(#ar2)"/>
+        <text x="252" y="52" class="t svg-fg">1,1 ms</text>
+        <text x="252" y="70" class="t-sm svg-amber">puede ir atrasado</text>
+
+        <line x1="0" y1="104" x2="560" y2="104" class="s-line" stroke-width="1" stroke-dasharray="3 4"/>
+
+        <text x="0" y="134" class="t-sm svg-amber">PREGÚNTALE A DOS</text>
+        <circle cx="40" cy="178" r="21" class="f-amberd s-amber" stroke-width="2"/>
+        <text x="40" y="183" text-anchor="middle" class="t svg-amber">1</text>
+        <circle cx="106" cy="178" r="21" class="f-amberd s-amber" stroke-width="2"/>
+        <text x="106" y="183" text-anchor="middle" class="t svg-amber">2</text>
+        <circle cx="172" cy="178" r="21" class="f-bg3 s-line" stroke-width="1"/>
+        <text x="172" y="183" text-anchor="middle" class="t svg-fg3">3</text>
+        <path d="M40,152 Q73,132 106,152" class="f-none s-amber" stroke-width="1.5" stroke-dasharray="3 3"/>
+        <text x="73" y="126" text-anchor="middle" class="t-sm svg-amber">se comparan</text>
+        <line x1="200" y1="178" x2="242" y2="178" class="s-fg3" stroke-width="1.5" marker-end="url(#ar2)"/>
+        <text x="252" y="172" class="t svg-fg">130 ms</text>
+        <text x="252" y="190" class="t-sm svg-lime">siempre correcto</text>
+
+        <line x1="0" y1="224" x2="560" y2="224" class="s-line" stroke-width="1"/>
+        <text x="0" y="248" class="t-sm svg-fg3">DIFERENCIA DE VELOCIDAD, A ESCALA</text>
+        <rect x="0" y="258" width="4" height="12" rx="2" class="svg-lime"/>
+        <text x="14" y="268" class="t-sm svg-fg2">uno</text>
+        <rect x="0" y="274" width="470" height="12" rx="2" class="svg-amber"/>
+        <text x="480" y="284" class="t-sm svg-fg2">dos</text>
+      </svg>
+    </div>
+    <figcaption>Las barras están a escala real: preguntarle a dos nodos cuesta 114 veces más tiempo que preguntarle a uno.</figcaption>
+  </figure>
+
+  <p class="pull">Ninguna otra base de datos te deja escoger eso pregunta por pregunta. Por eso es esta y no otra.</p>
+</section>
+
+<section>
+  <div class="num">PIEZA 02</div>
+  <span class="tag-pill am">KAFKA</span>
+  <h2>Una cinta de tres carriles</h2>
+  <p style="color:var(--fg-2)">Publicas la alerta y hay que entregarla cien mil veces. Kafka la parte en tres carriles y tres trabajadores entregan en paralelo. ¿Necesitas más velocidad? Agregas carriles — no compras un servidor más caro.</p>
+
+  <figure>
+    <div class="svg-card">
+      <svg viewBox="0 0 560 210" role="img" aria-label="Kafka reparte una alerta en tres particiones por zona, cada una consumida por un trabajador distinto que escribe en Cassandra">
+        <defs>
+          <marker id="ar3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+            <path d="M0,0 L10,5 L0,10 z" fill="var(--fg-3)"/>
+          </marker>
+        </defs>
+
+        <rect x="0" y="78" width="74" height="42" rx="8" class="f-limed s-lime" stroke-width="1.5"/>
+        <text x="37" y="96" text-anchor="middle" class="t-sm svg-lime">1 alerta</text>
+        <text x="37" y="111" text-anchor="middle" class="t-sm svg-fg3">publicada</text>
+
+        <line x1="78" y1="99" x2="112" y2="99" class="s-fg3" stroke-width="1.5" marker-end="url(#ar3)"/>
+
+        <rect x="118" y="26" width="150" height="146" rx="10" class="f-bg3 s-line" stroke-width="1.5"/>
+        <text x="193" y="46" text-anchor="middle" class="t-sm svg-fg3">KAFKA</text>
+
+        <rect x="132" y="58" width="122" height="28" rx="5" class="f-bg2 s-amber" stroke-width="1"/>
+        <text x="144" y="76" class="t-sm svg-amber">carril 0</text>
+        <text x="242" y="76" text-anchor="end" class="t-sm svg-fg2">norte</text>
+
+        <rect x="132" y="90" width="122" height="28" rx="5" class="f-bg2 s-amber" stroke-width="1"/>
+        <text x="144" y="108" class="t-sm svg-amber">carril 1</text>
+        <text x="242" y="108" text-anchor="end" class="t-sm svg-fg2">centro</text>
+
+        <rect x="132" y="122" width="122" height="28" rx="5" class="f-bg2 s-amber" stroke-width="1"/>
+        <text x="144" y="140" class="t-sm svg-amber">carril 2</text>
+        <text x="242" y="140" text-anchor="end" class="t-sm svg-fg2">sur</text>
+
+        <line x1="272" y1="72" x2="316" y2="72" class="s-fg3" stroke-width="1.5" marker-end="url(#ar3)"/>
+        <line x1="272" y1="104" x2="316" y2="104" class="s-fg3" stroke-width="1.5" marker-end="url(#ar3)"/>
+        <line x1="272" y1="136" x2="316" y2="136" class="s-fg3" stroke-width="1.5" marker-end="url(#ar3)"/>
+
+        <rect x="322" y="56" width="94" height="32" rx="6" class="f-bg3 s-line" stroke-width="1"/>
+        <text x="369" y="76" text-anchor="middle" class="t-sm svg-fg2">trabajador 1</text>
+        <rect x="322" y="88" width="94" height="32" rx="6" class="f-bg3 s-line" stroke-width="1"/>
+        <text x="369" y="108" text-anchor="middle" class="t-sm svg-fg2">trabajador 2</text>
+        <rect x="322" y="120" width="94" height="32" rx="6" class="f-bg3 s-line" stroke-width="1"/>
+        <text x="369" y="140" text-anchor="middle" class="t-sm svg-fg2">trabajador 3</text>
+
+        <line x1="420" y1="72" x2="454" y2="94" class="s-fg3" stroke-width="1.5" marker-end="url(#ar3)"/>
+        <line x1="420" y1="104" x2="454" y2="104" class="s-fg3" stroke-width="1.5" marker-end="url(#ar3)"/>
+        <line x1="420" y1="136" x2="454" y2="114" class="s-fg3" stroke-width="1.5" marker-end="url(#ar3)"/>
+
+        <rect x="460" y="82" width="90" height="44" rx="8" class="f-bg3 s-line" stroke-width="1.5"/>
+        <text x="505" y="100" text-anchor="middle" class="t-sm svg-fg2">Cassandra</text>
+        <text x="505" y="116" text-anchor="middle" class="t-sm svg-fg3">historial</text>
+
+        <text x="193" y="196" text-anchor="middle" class="t-sm svg-fg3">una zona = un carril = un trabajador</text>
+      </svg>
+    </div>
+    <figcaption>La alerta entra una sola vez. Kafka la separa por zona y cada trabajador entrega la suya sin esperar a los demás.</figcaption>
+  </figure>
+</section>
+
+<section>
+  <div class="num">PIEZA 03</div>
+  <span class="tag-pill sk">CLICKHOUSE</span>
+  <h2>La calculadora de totales</h2>
+  <p style="color:var(--fg-2)">Cassandra es buenísima para <em>“dame el historial de Juan”</em>. Pero malísima para <em>“¿cuántos conectados hay por zona?”</em> — para eso tiene que revisar los tres cuadernos completos.</p>
+
+  <figure>
+    <div class="svg-card">
+      <svg viewBox="0 0 560 176" role="img" aria-label="Cassandra lee una fila completa por clave; ClickHouse lee solo las columnas necesarias para sumar">
+        <text x="0" y="14" class="t-sm svg-fg3">CASSANDRA · buscar UNA carpeta</text>
+        <g>
+          <rect x="0" y="26" width="240" height="20" rx="3" class="f-limed s-lime" stroke-width="1.5"/>
+          <text x="250" y="41" class="t-sm svg-lime">← lee esta fila entera</text>
+          <rect x="0" y="50" width="240" height="20" rx="3" class="f-bg3 s-line" stroke-width="1"/>
+          <rect x="0" y="74" width="240" height="20" rx="3" class="f-bg3 s-line" stroke-width="1"/>
+        </g>
+
+        <line x1="0" y1="112" x2="560" y2="112" class="s-line" stroke-width="1" stroke-dasharray="3 4"/>
+
+        <text x="0" y="136" class="t-sm svg-fg3">CLICKHOUSE · sacar un TOTAL</text>
+        <g>
+          <rect x="0" y="148" width="34" height="20" rx="3" class="f-bg3 s-line" stroke-width="1"/>
+          <rect x="38" y="148" width="34" height="20" rx="3" class="f-bg2 s-sky" stroke-width="1.5"/>
+          <rect x="76" y="148" width="34" height="20" rx="3" class="f-bg3 s-line" stroke-width="1"/>
+          <rect x="114" y="148" width="34" height="20" rx="3" class="f-bg2 s-sky" stroke-width="1.5"/>
+          <rect x="152" y="148" width="34" height="20" rx="3" class="f-bg3 s-line" stroke-width="1"/>
+          <rect x="190" y="148" width="34" height="20" rx="3" class="f-bg3 s-line" stroke-width="1"/>
+          <text x="250" y="163" class="t-sm svg-sky">↑ lee solo estas dos columnas</text>
+        </g>
+      </svg>
+    </div>
+    <figcaption>Es la diferencia entre buscar una carpeta en el archivador y sacar totales en una hoja de cálculo. Dos trabajos distintos, dos herramientas distintas.</figcaption>
+  </figure>
+</section>
+
+<section>
+  <div class="num">PIEZA 04</div>
+  <span class="tag-pill">FASTAPI</span>
+  <h2>Y el backend, ¿dónde entra?</h2>
+  <p style="color:var(--fg-2)">Ninguna de esas tres bases de datos habla con tu celular directamente. Todo pasa por el intermediario.</p>
+
+  <figure>
+    <div class="svg-card">
+      <svg viewBox="0 0 560 260" role="img" aria-label="El celular habla solo con FastAPI, que a su vez decide si escribir en Kafka, Cassandra o consultar ClickHouse">
+        <defs>
+          <marker id="ar4" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+            <path d="M0,0 L10,5 L0,10 z" fill="var(--fg-3)"/>
+          </marker>
+        </defs>
+
+        <rect x="216" y="0" width="128" height="38" rx="8" class="f-bg3 s-line" stroke-width="1"/>
+        <text x="280" y="24" text-anchor="middle" class="t svg-fg2">celular</text>
+
+        <line x1="280" y1="42" x2="280" y2="70" class="s-fg3" stroke-width="1.5" marker-end="url(#ar4)"/>
+
+        <rect x="176" y="76" width="208" height="52" rx="10" class="f-limed s-lime" stroke-width="2"/>
+        <text x="280" y="99" text-anchor="middle" class="t svg-lime">FastAPI</text>
+        <text x="280" y="117" text-anchor="middle" class="t-sm svg-fg3">decide · traduce · muestra</text>
+
+        <line x1="230" y1="132" x2="106" y2="176" class="s-fg3" stroke-width="1.5" marker-end="url(#ar4)"/>
+        <line x1="280" y1="132" x2="280" y2="176" class="s-fg3" stroke-width="1.5" marker-end="url(#ar4)"/>
+        <line x1="330" y1="132" x2="454" y2="176" class="s-fg3" stroke-width="1.5" marker-end="url(#ar4)"/>
+
+        <text x="140" y="156" text-anchor="middle" class="t-sm svg-fg3">reparte</text>
+        <text x="296" y="160" class="t-sm svg-fg3">guarda</text>
+        <text x="420" y="156" text-anchor="middle" class="t-sm svg-fg3">calcula</text>
+
+        <rect x="34" y="182" width="144" height="48" rx="8" class="f-bg3 s-amber" stroke-width="1.5"/>
+        <text x="106" y="203" text-anchor="middle" class="t-sm svg-amber">Kafka</text>
+        <text x="106" y="219" text-anchor="middle" class="t-sm svg-fg3">3 carriles</text>
+
+        <rect x="208" y="182" width="144" height="48" rx="8" class="f-bg3 s-lime" stroke-width="1.5"/>
+        <text x="280" y="203" text-anchor="middle" class="t-sm svg-lime">Cassandra</text>
+        <text x="280" y="219" text-anchor="middle" class="t-sm svg-fg3">3 nodos</text>
+
+        <rect x="382" y="182" width="144" height="48" rx="8" class="f-bg3 s-sky" stroke-width="1.5"/>
+        <text x="454" y="203" text-anchor="middle" class="t-sm svg-sky">ClickHouse</text>
+        <text x="454" y="219" text-anchor="middle" class="t-sm svg-fg3">totales</text>
+
+        <text x="280" y="254" text-anchor="middle" class="t-sm svg-fg3">el backend no guarda nada</text>
+      </svg>
+    </div>
+    <figcaption>El backend es el único que habla con todos. Su trabajo es decidir a quién preguntarle y con qué nivel de exigencia.</figcaption>
+  </figure>
+
+  <h3 style="margin-top:32px">Qué hace, paso a paso</h3>
+  <div class="steps">
+    <div class="step">
+      <span class="sn">01</span>
+      <div>
+        <div class="st">Alguien abre la app</div>
+        <div class="sd">El backend le dice a Cassandra: “guarda que está conectado”. Nivel <span style="color:var(--lime)">UNO</span> — es un dato que no importa si llega tarde.</div>
+      </div>
+    </div>
+    <div class="step">
+      <span class="sn">02</span>
+      <div>
+        <div class="st">La Alcaldía publica una alerta</div>
+        <div class="sd">El backend la pone en Kafka, partida en tres zonas. Los trabajadores la recogen y la entregan.</div>
+      </div>
+    </div>
+    <div class="step">
+      <span class="sn">03</span>
+      <div>
+        <div class="st">Se guarda en el historial</div>
+        <div class="sd">Nivel <span style="color:var(--amber)">DOS</span> — una alerta de emergencia <strong>no se puede perder</strong>. Aquí sí vale la pena pagar la lentitud.</div>
+      </div>
+    </div>
+  </div>
+
+  <p class="pull am">El backend elige el nivel según qué tan grave sea perder ese dato. Eso no es una decisión técnica: es una decisión de negocio.</p>
+</section>
+
+<section>
+  <div class="num">LA DEMO</div>
+  <h2>Nuestro sistema está mal a propósito</h2>
+  <p style="color:var(--fg-2)">El backend hace algo que normalmente no harías: le pregunta lo mismo a dos nodos <strong>por separado</strong>, para comparar qué responde cada uno.</p>
+
+  <figure>
+    <div class="svg-card">
+      <svg viewBox="0 0 560 300" role="img" aria-label="Con nivel uno los dos nodos devuelven horas distintas en 1,5 milisegundos; con nivel dos devuelven la misma hora pero uno tarda 253 milisegundos">
+        <text x="0" y="14" class="t-sm svg-lime">NIVEL UNO</text>
+        <rect x="0" y="26" width="268" height="76" rx="10" class="f-bg3 s-line" stroke-width="1"/>
+        <text x="18" y="48" class="t-sm svg-fg3">NODO 1</text>
+        <text x="18" y="70" class="t svg-fg">19:24:45.074</text>
+        <text x="18" y="90" class="t-sm svg-fg3">1,5 ms</text>
+
+        <rect x="292" y="26" width="268" height="76" rx="10" class="f-bg3 s-amber" stroke-width="1.5"/>
+        <text x="310" y="48" class="t-sm svg-fg3">NODO 3</text>
+        <text x="310" y="70" class="t svg-amber">19:24:38.912</text>
+        <text x="310" y="90" class="t-sm svg-fg3">1,5 ms</text>
+
+        <text x="0" y="126" class="t-sm svg-amber">✗ distintos — el nodo 3 va atrasado, pero responde volando</text>
+
+        <line x1="0" y1="150" x2="560" y2="150" class="s-line" stroke-width="1" stroke-dasharray="3 4"/>
+
+        <text x="0" y="180" class="t-sm svg-amber">NIVEL DOS</text>
+        <rect x="0" y="192" width="268" height="76" rx="10" class="f-bg3 s-line" stroke-width="1"/>
+        <text x="18" y="214" class="t-sm svg-fg3">NODO 1</text>
+        <text x="18" y="236" class="t svg-fg">19:24:45.074</text>
+        <text x="18" y="256" class="t-sm svg-fg3">3,2 ms</text>
+
+        <rect x="292" y="192" width="268" height="76" rx="10" class="f-bg3 s-lime" stroke-width="1.5"/>
+        <text x="310" y="214" class="t-sm svg-fg3">NODO 3</text>
+        <text x="310" y="236" class="t svg-lime">19:24:45.074</text>
+        <text x="310" y="256" class="t-sm svg-amber">253,8 ms</text>
+
+        <text x="0" y="292" class="t-sm svg-lime">✓ iguales — pero costó 130 veces más tiempo</text>
+      </svg>
+    </div>
+    <figcaption>La misma lectura, dos niveles de exigencia. Medimos 150 rondas: con nivel UNO el dato estaba desactualizado el 99,3 % de las veces.</figcaption>
+  </figure>
+
+  <p class="pull">Y aun así elegimos el nivel UNO. Porque a nadie le importa si apareces conectado dos segundos tarde — pero sí importa que el sistema responda cuando hay una emergencia.</p>
+</section>
+
+<section>
+  <div class="num">EN RESUMEN</div>
+  <h2>Cuatro piezas</h2>
+  <div class="sum">
+    <div class="sum-row"><span class="k">Cassandra</span><span class="v">Tres cuadernos idénticos donde tú eliges a cuántos preguntarle</span></div>
+    <div class="sum-row"><span class="k am">Kafka</span><span class="v">Cinta de tres carriles para repartir el trabajo en paralelo</span></div>
+    <div class="sum-row"><span class="k sk">ClickHouse</span><span class="v">Calculadora para las preguntas de totales</span></div>
+    <div class="sum-row"><span class="k">FastAPI</span><span class="v">El intermediario que decide a quién preguntarle y cómo</span></div>
+  </div>
+  <p style="color:var(--fg-2);margin-top:20px">Todo corre en un portátil con un solo comando. Y todo es software libre — cero licencias, cero servicios de pago.</p>
+</section>
+
+</div>
+
+<div class="outro">
+  <div class="w">
+    <h2>La pregunta que me quedó dando vueltas</h2>
+    <p>No es “¿cómo hago que todo esté perfecto?”. Es <strong>“¿qué me puedo dar el lujo de tener mal, y qué no?”</strong></p>
+    <p>Que alguien aparezca conectado dos segundos tarde: no importa. Que se pierda una alerta de emergencia: sí importa. Y esa diferencia es la que decide cómo se construye todo lo demás.</p>
+    <div class="tags">
+      <span class="tag">#BasesDeDatos</span>
+      <span class="tag">#SistemasDistribuidos</span>
+      <span class="tag">#TeoremaCAP</span>
+      <span class="tag">#Cassandra</span>
+      <span class="tag">#Kafka</span>
+      <span class="tag">#DataEngineering</span>
+    </div>
+  </div>
+</div>
+
+<footer>Proyecto de Tópicos Avanzados de Bases de Datos · ITM · 2026</footer>
+</html>
