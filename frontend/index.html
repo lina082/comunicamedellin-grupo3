@@ -68,7 +68,7 @@
       <span id="conn" style="font-size:12px;color:var(--dim)">desconectado</span></span>
     <span style="flex:1"></span>
     <label>Usuario</label>
-    <input id="usuario" value="usuario:demo:A-12" size="20">
+    <select id="usuario"><option value="usuario:demo:A-12">cargando…</option></select>
     <label>Consistencia</label>
     <select id="nivel">
       <option value="ONE">ONE</option>
@@ -122,6 +122,19 @@
 
 <script>
 const API = "http://localhost:8765";
+
+// Poblar el selector con suscriptores reales (datos de Faker es_CO)
+fetch(API + "/suscriptores")
+  .then(r => r.json())
+  .then(us => {
+    if (!us.length) return;
+    const sel = document.getElementById("usuario");
+    sel.innerHTML = us.map(u =>
+      `<option value="${u.usuario_id}">${u.nombre} · ${u.comuna}</option>`
+    ).join("");
+    if (typeof suscribir === "function") suscribir();
+  })
+  .catch(() => {});
 let ws, lecturas = 0, divergencias = 0, latAcum = 0;
 
 const $ = id => document.getElementById(id);

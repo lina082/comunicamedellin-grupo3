@@ -101,6 +101,20 @@ def escribir(e: Escritura):
     return {"ok": True, "latencia_ms": round((time.perf_counter() - t0) * 1000, 2)}
 
 
+@app.get("/suscriptores")
+def suscriptores(limite: int = 12):
+    """Lista algunos suscriptores reales para poblar el selector
+    del frontend. Sin esto habria que copiar cedulas a mano."""
+    if "cass1" not in conexiones:
+        return []
+    _, s = conexiones["cass1"]
+    filas = s.execute(
+        f"SELECT usuario_id, nombre, comuna, zona FROM presencia LIMIT {int(limite)}")
+    return [{"usuario_id": f.usuario_id, "nombre": f.nombre,
+             "comuna": f.comuna, "zona": f.zona}
+            for f in filas if f.nombre]
+
+
 @app.get("/salud")
 def salud():
     return {"nodos_conectados": list(conexiones.keys())}
