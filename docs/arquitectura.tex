@@ -4,6 +4,7 @@
 \usepackage[spanish,es-noquoting]{babel}
 \usepackage[margin=2.4cm]{geometry}
 \usepackage{graphicx,booktabs,longtable,array,xcolor,hyperref,fancyhdr,enumitem}
+\usepackage{needspace}
 \usepackage{tikz}
 \usetikzlibrary{shapes.geometric,arrows.meta,positioning,fit,backgrounds,calc}
 
@@ -222,5 +223,41 @@ El módulo lo presenta como almacén en memoria empleado como \emph{feature stor
 para alimentar modelos en tiempo real, no como base de datos distribuida para la
 ruta operacional. Tampoco ofrece consistencia ajustable por consulta.
 \end{description}
+
+% ============================================================
+\needspace{9\baselineskip}
+\section{Conclusiones}
+% ============================================================
+\begin{enumerate}[leftmargin=*,itemsep=3pt]
+\item El caso no contiene una carga sino \textbf{cinco}, que abarcan los cuatro
+perfiles del módulo: transaccional, \emph{streaming}, analítico y \emph{batch}.
+Identificarlas antes de elegir tecnología es lo que evita forzar un único motor a
+resolver problemas de naturaleza distinta.
+
+\item Dos cargas que escriben en el mismo motor —historial y presencia— exigen
+\textbf{garantías opuestas}. Esa diferencia, y no el volumen, es la que estructura
+el diseño.
+
+\item La distinción entre estar en la nube y ser distribuido \sect{3.2, 3.3} es
+determinante: un servidor único replicado sigue concentrando la entrega en un
+proceso. Sólo el particionamiento por zona convierte una escritura en flujos
+paralelos independientes.
+
+\item Separar la ruta operacional (Cassandra) de la analítica (ClickHouse) evita
+el conflicto OLTP/OLAP descrito en la \sect{2.2}: cada motor atiende el perfil de
+acceso para el que está optimizado, alimentados ambos por el mismo log de eventos
+\sect{4.1, 4.2}.
+
+\item Ninguna decisión se tomó por preferencia técnica. Cada una se sostiene en
+una sección del módulo, y las alternativas se descartaron por razones explícitas
+—no por desconocimiento— empezando por CockroachDB, que sería la elección correcta
+en un caso con recursos en disputa.
+\end{enumerate}
+
+\vfill
+\begin{center}\footnotesize\color{gray}
+Repositorio: \texttt{github.com/lina082/comunicamedellin-grupo3} ·
+Todo el stack es software libre (Apache 2.0 / MIT).
+\end{center}
 
 \end{document}
