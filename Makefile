@@ -110,8 +110,8 @@ zk-shell: ## Shell de Zookeeper: ver brokers, controller, topicos
 api: ## Arranca la API (FastAPI + WebSocket)
 	cd api && python3 -m uvicorn main:app --reload --port 8765
 
-frontend: ## Sirve el frontend en http://localhost:3000
-	cd frontend && python3 -m http.server 3000
+frontend: ## Sirve el frontend en http://localhost:4173
+	cd frontend && python3 -m http.server 4173
 
 # ── Documentacion LaTeX ──────────────────────────────────────
 pdf: ## Compila el documento principal

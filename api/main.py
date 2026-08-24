@@ -115,6 +115,106 @@ def suscriptores(limite: int = 12):
             for f in filas if f.nombre]
 
 
+
+# ─────────────────────────────────────────────────────────────
+# Endpoints didacticos: mostrar la base de datos en pantalla
+# ─────────────────────────────────────────────────────────────
+
+@app.get("/tablas")
+def tablas():
+    """Esquema del keyspace: que tablas hay y con que columnas.
+
+    Sirve para explicar en clase el modelo clave-valor (Sec. 1.3)
+    sin tener que abrir cqlsh en una terminal aparte.
+    """
+    if "cass1" not in conexiones:
+        return []
+    _, s = conexiones["cass1"]
+    out = []
+    filas = s.execute("""
+        SELECT table_name FROM system_schema.tables
+        WHERE keyspace_name='comunica'""")
+    for t in filas:
+        cols = s.execute("""
+            SELECT column_name, type, kind FROM system_schema.columns
+            WHERE keyspace_name='comunica' AND table_name=%s""", (t.table_name,))
+        n = s.execute(f"SELECT COUNT(*) AS c FROM {t.table_name}").one()
+        out.append({
+            "tabla": t.table_name,
+            "filas": n.c if n else 0,
+            "columnas": [
+                {"nombre": c.column_name, "tipo": c.type,
+                 "clave": c.kind}          # partition_key | clustering | regular
+                for c in sorted(cols, key=lambda c: (c.kind != "partition_key",
+                                                     c.kind != "clustering",
+                                                     c.column_name))
+            ],
+        })
+    return sorted(out, key=lambda x: x["tabla"])
+
+
+@app.get("/datos/{tabla}")
+def datos(tabla: str, limite: int = 12):
+    """Filas reales de una tabla, tal como estan guardadas."""
+    if tabla not in {"presencia", "historial_usuario", "alertas"}:
+        return {"error": "tabla no permitida"}
+    if "cass1" not in conexiones:
+        return {"error": "sin conexion"}
+    _, s = conexiones["cass1"]
+    filas = s.execute(f"SELECT * FROM {tabla} LIMIT {int(limite)}")
+    cols = list(filas.column_names)
+    return {
+        "tabla": tabla,
+        "columnas": cols,
+        "filas": [
+            [(v.isoformat(sep=" ", timespec="milliseconds")
+              if isinstance(v, dt.datetime) else
+              (str(v) if v is not None else None))
+             for v in row]
+            for row in filas
+        ],
+    }
+
+
+@app.get("/anillo")
+def anillo():
+    """Como se reparten los datos entre los 3 nodos.
+
+    Muestra que Cassandra distribuye por hash de la clave de
+    particion (Sec. 3.3), no por rangos que uno elija.
+    """
+    if "cass1" not in conexiones:
+        return {"nodos": []}
+    _, s = conexiones["cass1"]
+    vivos = []
+    for nodo in NODOS:
+        vivos.append({"nodo": nodo, "activo": nodo in conexiones})
+    # Reparto real por zona (dato de negocio, no de infraestructura)
+    zonas = {}
+    for z in ("norte", "centro", "sur"):
+        r = s.execute(
+            "SELECT COUNT(*) AS c FROM presencia WHERE zona=%s ALLOW FILTERING",
+            (z,)).one()
+        zonas[z] = r.c if r else 0
+    total = s.execute("SELECT COUNT(*) AS c FROM presencia").one()
+    return {"nodos": vivos, "zonas": zonas,
+            "total": total.c if total else 0}
+
+
+@app.get("/replicas/{usuario}")
+def replicas(usuario: str):
+    """Que devuelve CADA nodo para el mismo usuario.
+
+    Es el corazon de la demo: con RF=3 el dato vive en los tres,
+    pero pueden no estar sincronizados (Sec. 1.2, consistencia
+    eventual).
+    """
+    out = []
+    for nodo in NODOS:
+        out.append(leer(nodo, usuario, "ONE"))
+    return out
+
+
 @app.get("/salud")
 def salud():
     return {"nodos_conectados": list(conexiones.keys())}
@@ -122,7 +222,11 @@ def salud():
 
 @app.websocket("/ws")
 async def ws(sock: WebSocket):
-    """Empuja lecturas simultaneas de nodo1 y nodo3 al frontend."""
+    """Empuja lecturas simultaneas de LOS TRES nodos al frontend.
+
+    Con RF=3 el dato vive en los tres, asi que mostrarlos todos
+    hace visible cual va atrasado (Sec. 1.2, consistencia eventual).
+    """
     await sock.accept()
     usuario, nivel = "usuario:demo:A-12", "ONE"
     try:
@@ -151,6 +255,7 @@ async def ws(sock: WebSocket):
                 "ts": dt.datetime.now().isoformat(),
                 "nivel": nivel, "usuario": usuario,
                 "nodo1": n1, "nodo3": n3,
+                "nodos": [leer(n, usuario, nivel) for n in NODOS],
                 "divergente": divergente, "delta_ms": round(delta, 1),
             })
     except WebSocketDisconnect:

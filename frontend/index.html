@@ -1,216 +1,355 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="es">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>ComunicaMedellín · Consistencia en vivo</title>
 <style>
-  :root{
-    --bg:#0d1117; --panel:#161b22; --borde:#30363d; --txt:#e6edf3;
-    --dim:#8b949e; --verde:#3fb950; --rojo:#f85149; --ambar:#d29922;
-    --azul:#58a6ff; --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
-  }
-  *{box-sizing:border-box}
-  body{margin:0;background:var(--bg);color:var(--txt);
-       font-family:system-ui,-apple-system,"Segoe UI",sans-serif;padding:24px}
-  header{max-width:1100px;margin:0 auto 20px}
-  h1{margin:0 0 4px;font-size:20px;letter-spacing:-.01em}
-  .sub{color:var(--dim);font-size:13px}
-  .wrap{max-width:1100px;margin:0 auto}
-  .ctrl{display:flex;gap:10px;flex-wrap:wrap;align-items:center;
-        background:var(--panel);border:1px solid var(--borde);
-        border-radius:8px;padding:12px;margin-bottom:16px}
-  label{font-size:12px;color:var(--dim);margin-right:4px}
-  select,input,button{background:#0d1117;color:var(--txt);
-       border:1px solid var(--borde);border-radius:6px;padding:7px 10px;
-       font-size:13px;font-family:inherit}
-  button{cursor:pointer;font-weight:500}
-  button:hover{border-color:var(--azul)}
-  button.danger:hover{border-color:var(--rojo);color:var(--rojo)}
-  .grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
-  @media(max-width:760px){.grid{grid-template-columns:1fr}}
-  .nodo{background:var(--panel);border:1px solid var(--borde);
-        border-radius:8px;padding:16px}
-  .nodo h2{margin:0 0 12px;font-size:13px;color:var(--azul);
-           font-family:var(--mono);font-weight:600}
-  .campo{display:flex;justify-content:space-between;padding:6px 0;
-         border-bottom:1px solid #21262d;font-size:13px}
-  .campo:last-child{border:0}
-  .campo span:first-child{color:var(--dim)}
-  .campo span:last-child{font-family:var(--mono)}
-  .estado-banner{margin:16px 0;padding:14px;border-radius:8px;
-       text-align:center;font-weight:600;font-size:15px;
-       border:1px solid var(--borde);background:var(--panel)}
-  .ok{border-color:var(--verde);color:var(--verde)}
-  .div{border-color:var(--ambar);color:var(--ambar)}
-  .metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:16px}
-  @media(max-width:760px){.metrics{grid-template-columns:repeat(2,1fr)}}
-  .m{background:var(--panel);border:1px solid var(--borde);
-     border-radius:8px;padding:12px;text-align:center}
-  .m .v{font-size:22px;font-family:var(--mono);font-weight:600}
-  .m .k{font-size:11px;color:var(--dim);margin-top:3px}
-  .nota{margin-top:18px;padding:12px 14px;background:var(--panel);
-        border:1px solid var(--borde);border-left:3px solid var(--azul);
-        border-radius:6px;font-size:12.5px;color:var(--dim);line-height:1.6}
-  .pill{display:inline-block;width:8px;height:8px;border-radius:50%;
-        margin-right:6px;vertical-align:middle}
+:root{
+  --bg:#0B0E14; --bg2:#141922; --bg3:#1C2230;
+  --fg:#EDF1F7; --fg2:#9FADC0; --fg3:#66768C;
+  --line:#242C3A;
+  --ok:#9EE86B; --ok-d:#1E2E17;
+  --warn:#FFA347; --warn-d:#33210C;
+  --sky:#6BC5F8;
+  --mono:"JetBrains Mono",ui-monospace,"SF Mono",Menlo,monospace;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);
+  font:15px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+.wrap{max-width:1180px;margin:0 auto;padding:0 20px 60px}
+
+header{border-bottom:1px solid var(--line);padding:22px 0;margin-bottom:24px}
+header h1{margin:0;font-size:21px;letter-spacing:-.02em}
+header .sub{color:var(--fg3);font-size:13.5px;margin-top:5px}
+.dot{display:inline-block;width:8px;height:8px;border-radius:50%;
+  background:var(--fg3);margin-right:7px;vertical-align:middle}
+.dot.on{background:var(--ok)}
+
+/* pestañas */
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);margin-bottom:24px;
+  overflow-x:auto}
+.tab{background:none;border:0;color:var(--fg3);font:inherit;font-size:14.5px;
+  padding:11px 16px;cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap}
+.tab:hover{color:var(--fg2)}
+.tab.act{color:var(--ok);border-bottom-color:var(--ok)}
+.tab:focus-visible{outline:2px solid var(--sky);outline-offset:-2px}
+.vista{display:none}
+.vista.act{display:block}
+
+.expl{background:var(--bg2);border:1px solid var(--line);border-left:3px solid var(--sky);
+  border-radius:8px;padding:14px 18px;margin-bottom:20px;font-size:14.5px;color:var(--fg2)}
+.expl b{color:var(--fg)}
+.expl code{font-family:var(--mono);font-size:12.5px;background:var(--bg3);
+  padding:1px 5px;border-radius:3px;color:var(--sky)}
+
+/* controles */
+.ctrl{display:flex;gap:14px;align-items:center;flex-wrap:wrap;margin-bottom:20px;
+  background:var(--bg2);border:1px solid var(--line);border-radius:8px;padding:14px 18px}
+.ctrl label{font-size:13px;color:var(--fg3);display:block;margin-bottom:5px}
+select,button{font:inherit;background:var(--bg3);color:var(--fg);
+  border:1px solid var(--line);border-radius:6px;padding:8px 12px}
+select{min-width:230px;max-width:100%}
+button{cursor:pointer}
+button:hover{border-color:var(--fg3)}
+button.p{background:var(--ok-d);border-color:var(--ok);color:var(--ok);font-weight:600}
+button:focus-visible,select:focus-visible{outline:2px solid var(--sky);outline-offset:1px}
+
+/* tarjetas de nodo */
+.nodos{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px}
+.nodo{background:var(--bg2);border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.nodo.dif{border-color:var(--warn)}
+.nodo h3{margin:0;padding:12px 16px;font-size:13px;font-family:var(--mono);
+  background:var(--bg3);border-bottom:1px solid var(--line);
+  display:flex;justify-content:space-between;align-items:center;gap:8px}
+.nodo h3 .lat{color:var(--fg3);font-weight:400}
+.nodo h3 .lat.slow{color:var(--warn)}
+.campos{padding:6px 16px 14px}
+.campo{display:flex;justify-content:space-between;gap:12px;padding:7px 0;
+  border-bottom:1px solid var(--line);font-size:13.5px}
+.campo:last-child{border-bottom:0}
+.campo .k{color:var(--fg3);font-family:var(--mono);font-size:12px}
+.campo .v{font-family:var(--mono);font-size:12.5px;text-align:right;
+  word-break:break-all;max-width:62%}
+.campo .v.hl{color:var(--ok)}
+.campo .v.dif{color:var(--warn);font-weight:600}
+
+.banner{margin:18px 0;padding:14px 18px;border-radius:8px;font-size:14.5px;
+  border:1px solid var(--line);background:var(--bg2)}
+.banner.ok{border-color:var(--ok);background:var(--ok-d);color:var(--ok)}
+.banner.dif{border-color:var(--warn);background:var(--warn-d);color:var(--warn)}
+
+/* tablas */
+.tabla-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:8px;
+  background:var(--bg2);margin-bottom:18px}
+table{border-collapse:collapse;width:100%;font-size:12.5px;font-family:var(--mono)}
+th{background:var(--bg3);color:var(--fg3);text-align:left;padding:9px 12px;
+  border-bottom:1px solid var(--line);white-space:nowrap;font-weight:600;font-size:11.5px}
+td{padding:8px 12px;border-bottom:1px solid var(--line);white-space:nowrap;color:var(--fg2)}
+tr:last-child td{border-bottom:0}
+tr:hover td{background:var(--bg3)}
+td.pk{color:var(--ok)}
+
+.esquema{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px}
+.tabla-card{background:var(--bg2);border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.tabla-card h3{margin:0;padding:12px 16px;font-size:13.5px;font-family:var(--mono);
+  background:var(--bg3);border-bottom:1px solid var(--line);
+  display:flex;justify-content:space-between;gap:10px}
+.tabla-card h3 .n{color:var(--fg3);font-weight:400;font-size:12px}
+.cols{padding:8px 0}
+.col-row{display:flex;justify-content:space-between;gap:12px;padding:6px 16px;font-size:12.5px;
+  font-family:var(--mono)}
+.col-row .t{color:var(--fg3);font-size:11.5px}
+.badge{font-size:10px;padding:2px 6px;border-radius:3px;font-family:var(--mono);
+  background:var(--bg3);color:var(--fg3);margin-left:6px}
+.badge.pk{background:var(--ok-d);color:var(--ok)}
+.badge.ck{background:var(--warn-d);color:var(--warn)}
+
+/* barras de zona */
+.zonas{display:grid;gap:12px;margin-bottom:18px}
+.zona-row{background:var(--bg2);border:1px solid var(--line);border-radius:8px;padding:14px 18px}
+.zona-hd{display:flex;justify-content:space-between;font-size:13.5px;margin-bottom:9px}
+.zona-hd .n{font-family:var(--mono);color:var(--fg3);font-size:12.5px}
+.barra{height:9px;background:var(--bg3);border-radius:5px;overflow:hidden}
+.barra div{height:100%;background:var(--ok);border-radius:5px;transition:width .4s}
+.err{color:var(--warn);font-size:13.5px;padding:12px 0}
+.hint{color:var(--fg3);font-size:12.5px;margin-top:12px;font-family:var(--mono)}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
 </head>
 <body>
-<header class="wrap">
-  <h1>ComunicaMedellín · Consistencia ajustable en vivo</h1>
-  <div class="sub">Grupo 3 — Módulo 1 · Secciones 1.2 (CAP), 1.3 (NoSQL AP), 3.3 (distribuida)</div>
+<div class="wrap">
+
+<header>
+  <h1>ComunicaMedellín · panel de la base de datos</h1>
+  <div class="sub"><span class="dot" id="dot"></span><span id="conn">conectando…</span>
+    · Cassandra 3 nodos · RF=3 · Grupo 3</div>
 </header>
 
-<div class="wrap">
+<div class="tabs" role="tablist">
+  <button class="tab act" data-v="v-repl" role="tab">Réplicas en vivo</button>
+  <button class="tab" data-v="v-datos" role="tab">Datos guardados</button>
+  <button class="tab" data-v="v-esquema" role="tab">Esquema</button>
+  <button class="tab" data-v="v-reparto" role="tab">Reparto</button>
+</div>
+
+<!-- ═══ RÉPLICAS ═══ -->
+<section class="vista act" id="v-repl">
+  <div class="expl">
+    <b>Qué estás viendo:</b> el mismo usuario leído desde los <b>tres nodos a la vez</b>.
+    Con <code>RF=3</code> el dato vive en los tres, pero pueden no estar sincronizados.
+    Si un panel muestra <b>otra hora</b>, esa es la consistencia eventual del teorema CAP.
+  </div>
+
   <div class="ctrl">
-    <span><span class="pill" id="luz" style="background:var(--rojo)"></span>
-      <span id="conn" style="font-size:12px;color:var(--dim)">desconectado</span></span>
-    <span style="flex:1"></span>
-    <label>Usuario</label>
-    <select id="usuario"><option value="usuario:demo:A-12">cargando…</option></select>
-    <label>Consistencia</label>
-    <select id="nivel">
-      <option value="ONE">ONE</option>
-      <option value="QUORUM">QUORUM</option>
-      <option value="ALL">ALL</option>
-    </select>
-    <button id="escribir">Escribir en nodo 1</button>
-    <button id="martillo" class="danger">Martillo (100 escrituras)</button>
-    <button id="reset">Reiniciar métricas</button>
-  </div>
-
-  <div class="grid">
-    <div class="nodo">
-      <h2>▸ cassandra-1 · puerto 9042</h2>
-      <div class="campo"><span>nombre</span><span id="n1-nombre">—</span></div>
-      <div class="campo"><span>estado</span><span id="n1-estado">—</span></div>
-      <div class="campo"><span>last_seen</span><span id="n1-ts">—</span></div>
-      <div class="campo"><span>zona</span><span id="n1-zona">—</span></div>
-      <div class="campo"><span>comuna</span><span id="n1-comuna">—</span></div>
-      <div class="campo"><span>latencia</span><span id="n1-lat">—</span></div>
+    <div>
+      <label for="usuario">Suscriptor</label>
+      <select id="usuario"><option>cargando…</option></select>
     </div>
-    <div class="nodo">
-      <h2>▸ cassandra-3 · puerto 9044</h2>
-      <div class="campo"><span>nombre</span><span id="n3-nombre">—</span></div>
-      <div class="campo"><span>estado</span><span id="n3-estado">—</span></div>
-      <div class="campo"><span>last_seen</span><span id="n3-ts">—</span></div>
-      <div class="campo"><span>zona</span><span id="n3-zona">—</span></div>
-      <div class="campo"><span>comuna</span><span id="n3-comuna">—</span></div>
-      <div class="campo"><span>latencia</span><span id="n3-lat">—</span></div>
+    <div>
+      <label for="nivel">Nivel de consistencia</label>
+      <select id="nivel">
+        <option value="ONE">ONE · 1 réplica</option>
+        <option value="QUORUM">QUORUM · 2 de 3</option>
+        <option value="ALL">ALL · las 3</option>
+      </select>
+    </div>
+    <div>
+      <label for="escribir">&nbsp;</label>
+      <button class="p" id="escribir">Escribir presencia ahora</button>
     </div>
   </div>
 
-  <div class="estado-banner ok" id="banner">Esperando datos…</div>
+  <div class="banner ok" id="banner">Esperando lecturas…</div>
+  <div class="nodos" id="nodos"></div>
+  <div class="hint">Para ver divergencia: <b>make latencia-on</b> en la terminal.</div>
+</section>
 
-  <div class="metrics">
-    <div class="m"><div class="v" id="m-lecturas">0</div><div class="k">lecturas</div></div>
-    <div class="m"><div class="v" id="m-div">0</div><div class="k">divergencias</div></div>
-    <div class="m"><div class="v" id="m-pct">0%</div><div class="k">tasa divergencia</div></div>
-    <div class="m"><div class="v" id="m-lat">—</div><div class="k">latencia media</div></div>
+<!-- ═══ DATOS ═══ -->
+<section class="vista" id="v-datos">
+  <div class="expl">
+    <b>Qué estás viendo:</b> filas reales tal como están guardadas en Cassandra.
+    La columna en <b style="color:var(--ok)">verde</b> es la <b>clave de partición</b>:
+    su hash decide en qué nodo vive cada fila.
   </div>
+  <div class="ctrl">
+    <div>
+      <label for="tabla">Tabla</label>
+      <select id="tabla">
+        <option value="presencia">presencia</option>
+        <option value="historial_usuario">historial_usuario</option>
+        <option value="alertas">alertas</option>
+      </select>
+    </div>
+    <div><label>&nbsp;</label><button id="recargar">Recargar</button></div>
+  </div>
+  <div class="tabla-wrap"><table id="t-datos"></table></div>
+</section>
 
-  <div class="nota">
-    <strong>Qué observar:</strong> con <code>ONE</code>, pulsa «Martillo» y aparecerán
-    divergencias — el nodo 3 devuelve un valor ligeramente anterior al del nodo 1.
-    Cambia a <code>QUORUM</code> y repite: las divergencias desaparecen, pero la
-    latencia media sube. Ese es el trade-off del teorema CAP (Sec. 1.2) hecho visible.
-    Para presencia elegimos <code>ONE</code>: un desfase de milisegundos en «en línea»
-    no tiene costo de negocio, y mantiene el canal disponible durante una partición.
+<!-- ═══ ESQUEMA ═══ -->
+<section class="vista" id="v-esquema">
+  <div class="expl">
+    <b>Qué estás viendo:</b> el modelo de datos. Fíjate que <b>no hay JOINs ni claves
+    foráneas</b> — es un modelo <b>clave-valor</b>: se busca por la clave y ya.
+    Eso responde la pregunta (b) del enunciado.
   </div>
+  <div class="esquema" id="esquema"></div>
+</section>
+
+<!-- ═══ REPARTO ═══ -->
+<section class="vista" id="v-reparto">
+  <div class="expl">
+    <b>Qué estás viendo:</b> cómo se reparten los suscriptores por zona.
+    Cada zona es una <b>partición de Kafka</b> y un worker distinto en el fan-out
+    — así una alerta se entrega en paralelo en vez de uno por uno.
+  </div>
+  <div class="zonas" id="zonas"></div>
+  <div class="tabla-wrap"><table id="t-nodos"></table></div>
+</section>
+
 </div>
 
 <script>
 const API = "http://localhost:8765";
-
-// Poblar el selector con suscriptores reales (datos de Faker es_CO)
-fetch(API + "/suscriptores")
-  .then(r => r.json())
-  .then(us => {
-    if (!us.length) return;
-    const sel = document.getElementById("usuario");
-    sel.innerHTML = us.map(u =>
-      `<option value="${u.usuario_id}">${u.nombre} · ${u.comuna}</option>`
-    ).join("");
-    if (typeof suscribir === "function") suscribir();
-  })
-  .catch(() => {});
-let ws, lecturas = 0, divergencias = 0, latAcum = 0;
-
 const $ = id => document.getElementById(id);
-const fmtTs = s => s ? s.slice(11, 23) : "—";
+let ws = null, ultimo = null;
 
-function conectar(){
+/* ── pestañas ── */
+document.querySelectorAll(".tab").forEach(b => b.onclick = () => {
+  document.querySelectorAll(".tab").forEach(x => x.classList.remove("act"));
+  document.querySelectorAll(".vista").forEach(x => x.classList.remove("act"));
+  b.classList.add("act");
+  $(b.dataset.v).classList.add("act");
+  if (b.dataset.v === "v-datos")   cargarDatos();
+  if (b.dataset.v === "v-esquema") cargarEsquema();
+  if (b.dataset.v === "v-reparto") cargarReparto();
+});
+
+/* ── suscriptores ── */
+fetch(API + "/suscriptores?limite=25").then(r => r.json()).then(us => {
+  if (!us.length) return;
+  $("usuario").innerHTML = us.map(u =>
+    `<option value="${u.usuario_id}">${u.nombre} · ${u.comuna}</option>`).join("");
+  conectarWS();
+}).catch(() => $("conn").textContent = "API no disponible");
+
+/* ── WebSocket ── */
+function conectarWS(){
   ws = new WebSocket("ws://localhost:8765/ws");
-  ws.onopen = () => {
-    $("luz").style.background = "var(--verde)";
-    $("conn").textContent = "conectado";
-    enviarConfig();
-  };
-  ws.onclose = () => {
-    $("luz").style.background = "var(--rojo)";
-    $("conn").textContent = "desconectado — reintentando";
-    setTimeout(conectar, 2000);
-  };
-  ws.onmessage = ev => pintar(JSON.parse(ev.data));
+  ws.onopen = () => { $("conn").textContent = "conectado";
+                      $("dot").classList.add("on"); suscribir(); };
+  ws.onclose = () => { $("conn").textContent = "desconectado — reintentando";
+                       $("dot").classList.remove("on"); setTimeout(conectarWS, 2000); };
+  ws.onmessage = e => pintarNodos(JSON.parse(e.data));
 }
-
-function enviarConfig(){
-  if (ws?.readyState === 1)
+function suscribir(){
+  if (ws && ws.readyState === 1)
     ws.send(JSON.stringify({usuario: $("usuario").value, nivel: $("nivel").value}));
 }
+$("usuario").onchange = suscribir;
+$("nivel").onchange   = suscribir;
 
-function pintar(d){
-  for (const [k, n] of [["n1", d.nodo1], ["n3", d.nodo3]]){
-    $(`${k}-nombre`).textContent = n.nombre ?? "—";
-    $(`${k}-estado`).textContent = n.estado ?? (n.error ?? "—");
-    $(`${k}-ts`).textContent = fmtTs(n.last_seen);
-    $(`${k}-zona`).textContent = n.zona ?? "—";
-    $(`${k}-comuna`).textContent = n.comuna ?? "—";
-    $(`${k}-lat`).textContent = n.latencia_ms != null ? n.latencia_ms + " ms" : "—";
-  }
-  lecturas++;
-  const lats = [d.nodo1.latencia_ms, d.nodo3.latencia_ms].filter(x => x != null);
-  if (lats.length) latAcum += lats.reduce((a,b)=>a+b,0) / lats.length;
-  if (d.divergente) divergencias++;
+/* ── escribir presencia ── */
+$("escribir").onclick = async () => {
+  const b = $("escribir"); b.disabled = true; b.textContent = "escribiendo…";
+  try{
+    await fetch(API + "/presencia", {
+      method: "POST", headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({usuario_id: $("usuario").value, estado: "online",
+                            zona: "centro", nivel: $("nivel").value})});
+  } catch(e){}
+  b.disabled = false; b.textContent = "Escribir presencia ahora";
+};
+
+/* ── pintar réplicas ── */
+function pintarNodos(d){
+  const ns = d.nodos || [d.nodo1, d.nodo3].filter(Boolean);
+  const ts = ns.map(n => n && n.last_seen).filter(Boolean);
+  const hayDif = new Set(ts).size > 1;
+
+  $("nodos").innerHTML = ns.map(n => {
+    if (!n) return "";
+    const dif  = hayDif && n.last_seen !== ts[0];
+    const slow = n.latencia_ms > 50;
+    return `<div class="nodo ${dif ? "dif" : ""}">
+      <h3><span>${n.nodo || "?"}</span>
+          <span class="lat ${slow ? "slow" : ""}">${
+            n.latencia_ms != null ? n.latencia_ms + " ms" : "—"}</span></h3>
+      <div class="campos">
+        <div class="campo"><span class="k">nombre</span>
+          <span class="v">${n.nombre ?? "—"}</span></div>
+        <div class="campo"><span class="k">estado</span>
+          <span class="v ${n.estado === "online" ? "hl" : ""}">${n.estado ?? (n.error ?? "—")}</span></div>
+        <div class="campo"><span class="k">last_seen</span>
+          <span class="v ${dif ? "dif" : ""}">${(n.last_seen ?? "—").replace("T", " ").slice(0, 23)}</span></div>
+        <div class="campo"><span class="k">zona</span>
+          <span class="v">${n.zona ?? "—"}</span></div>
+        <div class="campo"><span class="k">comuna</span>
+          <span class="v">${n.comuna ?? "—"}</span></div>
+      </div></div>`;
+  }).join("");
 
   const b = $("banner");
-  if (d.divergente){
-    b.className = "estado-banner div";
-    b.textContent = `⚠ DIVERGENCIA · los nodos difieren en ${d.delta_ms} ms · nivel ${d.nivel}`;
+  if (hayDif){
+    b.className = "banner dif";
+    b.innerHTML = `<b>Los nodos NO coinciden.</b> Con nivel <b>${d.nivel ?? ""}</b>
+      cada réplica responde lo que tiene. Esto es consistencia eventual (AP).`;
   } else {
-    b.className = "estado-banner ok";
-    b.textContent = `✓ CONSISTENTE · ambos nodos coinciden · nivel ${d.nivel}`;
+    b.className = "banner ok";
+    b.innerHTML = `<b>Los ${ns.length} nodos coinciden.</b> Nivel <b>${d.nivel ?? ""}</b>.`;
   }
-  $("m-lecturas").textContent = lecturas;
-  $("m-div").textContent = divergencias;
-  $("m-pct").textContent = (100*divergencias/lecturas).toFixed(1) + "%";
-  $("m-lat").textContent = (latAcum/lecturas).toFixed(1) + " ms";
 }
 
-async function escribir(){
-  await fetch(API + "/presencia", {
-    method: "POST", headers: {"Content-Type": "application/json"},
-    body: JSON.stringify({
-      usuario_id: $("usuario").value,
-      estado: Math.random() > .3 ? "online" : "offline",
-      zona: ["norte","centro","sur"][Math.floor(Math.random()*3)],
-      nivel: $("nivel").value})
-  });
+/* ── datos ── */
+async function cargarDatos(){
+  const t = $("tabla").value;
+  try{
+    const d = await (await fetch(`${API}/datos/${t}?limite=15`)).json();
+    if (d.error){ $("t-datos").innerHTML = `<tr><td class="err">${d.error}</td></tr>`; return; }
+    $("t-datos").innerHTML =
+      `<thead><tr>${d.columnas.map(c => `<th>${c}</th>`).join("")}</tr></thead>
+       <tbody>${d.filas.map(f => `<tr>${f.map((v, i) =>
+         `<td class="${i === 0 ? "pk" : ""}">${v ?? "—"}</td>`).join("")}</tr>`).join("")}</tbody>`;
+  } catch(e){ $("t-datos").innerHTML = `<tr><td class="err">API no disponible</td></tr>`; }
+}
+$("tabla").onchange = cargarDatos;
+$("recargar").onclick = cargarDatos;
+
+/* ── esquema ── */
+async function cargarEsquema(){
+  try{
+    const ts = await (await fetch(API + "/tablas")).json();
+    $("esquema").innerHTML = ts.map(t => `
+      <div class="tabla-card">
+        <h3><span>${t.tabla}</span><span class="n">${t.filas.toLocaleString("es")} filas</span></h3>
+        <div class="cols">${t.columnas.map(c => `
+          <div class="col-row">
+            <span>${c.nombre}${
+              c.clave === "partition_key" ? '<span class="badge pk">PK</span>' :
+              c.clave === "clustering"    ? '<span class="badge ck">orden</span>' : ""}</span>
+            <span class="t">${c.tipo}</span>
+          </div>`).join("")}</div>
+      </div>`).join("");
+  } catch(e){ $("esquema").innerHTML = `<div class="err">API no disponible</div>`; }
 }
 
-$("escribir").onclick = escribir;
-$("martillo").onclick = async () => {
-  for (let i = 0; i < 100; i++){ escribir(); await new Promise(r => setTimeout(r, 12)); }
-};
-$("reset").onclick = () => {
-  lecturas = divergencias = latAcum = 0;
-  ["m-lecturas","m-div"].forEach(i => $(i).textContent = "0");
-  $("m-pct").textContent = "0%"; $("m-lat").textContent = "—";
-};
-$("nivel").onchange = enviarConfig;
-$("usuario").onchange = enviarConfig;
-conectar();
+/* ── reparto ── */
+async function cargarReparto(){
+  try{
+    const d = await (await fetch(API + "/anillo")).json();
+    const max = Math.max(...Object.values(d.zonas), 1);
+    $("zonas").innerHTML = Object.entries(d.zonas).map(([z, n]) => `
+      <div class="zona-row">
+        <div class="zona-hd"><span>zona <b>${z}</b></span>
+          <span class="n">${n.toLocaleString("es")} suscriptores</span></div>
+        <div class="barra"><div style="width:${100 * n / max}%"></div></div>
+      </div>`).join("");
+    $("t-nodos").innerHTML =
+      `<thead><tr><th>nodo</th><th>estado</th><th>puerto</th></tr></thead><tbody>${
+        d.nodos.map((n, i) => `<tr><td class="pk">${n.nodo}</td>
+          <td>${n.activo ? "UP" : "DOWN"}</td><td>904${2 + i}</td></tr>`).join("")}</tbody>`;
+  } catch(e){ $("zonas").innerHTML = `<div class="err">API no disponible</div>`; }
+}
 </script>
 </body>
 </html>
