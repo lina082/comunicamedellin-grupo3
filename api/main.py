@@ -7,7 +7,7 @@ de consistencia en vivo.
 
 Sec. 1.2 (CAP) | Sec. 1.3 (Cassandra AP) | Sec. 3.3 (distribuida)
 """
-import asyncio, json, time, datetime as dt
+import asyncio, json, time, uuid, datetime as dt
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
@@ -213,6 +213,125 @@ def replicas(usuario: str):
     for nodo in NODOS:
         out.append(leer(nodo, usuario, "ONE"))
     return out
+
+
+
+# ─────────────────────────────────────────────────────────────
+# Simulador de fan-out: la vista del funcionario de la Alcaldia
+# ─────────────────────────────────────────────────────────────
+
+@app.websocket("/ws-fanout")
+async def ws_fanout(sock: WebSocket):
+    """Transmite el recorrido REAL de una alerta, paso a paso.
+
+    El frontend dibuja el flujo (API -> Kafka -> workers -> Cassandra
+    -> dispositivos) y necesita saber cuando ocurre cada etapa para
+    animarla. Aqui no simulamos: publicamos en Kafka de verdad y
+    escribimos en Cassandra de verdad, emitiendo un evento por cada
+    hito para que la animacion siga al sistema y no al reves.
+    """
+    await sock.accept()
+    try:
+        while True:
+            cfg = json.loads(await sock.receive_text())
+            titulo = (cfg.get("titulo") or "Alerta sin titulo")[:200]
+            cuerpo = (cfg.get("cuerpo") or "")[:500]
+            severidad = cfg.get("severidad", "critica")
+            destinos = int(cfg.get("destinos", 12))
+            alerta_id = uuid.uuid4()
+            t_ini = time.perf_counter()
+
+            def ms():
+                return round((time.perf_counter() - t_ini) * 1000, 1)
+
+            await sock.send_json({"evento": "inicio", "ms": ms(),
+                                  "alerta_id": str(alerta_id),
+                                  "titulo": titulo, "severidad": severidad})
+
+            # ── 1. Publicar en Kafka: una particion por zona ──
+            zonas = ["norte", "centro", "sur"]
+            try:
+                from kafka import KafkaProducer
+                prod = KafkaProducer(
+                    bootstrap_servers="localhost:29092",
+                    value_serializer=lambda v: json.dumps(v).encode(),
+                    key_serializer=lambda k: k.encode(), acks=1)
+                for i, z in enumerate(zonas):
+                    md = prod.send(
+                        "alertas-ciudadanas", key=z, partition=i,
+                        value={"alerta_id": str(alerta_id), "titulo": titulo,
+                               "cuerpo": cuerpo, "severidad": severidad,
+                               "zona_destino": z}).get(timeout=8)
+                    await sock.send_json({
+                        "evento": "kafka", "ms": ms(), "zona": z,
+                        "particion": md.partition, "offset": md.offset})
+                    await asyncio.sleep(0.18)
+                prod.flush(); prod.close()
+            except Exception as e:
+                await sock.send_json({"evento": "kafka_error", "ms": ms(),
+                                      "detalle": type(e).__name__})
+
+            # ── 2. Repartir los destinatarios entre las 3 zonas ──
+            if "cass1" not in conexiones:
+                await sock.send_json({"evento": "fin", "ms": ms(),
+                                      "error": "sin conexion a Cassandra"})
+                continue
+            _, ses = conexiones["cass1"]
+            suscriptores = []
+            for z in zonas:
+                filas = ses.execute(
+                    "SELECT usuario_id, nombre, comuna, zona FROM presencia "
+                    "WHERE zona=%s LIMIT %s ALLOW FILTERING",
+                    (z, max(1, destinos // 3)))
+                suscriptores += [
+                    {"usuario_id": f.usuario_id, "nombre": f.nombre,
+                     "comuna": f.comuna, "zona": f.zona}
+                    for f in filas if f.nombre]
+
+            await sock.send_json({"evento": "workers", "ms": ms(),
+                                  "total": len(suscriptores)})
+
+            # ── 3. Escribir el historial de cada uno (QUORUM) ──
+            # QUORUM porque una alerta de emergencia no se puede perder.
+            prep = ses.prepare(
+                "INSERT INTO historial_usuario (usuario_id, enviado_en, "
+                "alerta_id, titulo, cuerpo, severidad, zona) "
+                "VALUES (?,?,?,?,?,?,?)")
+            prep.consistency_level = ConsistencyLevel.QUORUM
+
+            for u in suscriptores:
+                t0 = time.perf_counter()
+                try:
+                    ses.execute(prep, (
+                        u["usuario_id"], dt.datetime.now(dt.timezone.utc),
+                        alerta_id, titulo, cuerpo, severidad, u["zona"]))
+                    lat = round((time.perf_counter() - t0) * 1000, 1)
+                    await sock.send_json({
+                        "evento": "entrega", "ms": ms(), "latencia_ms": lat,
+                        "usuario_id": u["usuario_id"], "nombre": u["nombre"],
+                        "comuna": u["comuna"], "zona": u["zona"]})
+                except Exception as e:
+                    await sock.send_json({
+                        "evento": "entrega_error", "ms": ms(),
+                        "usuario_id": u["usuario_id"],
+                        "detalle": type(e).__name__})
+                await asyncio.sleep(0.09)
+
+            # ── 4. Registrar la alerta en el catalogo ──
+            try:
+                ses.execute(
+                    "INSERT INTO alertas (alerta_id, titulo, cuerpo, severidad, "
+                    "zona_destino, publicada_en, total_envios) "
+                    "VALUES (%s,%s,%s,%s,%s,%s,%s)",
+                    (alerta_id, titulo, cuerpo, severidad, "todas",
+                     dt.datetime.now(dt.timezone.utc), len(suscriptores)))
+            except Exception:
+                pass
+
+            await sock.send_json({"evento": "fin", "ms": ms(),
+                                  "total": len(suscriptores)})
+    except WebSocketDisconnect:
+        pass
 
 
 @app.get("/salud")

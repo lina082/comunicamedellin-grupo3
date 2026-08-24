@@ -114,7 +114,63 @@ td.pk{color:var(--ok)}
 .barra div{height:100%;background:var(--ok);border-radius:5px;transition:width .4s}
 .err{color:var(--warn);font-size:13.5px;padding:12px 0}
 .hint{color:var(--fg3);font-size:12.5px;margin-top:12px;font-family:var(--mono)}
-@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+
+/* ═══ simulador de fan-out ═══ */
+.compositor{background:var(--bg2);border:1px solid var(--line);border-radius:10px;
+  padding:18px 20px;margin-bottom:18px}
+.compositor label{display:block;font-size:12.5px;color:var(--fg3);margin-bottom:6px}
+.compositor input[type=text],.compositor textarea{width:100%;font:inherit;font-size:14.5px;
+  background:var(--bg3);color:var(--fg);border:1px solid var(--line);
+  border-radius:6px;padding:10px 12px;margin-bottom:14px;resize:vertical}
+.compositor textarea{min-height:64px;line-height:1.5}
+.compositor input:focus,.compositor textarea:focus{outline:2px solid var(--sky);
+  outline-offset:1px;border-color:var(--sky)}
+.fila-ctrl{display:flex;gap:14px;align-items:flex-end;flex-wrap:wrap}
+.sev{display:flex;gap:6px}
+.sev button{font-size:12.5px;padding:7px 13px;border-radius:20px}
+.sev button.act{background:var(--warn-d);border-color:var(--warn);color:var(--warn);font-weight:600}
+#enviar{font-size:15px;padding:11px 26px;font-weight:600}
+#enviar:disabled{opacity:.5;cursor:not-allowed}
+
+.escenario{background:var(--bg2);border:1px solid var(--line);border-radius:10px;
+  padding:22px 20px;margin-bottom:18px;overflow-x:auto}
+.escenario svg{display:block;min-width:660px;width:100%;height:auto}
+.et{font-family:var(--mono);font-size:11px;fill:var(--fg3)}
+.et-b{font-family:var(--mono);font-size:12px;fill:var(--fg2)}
+.caja{fill:var(--bg3);stroke:var(--line);stroke-width:1}
+.caja.on{fill:var(--ok-d);stroke:var(--ok);stroke-width:2}
+.caja.warn{fill:var(--warn-d);stroke:var(--warn);stroke-width:2}
+.link{stroke:var(--line);stroke-width:1.5;fill:none;stroke-dasharray:5 5}
+.link.on{stroke:var(--ok);animation:fluir .6s linear infinite}
+@keyframes fluir{to{stroke-dashoffset:-20}}
+
+.disp-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(112px,1fr));
+  gap:10px;margin-top:8px}
+.disp{background:var(--bg3);border:1px solid var(--line);border-radius:9px;
+  padding:11px 10px;text-align:center;transition:all .25s;opacity:.42}
+.disp.rx{opacity:1;border-color:var(--ok);background:var(--ok-d);
+  transform:translateY(-2px)}
+.disp .ico{font-size:20px;line-height:1;margin-bottom:6px}
+.disp .nom{font-size:11px;color:var(--fg2);line-height:1.3;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.disp .com{font-size:10px;color:var(--fg3);font-family:var(--mono);margin-top:3px}
+.disp .lat{font-size:10px;color:var(--ok);font-family:var(--mono);margin-top:4px;min-height:13px}
+
+.consola{background:#04070C;border:1px solid var(--line);border-radius:8px;
+  padding:12px 14px;font-family:var(--mono);font-size:11.5px;line-height:1.75;
+  max-height:190px;overflow-y:auto;color:var(--fg2)}
+.consola .t{color:var(--fg3)}
+.consola .k{color:var(--warn)}
+.consola .c{color:var(--sky)}
+.consola .d{color:var(--ok)}
+
+.metricas{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));
+  gap:10px;margin:14px 0}
+.metrica{background:var(--bg2);border:1px solid var(--line);border-radius:8px;padding:13px 15px}
+.metrica .n{font-size:22px;font-weight:700;font-family:var(--mono);letter-spacing:-.02em}
+.metrica .k{font-size:11px;color:var(--fg3);margin-top:4px}
+
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 </style>
 </head>
 <body>
@@ -127,14 +183,109 @@ td.pk{color:var(--ok)}
 </header>
 
 <div class="tabs" role="tablist">
-  <button class="tab act" data-v="v-repl" role="tab">Réplicas en vivo</button>
+  <button class="tab act" data-v="v-envio" role="tab">Enviar alerta</button>
+  <button class="tab" data-v="v-repl" role="tab">Réplicas en vivo</button>
   <button class="tab" data-v="v-datos" role="tab">Datos guardados</button>
   <button class="tab" data-v="v-esquema" role="tab">Esquema</button>
   <button class="tab" data-v="v-reparto" role="tab">Reparto</button>
 </div>
 
+<!-- ═══ ENVIAR ALERTA ═══ -->
+<section class="vista act" id="v-envio">
+  <div class="expl">
+    <b>Eres el funcionario de la Alcaldía.</b> Escribe la alerta y dale enviar.
+    Vas a ver el recorrido real: la API la publica en <b>Kafka</b> (una partición
+    por zona), tres <b>workers</b> la recogen en paralelo, se guarda en
+    <b>Cassandra</b> con nivel <code>QUORUM</code> y llega a los dispositivos.
+    <b>Nada de esto es simulado</b> — se escribe de verdad en la base de datos.
+  </div>
+
+  <div class="compositor">
+    <label for="a-titulo">Título de la alerta</label>
+    <input type="text" id="a-titulo" value="Cierre vial - Avenida Regional"
+           maxlength="120">
+    <label for="a-cuerpo">Mensaje</label>
+    <textarea id="a-cuerpo" maxlength="300">Cierre total por emergencia entre la Calle 30 y la Calle 44. Use rutas alternas.</textarea>
+    <div class="fila-ctrl">
+      <div>
+        <label>Severidad</label>
+        <div class="sev" id="sev">
+          <button data-s="critica" class="act">crítica</button>
+          <button data-s="advertencia">advertencia</button>
+          <button data-s="info">info</button>
+        </div>
+      </div>
+      <div>
+        <label for="a-dest">Dispositivos</label>
+        <select id="a-dest">
+          <option value="12">12</option>
+          <option value="18">18</option>
+          <option value="24">24</option>
+        </select>
+      </div>
+      <button class="p" id="enviar">Publicar alerta</button>
+    </div>
+  </div>
+
+  <div class="escenario">
+    <svg viewBox="0 0 700 168" role="img"
+         aria-label="Flujo de la alerta desde la Alcaldia hasta los dispositivos">
+      <!-- lineas -->
+      <path id="L1" class="link" d="M96,84 L150,84"/>
+      <path id="L2" class="link" d="M258,50 L318,50"/>
+      <path id="L3" class="link" d="M258,84 L318,84"/>
+      <path id="L4" class="link" d="M258,118 L318,118"/>
+      <path id="L5" class="link" d="M424,50 L482,78"/>
+      <path id="L6" class="link" d="M424,84 L482,84"/>
+      <path id="L7" class="link" d="M424,118 L482,90"/>
+      <path id="L8" class="link" d="M590,84 L646,84"/>
+
+      <rect id="B-api" class="caja" x="14" y="62" width="82" height="44" rx="8"/>
+      <text x="55" y="80" text-anchor="middle" class="et-b">Alcaldía</text>
+      <text x="55" y="95" text-anchor="middle" class="et">API</text>
+
+      <rect id="B-k0" class="caja" x="150" y="34" width="108" height="32" rx="6"/>
+      <text x="204" y="54" text-anchor="middle" class="et">Kafka p0 · norte</text>
+      <rect id="B-k1" class="caja" x="150" y="68" width="108" height="32" rx="6"/>
+      <text x="204" y="88" text-anchor="middle" class="et">Kafka p1 · centro</text>
+      <rect id="B-k2" class="caja" x="150" y="102" width="108" height="32" rx="6"/>
+      <text x="204" y="122" text-anchor="middle" class="et">Kafka p2 · sur</text>
+
+      <rect id="B-w0" class="caja" x="318" y="34" width="106" height="32" rx="6"/>
+      <text x="371" y="54" text-anchor="middle" class="et">worker 1</text>
+      <rect id="B-w1" class="caja" x="318" y="68" width="106" height="32" rx="6"/>
+      <text x="371" y="88" text-anchor="middle" class="et">worker 2</text>
+      <rect id="B-w2" class="caja" x="318" y="102" width="106" height="32" rx="6"/>
+      <text x="371" y="122" text-anchor="middle" class="et">worker 3</text>
+
+      <rect id="B-cass" class="caja" x="482" y="56" width="108" height="56" rx="8"/>
+      <text x="536" y="78" text-anchor="middle" class="et-b">Cassandra</text>
+      <text x="536" y="93" text-anchor="middle" class="et">QUORUM</text>
+      <text x="536" y="106" text-anchor="middle" class="et">3 nodos</text>
+
+      <rect id="B-disp" class="caja" x="646" y="62" width="46" height="44" rx="8"/>
+      <text x="669" y="90" text-anchor="middle" class="et-b">📱</text>
+    </svg>
+  </div>
+
+  <div class="metricas">
+    <div class="metrica"><div class="n" id="m-entregas">0</div><div class="k">entregadas</div></div>
+    <div class="metrica"><div class="n" id="m-tiempo">—</div><div class="k">tiempo total</div></div>
+    <div class="metrica"><div class="n" id="m-p50">—</div><div class="k">latencia media</div></div>
+    <div class="metrica"><div class="n" id="m-tasa">—</div><div class="k">entregas/s</div></div>
+  </div>
+
+  <div class="disp-grid" id="dispositivos"></div>
+
+  <div style="margin-top:16px">
+    <label style="font-size:12.5px;color:var(--fg3);display:block;margin-bottom:6px">
+      Log del recorrido</label>
+    <div class="consola" id="consola">Escribe una alerta y pulsa <b>Publicar alerta</b>.</div>
+  </div>
+</section>
+
 <!-- ═══ RÉPLICAS ═══ -->
-<section class="vista act" id="v-repl">
+<section class="vista" id="v-repl">
   <div class="expl">
     <b>Qué estás viendo:</b> el mismo usuario leído desde los <b>tres nodos a la vez</b>.
     Con <code>RF=3</code> el dato vive en los tres, pero pueden no estar sincronizados.
@@ -297,6 +448,130 @@ function pintarNodos(d){
   } else {
     b.className = "banner ok";
     b.innerHTML = `<b>Los ${ns.length} nodos coinciden.</b> Nivel <b>${d.nivel ?? ""}</b>.`;
+  }
+}
+
+
+/* ═══════════ SIMULADOR DE FAN-OUT ═══════════ */
+let wsF = null, severidad = "critica", lats = [], entregados = 0;
+
+document.querySelectorAll("#sev button").forEach(b => b.onclick = () => {
+  document.querySelectorAll("#sev button").forEach(x => x.classList.remove("act"));
+  b.classList.add("act"); severidad = b.dataset.s;
+});
+
+function log(html){
+  const c = $("consola");
+  c.innerHTML += (c.innerHTML.includes("Publicar alerta") ? "" : "<br>") + html;
+  c.scrollTop = c.scrollHeight;
+}
+function limpiarEscenario(){
+  ["L1","L2","L3","L4","L5","L6","L7","L8"].forEach(i =>
+    $(i)?.classList.remove("on"));
+  ["B-api","B-k0","B-k1","B-k2","B-w0","B-w1","B-w2","B-cass","B-disp"]
+    .forEach(i => $(i)?.classList.remove("on","warn"));
+}
+function encender(caja, links = []){
+  $(caja)?.classList.add("on");
+  links.forEach(l => $(l)?.classList.add("on"));
+}
+
+/* dibuja las tarjetas de dispositivo, apagadas */
+function prepararDispositivos(n){
+  const ICONOS = ["📱","📲","☎️"];
+  $("dispositivos").innerHTML = Array.from({length: n}, (_, i) => `
+    <div class="disp" id="d${i}">
+      <div class="ico">${ICONOS[i % ICONOS.length]}</div>
+      <div class="nom">esperando…</div>
+      <div class="com">—</div>
+      <div class="lat"></div>
+    </div>`).join("");
+}
+
+$("enviar").onclick = () => {
+  const titulo = $("a-titulo").value.trim();
+  if (!titulo){ $("a-titulo").focus(); return; }
+  const destinos = parseInt($("a-dest").value, 10);
+
+  $("enviar").disabled = true;
+  $("consola").innerHTML = "";
+  limpiarEscenario();
+  prepararDispositivos(destinos);
+  lats = []; entregados = 0;
+  $("m-entregas").textContent = "0";
+  ["m-tiempo","m-p50","m-tasa"].forEach(i => $(i).textContent = "—");
+
+  wsF = new WebSocket("ws://localhost:8765/ws-fanout");
+  wsF.onopen = () => wsF.send(JSON.stringify({
+    titulo, cuerpo: $("a-cuerpo").value.trim(),
+    severidad, destinos}));
+  wsF.onerror = () => { log('<span class="k">error de conexión con la API</span>');
+                        $("enviar").disabled = false; };
+  wsF.onmessage = e => manejar(JSON.parse(e.data));
+};
+
+function manejar(d){
+  const t = `<span class="t">[${String(d.ms).padStart(7)} ms]</span>`;
+  switch(d.evento){
+    case "inicio":
+      encender("B-api", ["L1"]);
+      log(`${t} <b>${d.titulo}</b> · severidad ${d.severidad}`);
+      log(`${t} alerta_id ${d.alerta_id.slice(0,8)}…`);
+      break;
+
+    case "kafka": {
+      const i = d.particion;
+      encender(`B-k${i}`, [`L${i+2}`]);
+      log(`${t} <span class="k">KAFKA</span> zona ${d.zona} → partición ${d.particion}, offset ${d.offset}`);
+      break;
+    }
+    case "kafka_error":
+      $("B-k0")?.classList.add("warn");
+      log(`${t} <span class="k">KAFKA no disponible</span> (${d.detalle}) — sigue el flujo a Cassandra`);
+      break;
+
+    case "workers":
+      ["B-w0","B-w1","B-w2"].forEach((w,i) => encender(w, [`L${i+5}`]));
+      encender("B-cass", ["L8"]);
+      log(`${t} <span class="c">3 workers</span> en paralelo · ${d.total} destinatarios`);
+      break;
+
+    case "entrega": {
+      const el = $(`d${entregados}`);
+      if (el){
+        el.classList.add("rx");
+        el.querySelector(".nom").textContent = (d.nombre || "").split(" ").slice(0,2).join(" ");
+        el.querySelector(".com").textContent = d.comuna || d.zona;
+        el.querySelector(".lat").textContent = d.latencia_ms + " ms";
+      }
+      encender("B-disp");
+      lats.push(d.latencia_ms);
+      entregados++;
+      $("m-entregas").textContent = entregados;
+      log(`${t} <span class="d">ENTREGADO</span> ${d.nombre} · ${d.comuna} · ${d.latencia_ms} ms`);
+      break;
+    }
+    case "entrega_error":
+      log(`${t} <span class="k">falló</span> ${d.usuario_id} (${d.detalle})`);
+      break;
+
+    case "fin": {
+      const seg = d.ms / 1000;
+      $("m-tiempo").textContent = seg.toFixed(2) + " s";
+      if (lats.length){
+        const media = lats.reduce((a,b) => a+b, 0) / lats.length;
+        $("m-p50").textContent = media.toFixed(1) + " ms";
+        $("m-tasa").textContent = Math.round(lats.length / seg);
+      }
+      log(`${t} <b>listo</b> · ${d.total ?? entregados} entregas`);
+      if (d.total)
+        log(`<span class="t">Extrapolado a 100.000 suscriptores: ~${
+          (100000 / (d.total / seg)).toFixed(0)} s con esta misma tasa</span>`);
+      $("enviar").disabled = false;
+      wsF?.close();
+      setTimeout(limpiarEscenario, 1400);
+      break;
+    }
   }
 }
 
