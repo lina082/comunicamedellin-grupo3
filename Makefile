@@ -6,7 +6,7 @@ CH    := docker exec -i clickhouse clickhouse-client --user demo --password demo
 
 .PHONY: help up down clean status schema seed demo-consistencia demo-fanout \
         demo-nodo-caido ch-demo ch-seed up-zk down-zk zk-shell kafka-topics \
-        latencia-on latencia-off grabar-demo \
+        latencia-on latencia-off grabar-demo docs \
         kafka-consumer kafka-replay api frontend pdf slides logs
 
 help: ## Muestra esta ayuda
@@ -117,12 +117,18 @@ frontend: ## Sirve el frontend en http://localhost:4173
 	cd frontend && python3 -m http.server 4173
 
 # ── Documentacion LaTeX ──────────────────────────────────────
-pdf: ## Compila el documento principal
-	cd docs && pdflatex -interaction=nonstopmode arquitectura.tex >/dev/null && \
-		pdflatex -interaction=nonstopmode arquitectura.tex >/dev/null
+pdf: ## Compila el documento principal (docs/arquitectura.pdf)
+	@cd docs && pdflatex -interaction=nonstopmode -halt-on-error arquitectura.tex >/dev/null \
+		&& pdflatex -interaction=nonstopmode arquitectura.tex >/dev/null \
+		|| { echo "Fallo la compilacion. Detalle:"; \
+		     cd docs && pdflatex -interaction=nonstopmode arquitectura.tex 2>&1 | grep -A4 "^! " | head -8; exit 1; }
 	@echo "docs/arquitectura.pdf"
 
-slides: ## Compila las diapositivas
-	cd docs && pdflatex -interaction=nonstopmode presentacion.tex >/dev/null && \
-		pdflatex -interaction=nonstopmode presentacion.tex >/dev/null
+slides: ## Compila las diapositivas (docs/presentacion.pdf)
+	@cd docs && pdflatex -interaction=nonstopmode -halt-on-error presentacion.tex >/dev/null \
+		&& pdflatex -interaction=nonstopmode presentacion.tex >/dev/null \
+		|| { echo "Fallo la compilacion. Detalle:"; \
+		     cd docs && pdflatex -interaction=nonstopmode presentacion.tex 2>&1 | grep -A4 "^! " | head -8; exit 1; }
 	@echo "docs/presentacion.pdf"
+
+docs: pdf slides ## Compila documento y diapositivas

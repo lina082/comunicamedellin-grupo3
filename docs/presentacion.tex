@@ -6,7 +6,8 @@
 \usetikzlibrary{shapes.geometric,arrows.meta,positioning,calc}
 
 \usetheme{default}
-\usecolortheme{seabird}
+% Sin usecolortheme: 'seabird' no viene en la instalacion estandar de
+% TeX Live y los colores institucionales se definen abajo a mano.
 \definecolor{itmazul}{RGB}{22,48,110}
 \definecolor{acento}{RGB}{0,120,160}
 \definecolor{verde}{RGB}{34,120,60}
@@ -14,6 +15,11 @@
 \setbeamercolor{structure}{fg=itmazul}
 \setbeamercolor{frametitle}{fg=white,bg=itmazul}
 \setbeamertemplate{navigation symbols}{}
+\setbeamercolor{title}{fg=itmazul}
+\setbeamercolor{itemize item}{fg=acento}
+\setbeamercolor{itemize subitem}{fg=acento}
+\setbeamercolor{block title}{fg=white,bg=itmazul}
+\setbeamercolor{block body}{bg=itmazul!6}
 \setbeamertemplate{footline}[frame number]
 \setbeamerfont{frametitle}{size=\large}
 
