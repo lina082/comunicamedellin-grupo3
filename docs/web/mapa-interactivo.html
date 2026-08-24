@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Mapa del Sistema</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&family=JetBrains+Mono:wght@400;500;700&display=swap">
+
+<style>
+:root{
+  --itm:#0F2B6B; --itm-2:#1B4BA8; --cian:#00A0E3;
+  --bg:#F4F7FB; --card:#FFFFFF; --soft:#E8EFF7;
+  --ink:#101B33; --ink-2:#3F5680; --ink-3:#7789A6;
+  --line:#D3DFEC;
+  --ok:#0F7B5F; --ok-s:#DCF2EA;
+  --warn:#C4611A; --warn-s:#FBEADC;
+  --mono:"JetBrains Mono",ui-monospace,monospace;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#071230; --card:#0D1E44; --soft:#132A5C;
+    --ink:#E6EEF9; --ink-2:#A9BEDC; --ink-3:#6E88B0;
+    --line:#1D3565;
+    --itm:#4FC3F7; --itm-2:#6BC5F8; --cian:#4FC3F7;
+    --ok:#4FD1A5; --ok-s:#0A3A2E;
+    --warn:#F0954B; --warn-s:#3D2413;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#071230; --card:#0D1E44; --soft:#132A5C;
+  --ink:#E6EEF9; --ink-2:#A9BEDC; --ink-3:#6E88B0;
+  --line:#1D3565;
+  --itm:#4FC3F7; --itm-2:#6BC5F8; --cian:#4FC3F7;
+  --ok:#4FD1A5; --ok-s:#0A3A2E;
+  --warn:#F0954B; --warn-s:#3D2413;
+}
+
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);
+  font-family:"Source Serif 4",Georgia,serif;font-size:16px;line-height:1.6;
+  -webkit-font-smoothing:antialiased}
+.w{max-width:1180px;margin:0 auto;padding:0 24px}
+h1,h2,h3,h4,.ui{font-family:Archivo,"Helvetica Neue",Arial,sans-serif}
+p{margin:0 0 14px}
+code{font-family:var(--mono);font-size:.85em;background:var(--soft);
+  padding:.12em .4em;border-radius:3px;color:var(--itm-2)}
+
+/* cabecera */
+header{background:var(--itm);color:#EAF2FB;padding:34px 0 30px;
+  border-bottom:3px solid var(--cian)}
+header .et{font-family:Archivo,sans-serif;font-size:11px;letter-spacing:.16em;
+  text-transform:uppercase;color:#8FB4DC;margin-bottom:12px}
+header h1{margin:0;font-size:clamp(26px,4.2vw,38px);letter-spacing:-.028em;
+  font-weight:700;color:#fff;text-wrap:balance}
+header p{margin:12px 0 0;color:#A9C6E4;max-width:62ch;font-size:16.5px}
+
+/* controles del flujo */
+.barra{display:flex;gap:12px;align-items:center;flex-wrap:wrap;
+  padding:16px 0;border-bottom:1px solid var(--line);margin-bottom:22px}
+button{font:inherit;font-family:Archivo,sans-serif;cursor:pointer;
+  background:var(--card);color:var(--ink);border:1px solid var(--line);
+  border-radius:7px;padding:9px 15px;font-size:14px}
+button:hover{border-color:var(--ink-3)}
+button:focus-visible{outline:2px solid var(--cian);outline-offset:2px}
+button.p{background:var(--itm);border-color:var(--itm);color:#fff;font-weight:600}
+button.p:hover{background:var(--itm-2);border-color:var(--itm-2)}
+button:disabled{opacity:.5;cursor:not-allowed}
+.paso-txt{font-family:var(--mono);font-size:13px;color:var(--ink-3);flex:1;min-width:200px}
+
+/* layout mapa + panel */
+.tablero{display:grid;grid-template-columns:1fr 372px;gap:20px;align-items:start;
+  padding-bottom:40px}
+@media (max-width:940px){.tablero{grid-template-columns:1fr}}
+
+.mapa{background:var(--card);border:1px solid var(--line);border-radius:12px;
+  padding:20px 16px;overflow-x:auto;position:sticky;top:16px}
+@media (max-width:940px){.mapa{position:static}}
+.mapa svg{display:block;min-width:640px;width:100%;height:auto}
+
+/* nodos del svg */
+.nodo{cursor:pointer}
+.nodo rect{fill:var(--soft);stroke:var(--line);stroke-width:1.5;
+  transition:fill .18s,stroke .18s,stroke-width .18s}
+.nodo:hover rect{stroke:var(--cian);stroke-width:2}
+.nodo.sel rect{fill:#DCEEFB;stroke:var(--itm-2);stroke-width:2.5}
+.nodo.act rect{fill:var(--ok-s);stroke:var(--ok);stroke-width:2.5}
+.nodo.rel rect{stroke:var(--cian);stroke-width:2;stroke-dasharray:4 3}
+.nodo text{pointer-events:none}
+.nodo:focus-visible rect{outline:none;stroke:var(--cian);stroke-width:3}
+.n-t{font-family:Archivo,sans-serif;font-size:12.5px;font-weight:600;fill:var(--ink)}
+.n-s{font-family:var(--mono);font-size:9.5px;fill:var(--ink-3)}
+.arista{stroke:var(--line);stroke-width:1.6;fill:none;transition:stroke .2s}
+.arista.on{stroke:var(--cian);stroke-width:2.2;stroke-dasharray:6 4;
+  animation:fluye .55s linear infinite}
+.arista.rel{stroke:var(--itm-2);stroke-width:2}
+@keyframes fluye{to{stroke-dashoffset:-20}}
+.a-lbl{font-family:var(--mono);font-size:9px;fill:var(--ink-3)}
+
+/* panel lateral */
+.panel{background:var(--card);border:1px solid var(--line);border-radius:12px;
+  overflow:hidden;position:sticky;top:16px}
+@media (max-width:940px){.panel{position:static}}
+.p-hd{padding:18px 20px 15px;border-bottom:1px solid var(--line);
+  background:var(--soft)}
+.p-tag{display:inline-block;font-family:var(--mono);font-size:10px;font-weight:700;
+  letter-spacing:.09em;padding:3px 9px;border-radius:11px;
+  background:var(--itm);color:#fff;margin-bottom:9px}
+.p-tag.k{background:var(--warn)}
+.p-tag.c{background:var(--ok)}
+.p-hd h3{margin:0;font-size:19px;letter-spacing:-.015em}
+.p-hd .sub{font-family:var(--mono);font-size:11.5px;color:var(--ink-3);margin-top:5px}
+.p-body{padding:4px 20px 20px}
+.bloque{padding:15px 0;border-bottom:1px solid var(--line)}
+.bloque:last-child{border-bottom:0}
+.bloque h4{margin:0 0 7px;font-size:11px;letter-spacing:.12em;text-transform:uppercase;
+  color:var(--itm-2);font-weight:600}
+.bloque p{margin:0 0 9px;font-size:15px;color:var(--ink-2);line-height:1.55}
+.bloque p:last-child{margin:0}
+.bloque p strong{color:var(--ink);font-weight:600}
+.sec-chip{display:inline-block;font-family:var(--mono);font-size:11px;
+  background:var(--soft);color:var(--ink-2);padding:3px 9px;border-radius:4px;
+  margin:2px 4px 2px 0}
+.vacio{padding:44px 22px;text-align:center;color:var(--ink-3);font-size:15px}
+.vacio .ic{font-size:26px;margin-bottom:12px;opacity:.55}
+
+/* lista de conexiones */
+.conx{list-style:none;margin:0;padding:0}
+.conx li{font-size:14.5px;color:var(--ink-2);padding:7px 0;
+  border-bottom:1px dashed var(--line);display:flex;gap:9px;align-items:baseline}
+.conx li:last-child{border-bottom:0}
+.conx .fl{font-family:var(--mono);font-size:11px;color:var(--cian);flex-shrink:0}
+
+/* seccion inferior */
+section{padding:36px 0;border-top:1px solid var(--line)}
+section h2{font-size:clamp(21px,3vw,27px);letter-spacing:-.02em;margin:0 0 14px;
+  font-weight:600}
+.col{max-width:68ch}
+.tw{overflow-x:auto;border:1px solid var(--line);border-radius:8px;
+  background:var(--card);margin:18px 0}
+table{width:100%;border-collapse:collapse;font-size:14.5px}
+th{font-family:Archivo,sans-serif;font-size:10.5px;font-weight:600;letter-spacing:.11em;
+  text-transform:uppercase;color:var(--ink-3);text-align:left;padding:11px 15px;
+  border-bottom:1px solid var(--line);white-space:nowrap}
+td{padding:11px 15px;border-bottom:1px solid var(--line);vertical-align:top}
+tr:last-child td{border-bottom:0}
+td.mono{font-family:var(--mono);font-size:12.5px;white-space:nowrap}
+
+footer{background:var(--itm);color:#8FB4DC;padding:26px 0;
+  font-family:Archivo,sans-serif;font-size:13px}
+footer a{color:var(--cian);text-decoration:none;font-family:var(--mono);font-size:12.5px}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+
+<header>
+  <div class="w">
+    <div class="et">ComunicaMedellín · Grupo 3 · Módulo 1</div>
+    <h1>Mapa del sistema</h1>
+    <p>Haz clic en cualquier pieza para ver qué es, por qué la usamos y cómo se conecta con el resto. O pulsa <strong>Reproducir el flujo</strong> para seguir una alerta desde que la Alcaldía la publica hasta que llega al celular.</p>
+  </div>
+</header>
+
+<div class="w">
+
+  <div class="barra">
+    <button class="p" id="play">▶ Reproducir el flujo</button>
+    <button id="reset">Limpiar</button>
+    <span class="paso-txt" id="paso">Selecciona una pieza del mapa para empezar.</span>
+  </div>
+
+  <div class="tablero">
+    <div class="mapa">
+      <svg viewBox="0 0 660 400" role="img" aria-label="Mapa interactivo del sistema: la Alcaldía publica una alerta que pasa por la API, Kafka, los workers y Cassandra hasta llegar a los dispositivos; ClickHouse consume el mismo log para analítica">
+        <!-- aristas -->
+        <path id="e-alc-api"  class="arista" d="M104,52 L168,52"/>
+        <path id="e-api-kaf"  class="arista" d="M236,68 L236,104"/>
+        <path id="e-kaf-w0"   class="arista" d="M150,178 L110,208"/>
+        <path id="e-kaf-w1"   class="arista" d="M236,178 L236,208"/>
+        <path id="e-kaf-w2"   class="arista" d="M322,178 L362,208"/>
+        <path id="e-w0-cas"   class="arista" d="M110,252 L190,292"/>
+        <path id="e-w1-cas"   class="arista" d="M236,252 L236,292"/>
+        <path id="e-w2-cas"   class="arista" d="M362,252 L282,292"/>
+        <path id="e-cas-dis"  class="arista" d="M330,318 L436,318"/>
+        <path id="e-kaf-ch"   class="arista" d="M394,141 L470,141"/>
+        <path id="e-ch-front" class="arista" d="M556,168 L556,236"/>
+        <path id="e-cas-front" class="arista" d="M330,336 L470,336 L556,336 L556,300"/>
+
+        <text x="120" y="46" class="a-lbl">publica</text>
+        <text x="246" y="90" class="a-lbl">particiona</text>
+        <text x="418" y="134" class="a-lbl">Kafka Engine</text>
+        <text x="352" y="312" class="a-lbl">notifica</text>
+
+        <!-- Alcaldía -->
+        <g class="nodo" id="n-alcaldia" tabindex="0" role="button" aria-label="Alcaldía">
+          <rect x="16" y="32" width="88" height="40" rx="8"/>
+          <text x="60" y="52" text-anchor="middle" class="n-t">Alcaldía</text>
+          <text x="60" y="64" text-anchor="middle" class="n-s">funcionario</text>
+        </g>
+
+        <!-- API -->
+        <g class="nodo" id="n-api" tabindex="0" role="button" aria-label="API FastAPI">
+          <rect x="168" y="28" width="136" height="44" rx="8"/>
+          <text x="236" y="48" text-anchor="middle" class="n-t">API · FastAPI</text>
+          <text x="236" y="61" text-anchor="middle" class="n-s">orquesta · WebSocket</text>
+        </g>
+
+        <!-- Kafka -->
+        <g class="nodo" id="n-kafka" tabindex="0" role="button" aria-label="Apache Kafka">
+          <rect x="78" y="104" width="316" height="74" rx="9"/>
+          <text x="236" y="124" text-anchor="middle" class="n-t">Apache Kafka</text>
+          <text x="236" y="137" text-anchor="middle" class="n-s">log inmutable · 3 particiones</text>
+          <rect x="94" y="146" width="92" height="22" rx="4" style="fill:var(--card)"/>
+          <text x="140" y="161" text-anchor="middle" class="n-s">p0 · norte</text>
+          <rect x="190" y="146" width="92" height="22" rx="4" style="fill:var(--card)"/>
+          <text x="236" y="161" text-anchor="middle" class="n-s">p1 · centro</text>
+          <rect x="286" y="146" width="92" height="22" rx="4" style="fill:var(--card)"/>
+          <text x="332" y="161" text-anchor="middle" class="n-s">p2 · sur</text>
+        </g>
+
+        <!-- Workers -->
+        <g class="nodo" id="n-workers" tabindex="0" role="button" aria-label="Workers">
+          <rect x="62" y="208" width="96" height="44" rx="7"/>
+          <text x="110" y="228" text-anchor="middle" class="n-t">worker 1</text>
+          <text x="110" y="241" text-anchor="middle" class="n-s">norte</text>
+          <rect x="188" y="208" width="96" height="44" rx="7"/>
+          <text x="236" y="228" text-anchor="middle" class="n-t">worker 2</text>
+          <text x="236" y="241" text-anchor="middle" class="n-s">centro</text>
+          <rect x="314" y="208" width="96" height="44" rx="7"/>
+          <text x="362" y="228" text-anchor="middle" class="n-t">worker 3</text>
+          <text x="362" y="241" text-anchor="middle" class="n-s">sur</text>
+        </g>
+
+        <!-- Cassandra -->
+        <g class="nodo" id="n-cassandra" tabindex="0" role="button" aria-label="Apache Cassandra">
+          <rect x="142" y="292" width="188" height="66" rx="9"/>
+          <text x="236" y="312" text-anchor="middle" class="n-t">Apache Cassandra</text>
+          <text x="236" y="325" text-anchor="middle" class="n-s">3 nodos · RF=3 · AP</text>
+          <circle cx="196" cy="343" r="9" style="fill:var(--card);stroke:var(--line)"/>
+          <text x="196" y="347" text-anchor="middle" class="n-s">1</text>
+          <circle cx="236" cy="343" r="9" style="fill:var(--card);stroke:var(--line)"/>
+          <text x="236" y="347" text-anchor="middle" class="n-s">2</text>
+          <circle cx="276" cy="343" r="9" style="fill:var(--card);stroke:var(--line)"/>
+          <text x="276" y="347" text-anchor="middle" class="n-s">3</text>
+        </g>
+
+        <!-- ClickHouse -->
+        <g class="nodo" id="n-clickhouse" tabindex="0" role="button" aria-label="ClickHouse">
+          <rect x="470" y="114" width="172" height="54" rx="8"/>
+          <text x="556" y="136" text-anchor="middle" class="n-t">ClickHouse</text>
+          <text x="556" y="150" text-anchor="middle" class="n-s">columnar · OLAP</text>
+        </g>
+
+        <!-- Frontend -->
+        <g class="nodo" id="n-frontend" tabindex="0" role="button" aria-label="Panel web">
+          <rect x="470" y="236" width="172" height="64" rx="8"/>
+          <text x="556" y="258" text-anchor="middle" class="n-t">Panel web</text>
+          <text x="556" y="272" text-anchor="middle" class="n-s">HTML + WebSocket</text>
+          <text x="556" y="288" text-anchor="middle" class="n-s">sin build</text>
+        </g>
+
+        <!-- Dispositivos -->
+        <g class="nodo" id="n-dispositivos" tabindex="0" role="button" aria-label="Dispositivos">
+          <rect x="436" y="304" width="30" height="30" rx="6"/>
+          <text x="451" y="325" text-anchor="middle" class="n-t">📱</text>
+        </g>
+      </svg>
+    </div>
+
+    <aside class="panel" id="panel">
+      <div class="vacio" id="vacio">
+        <div class="ic">👆</div>
+        Haz clic en cualquier caja del mapa para entender qué hace y por qué está ahí.
+      </div>
+      <div id="detalle" hidden>
+        <div class="p-hd">
+          <span class="p-tag" id="d-tag"></span>
+          <h3 id="d-nom"></h3>
+          <div class="sub" id="d-sub"></div>
+        </div>
+        <div class="p-body">
+          <div class="bloque"><h4>Qué es</h4><div id="d-que"></div></div>
+          <div class="bloque"><h4>Por qué lo usamos</h4><div id="d-por"></div></div>
+          <div class="bloque"><h4>Cómo se conecta</h4><ul class="conx" id="d-conx"></ul></div>
+          <div class="bloque" id="b-sec"><h4>Sección del módulo</h4><div id="d-sec"></div></div>
+        </div>
+      </div>
+    </aside>
+  </div>
+
+  <section>
+    <div class="col">
+      <h2>El recorrido completo, en orden</h2>
+      <p>Estos son los pasos que reproduce el botón de arriba. Cada uno ocurre de verdad cuando publicas una alerta desde el panel.</p>
+    </div>
+    <div class="tw">
+      <table>
+        <thead><tr><th class="mono">#</th><th>Qué pasa</th><th>Dónde</th></tr></thead>
+        <tbody id="tabla-pasos"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section>
+    <div class="col">
+      <h2>La pregunta que organiza todo</h2>
+      <p>Cassandra y el historial guardan lo mismo en el mismo motor, pero con <strong>garantías opuestas</strong>. Esa diferencia no es un detalle técnico: es la decisión central del diseño.</p>
+    </div>
+    <div class="tw">
+      <table>
+        <thead><tr><th>Dato</th><th class="mono">Nivel</th><th>Si falla</th><th>Por eso</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><strong>Presencia</strong><br><span style="color:var(--ink-3);font-size:13.5px">quién está en línea</span></td>
+            <td class="mono" style="color:var(--ok);font-weight:600">ONE</td>
+            <td>Un estado desactualizado que nadie nota</td>
+            <td>Barato: responde una sola réplica</td>
+          </tr>
+          <tr>
+            <td><strong>Historial</strong><br><span style="color:var(--ink-3);font-size:13.5px">la alerta recibida</span></td>
+            <td class="mono" style="color:var(--warn);font-weight:600">QUORUM</td>
+            <td>Un ciudadano no recibe un aviso de emergencia</td>
+            <td>Seguro: confirman 2 de 3 réplicas</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+</div>
+
+<footer>
+  <div class="w">
+    <div style="display:flex;flex-wrap:wrap;gap:12px 34px;align-items:baseline">
+      <span>Grupo 3 · Instituto Tecnológico Metropolitano · 2026</span>
+      <a href="https://github.com/lina082/comunicamedellin-grupo3">github.com/lina082/comunicamedellin-grupo3</a>
+    </div>
+  </div>
+</footer>
+
+<script>
+const $ = id => document.getElementById(id);
+
+const PIEZAS = {
+  "n-alcaldia": {
+    nom: "Alcaldía", sub: "el origen de todo", tag: "ACTOR", clase: "",
+    que: "<p>Un funcionario redacta la alerta —un cierre vial, una creciente, una cancelación de clases— y pulsa enviar. Es <strong>una sola escritura</strong>.</p>",
+    por: "<p>Todo el problema arranca aquí: esa única escritura tiene que convertirse en <strong>100.000 entregas casi simultáneas</strong>. A ese patrón se le llama <em>fan-out</em>, y es lo que hace este caso distinto de una base de datos normal.</p>",
+    conx: [["→", "Envía la alerta a la <strong>API</strong> por HTTP"]],
+    sec: []
+  },
+  "n-api": {
+    nom: "API · FastAPI", sub: "el intermediario", tag: "APLICACIÓN", clase: "",
+    que: "<p>Un servidor en Python que recibe la alerta y decide qué hacer con ella. No guarda nada: <strong>coordina</strong>.</p><p>Mantiene además una conexión WebSocket abierta con el panel para transmitir cada paso mientras ocurre.</p>",
+    por: "<p>Ninguna base de datos habla directamente con un celular. Alguien tiene que traducir entre el mundo web y los motores, y sobre todo <strong>decidir con qué nivel de consistencia se escribe cada dato</strong>.</p><p>Esa decisión es el corazón del diseño y vive aquí, no en la base de datos.</p>",
+    conx: [["←", "Recibe la alerta de la <strong>Alcaldía</strong>"],
+           ["→", "Publica en <strong>Kafka</strong>, una vez por zona"],
+           ["→", "Escribe en <strong>Cassandra</strong> con el nivel que corresponda"],
+           ["↔", "Transmite el progreso al <strong>panel web</strong>"]],
+    sec: []
+  },
+  "n-kafka": {
+    nom: "Apache Kafka", sub: "el repartidor", tag: "TRANSPORTE", clase: "k",
+    que: "<p>Un <strong>log distribuido</strong>: una lista de eventos que solo crece, nunca se modifica. Los mensajes se guardan en <em>particiones</em>, y cada partición la consume un trabajador distinto.</p><p>Nosotros usamos <strong>tres particiones</strong>, una por zona de Medellín.</p>",
+    por: "<p>Sin Kafka, un solo proceso tendría que notificar a 100.000 personas una por una. Con particiones, esa escritura se parte en tres flujos que avanzan <strong>en paralelo y sin pisarse</strong>.</p><p>Y como el log es inmutable, se puede releer desde el principio: si mañana cambia la lógica de entrega, se reprocesa todo el histórico sin haber perdido nada.</p>",
+    conx: [["←", "Recibe la alerta de la <strong>API</strong>"],
+           ["→", "Cada partición alimenta un <strong>worker</strong>"],
+           ["→", "<strong>ClickHouse</strong> lee el mismo log para la analítica"]],
+    sec: ["4.2 — Arquitectura Kappa", "3.3 — Sharding"]
+  },
+  "n-workers": {
+    nom: "Workers", sub: "tres, en paralelo", tag: "PROCESO", clase: "",
+    que: "<p>Tres procesos idénticos. Cada uno consume <strong>su</strong> partición de Kafka y escribe el historial de los suscriptores de esa zona.</p>",
+    por: "<p>Aquí es donde una escritura se convierte en cien mil. Los tres trabajan al mismo tiempo, así que el tiempo total es el de <strong>una</strong> zona, no la suma de las tres.</p><p>Escalar es simple: más zonas → más particiones → más workers. No hace falta un servidor más grande, que es justo lo que diferencia una arquitectura distribuida de una cliente-servidor.</p>",
+    conx: [["←", "Cada uno lee una partición de <strong>Kafka</strong>"],
+           ["→", "Escriben el historial en <strong>Cassandra</strong> con QUORUM"]],
+    sec: ["3.3 — Arquitectura distribuida"]
+  },
+  "n-cassandra": {
+    nom: "Apache Cassandra", sub: "3 nodos · RF=3", tag: "BASE DE DATOS", clase: "c",
+    que: "<p>Una base de datos distribuida donde <strong>los tres nodos son iguales</strong>: no hay uno principal. Con factor de replicación 3, cada dato se guarda en los tres.</p><p>Guarda dos cosas: la <em>presencia</em> (quién está en línea) y el <em>historial</em> de cada usuario.</p>",
+    por: "<p>Es el único motor del stack que deja elegir <strong>cuánta consistencia quieres en cada consulta</strong>:</p><p><code>ONE</code> pregunta a una réplica — rápido, puede ir atrasado.<br><code>QUORUM</code> exige que coincidan 2 de 3 — seguro, más lento.</p><p>Eso permite usar <code>ONE</code> para presencia y <code>QUORUM</code> para las alertas, <strong>dentro del mismo sistema</strong>. Ninguna otra base de datos del módulo lo permite.</p>",
+    conx: [["←", "Los <strong>workers</strong> escriben el historial (QUORUM)"],
+           ["←", "La <strong>API</strong> escribe la presencia (ONE)"],
+           ["→", "Notifica a los <strong>dispositivos</strong>"],
+           ["→", "El <strong>panel</strong> lee de los 3 nodos para comparar"]],
+    sec: ["1.2 — Teorema CAP", "1.3 — NoSQL clave-valor", "3.3 — Distribuida"]
+  },
+  "n-clickhouse": {
+    nom: "ClickHouse", sub: "columnar · OLAP", tag: "ANALÍTICA", clase: "",
+    que: "<p>Una base de datos <strong>columnar</strong>: en vez de guardar fila por fila, guarda cada columna por separado. Al hacer una suma solo lee las columnas que necesita.</p>",
+    por: "<p>Cassandra es rapidísima para <em>“dame el historial de Juan”</em>, pero mala para <em>“¿cuántos conectados hay por zona?”</em>: tendría que recorrer el clúster entero.</p><p>Son dos trabajos distintos —el conflicto OLTP contra OLAP— y por eso hacen falta dos motores. ClickHouse resuelve esas agregaciones en milisegundos.</p><p>Se conecta a Kafka con su <strong>Kafka Engine</strong>: consume el mismo log sin que escribamos una sola línea de código.</p>",
+    conx: [["←", "Lee el log de <strong>Kafka</strong> vía Kafka Engine"],
+           ["→", "Alimenta las métricas del <strong>panel</strong>"]],
+    sec: ["2.2 — OLTP vs OLAP", "2.4 — Caso Mercado Libre"]
+  },
+  "n-frontend": {
+    nom: "Panel web", sub: "HTML + WebSocket", tag: "INTERFAZ", clase: "",
+    que: "<p>Un solo archivo HTML. Sin Node, sin npm, sin compilación: se abre con doble clic.</p><p>Muestra el flujo animándose, los datos guardados, el esquema de las tablas y la comparación entre los tres nodos.</p>",
+    por: "<p>Porque un resultado en la terminal no se ve. El panel convierte <code>ONE</code> contra <code>QUORUM</code> en algo <strong>visible</strong>: dos columnas con horas distintas, y una latencia que salta de 2 ms a 250 ms al cambiar el nivel.</p><p>Ese contraste en pantalla es lo que hace entender el teorema CAP sin explicarlo.</p>",
+    conx: [["↔", "Recibe el progreso de la <strong>API</strong> por WebSocket"],
+           ["←", "Lee de los 3 nodos de <strong>Cassandra</strong>"],
+           ["←", "Consulta métricas a <strong>ClickHouse</strong>"]],
+    sec: []
+  },
+  "n-dispositivos": {
+    nom: "Dispositivos", sub: "los 100.000", tag: "DESTINO", clase: "",
+    que: "<p>Los celulares de los suscriptores. En la demo simulamos 100, cada uno con su nombre y comuna reales de Medellín.</p>",
+    por: "<p>Son el final del recorrido y la razón del diseño: si el último se entera media hora tarde, la alerta ya no sirve.</p><p>Medimos <strong>10.127 entregas por segundo</strong>, lo que proyecta unos 10 segundos para los 100.000 reales.</p>",
+    conx: [["←", "Reciben la notificación desde <strong>Cassandra</strong>"]],
+    sec: []
+  }
+};
+
+const RELACIONES = {
+  "n-alcaldia":     {aristas:["e-alc-api"], nodos:["n-api"]},
+  "n-api":          {aristas:["e-alc-api","e-api-kaf"], nodos:["n-alcaldia","n-kafka","n-frontend"]},
+  "n-kafka":        {aristas:["e-api-kaf","e-kaf-w0","e-kaf-w1","e-kaf-w2","e-kaf-ch"],
+                     nodos:["n-api","n-workers","n-clickhouse"]},
+  "n-workers":      {aristas:["e-kaf-w0","e-kaf-w1","e-kaf-w2","e-w0-cas","e-w1-cas","e-w2-cas"],
+                     nodos:["n-kafka","n-cassandra"]},
+  "n-cassandra":    {aristas:["e-w0-cas","e-w1-cas","e-w2-cas","e-cas-dis","e-cas-front"],
+                     nodos:["n-workers","n-dispositivos","n-frontend"]},
+  "n-clickhouse":   {aristas:["e-kaf-ch","e-ch-front"], nodos:["n-kafka","n-frontend"]},
+  "n-frontend":     {aristas:["e-ch-front","e-cas-front"], nodos:["n-clickhouse","n-cassandra"]},
+  "n-dispositivos": {aristas:["e-cas-dis"], nodos:["n-cassandra"]}
+};
+
+const PASOS = [
+  {n:"n-alcaldia", a:[], t:"La Alcaldía redacta la alerta y pulsa enviar.", d:"Alcaldía"},
+  {n:"n-api", a:["e-alc-api"], t:"La API la recibe y decide cómo repartirla.", d:"API"},
+  {n:"n-kafka", a:["e-api-kaf"], t:"Se publica en Kafka: una partición por zona.", d:"Kafka"},
+  {n:"n-workers", a:["e-kaf-w0","e-kaf-w1","e-kaf-w2"], t:"Los 3 workers consumen su partición en paralelo.", d:"Workers"},
+  {n:"n-cassandra", a:["e-w0-cas","e-w1-cas","e-w2-cas"], t:"Escriben el historial con QUORUM: la alerta no se puede perder.", d:"Cassandra"},
+  {n:"n-dispositivos", a:["e-cas-dis"], t:"La notificación llega a los dispositivos.", d:"Dispositivos"},
+  {n:"n-clickhouse", a:["e-kaf-ch"], t:"En paralelo, ClickHouse lee el mismo log para la analítica.", d:"ClickHouse"},
+  {n:"n-frontend", a:["e-ch-front","e-cas-front"], t:"El panel muestra todo lo que acaba de ocurrir.", d:"Panel web"}
+];
+
+/* tabla de pasos */
+$("tabla-pasos").innerHTML = PASOS.map((p,i) =>
+  `<tr><td class="mono">${String(i+1).padStart(2,"0")}</td><td>${p.t}</td>
+   <td class="mono">${p.d}</td></tr>`).join("");
+
+function limpiar(){
+  document.querySelectorAll(".nodo").forEach(n => n.classList.remove("sel","act","rel"));
+  document.querySelectorAll(".arista").forEach(a => a.classList.remove("on","rel"));
+}
+
+function seleccionar(id){
+  limpiar();
+  const p = PIEZAS[id], r = RELACIONES[id];
+  if (!p) return;
+  $(id).classList.add("sel");
+  r?.aristas.forEach(a => $(a)?.classList.add("rel"));
+  r?.nodos.forEach(n => $(n)?.classList.add("rel"));
+
+  $("vacio").hidden = true;
+  $("detalle").hidden = false;
+  const tag = $("d-tag");
+  tag.textContent = p.tag;
+  tag.className = "p-tag " + p.clase;
+  $("d-nom").textContent = p.nom;
+  $("d-sub").textContent = p.sub;
+  $("d-que").innerHTML = p.que;
+  $("d-por").innerHTML = p.por;
+  $("d-conx").innerHTML = p.conx.map(c =>
+    `<li><span class="fl">${c[0]}</span><span>${c[1]}</span></li>`).join("");
+  $("b-sec").hidden = !p.sec.length;
+  $("d-sec").innerHTML = p.sec.map(s => `<span class="sec-chip">${s}</span>`).join("");
+  $("paso").textContent = p.nom + " · " + p.sub;
+}
+
+document.querySelectorAll(".nodo").forEach(n => {
+  n.addEventListener("click", () => seleccionar(n.id));
+  n.addEventListener("keydown", e => {
+    if (e.key === "Enter" || e.key === " "){ e.preventDefault(); seleccionar(n.id); }
+  });
+});
+
+$("reset").onclick = () => {
+  limpiar();
+  $("detalle").hidden = true;
+  $("vacio").hidden = false;
+  $("paso").textContent = "Selecciona una pieza del mapa para empezar.";
+};
+
+let corriendo = false;
+$("play").onclick = async () => {
+  if (corriendo) return;
+  corriendo = true;
+  $("play").disabled = true;
+  limpiar();
+  $("detalle").hidden = true;
+  $("vacio").hidden = false;
+
+  for (let i = 0; i < PASOS.length; i++){
+    const p = PASOS[i];
+    $("paso").textContent = `${i+1}/${PASOS.length} · ${p.t}`;
+    p.a.forEach(a => $(a)?.classList.add("on"));
+    $(p.n)?.classList.add("act");
+    await new Promise(r => setTimeout(r, 1250));
+  }
+  $("paso").textContent = "Listo. Haz clic en cualquier pieza para ver el detalle.";
+  $("play").disabled = false;
+  corriendo = false;
+};
+</script>
+</html>
