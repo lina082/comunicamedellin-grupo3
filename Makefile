@@ -6,7 +6,7 @@ CH    := docker exec -i clickhouse clickhouse-client --user demo --password demo
 
 .PHONY: help up down clean status schema seed demo-consistencia demo-fanout \
         demo-nodo-caido ch-demo ch-seed up-zk down-zk zk-shell kafka-topics \
-        latencia-on latencia-off grabar-demo docs ch-extra ch-play \
+        latencia-on latencia-off grabar-demo docs ch-extra ch-play cql cqlsh \
         kafka-consumer kafka-replay api frontend pdf slides logs
 
 help: ## Muestra esta ayuda
@@ -43,6 +43,12 @@ logs: ## Sigue los logs de todos los servicios
 	docker compose logs -f --tail=50
 
 # ── Esquemas y datos ─────────────────────────────────────────
+cql: ## Ejecuta el catalogo de consultas CQL de ejemplo
+	@$(CQLSH) < infra/cql/consultas.cql
+
+cqlsh: ## Abre una sesion interactiva de cqlsh
+	docker exec -it cass1 cqlsh
+
 schema: ## Crea el keyspace y las tablas en Cassandra
 	$(CQLSH) < infra/cql/schema.cql
 	@echo "Esquema Cassandra creado."

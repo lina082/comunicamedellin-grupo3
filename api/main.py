@@ -268,7 +268,7 @@ async def ws_fanout(sock: WebSocket):
                 prod = KafkaProducer(
                     bootstrap_servers="localhost:29092",
                     value_serializer=lambda v: json.dumps(v).encode(),
-                    key_serializer=lambda k: k.encode(), acks=1)
+                    key_serializer=lambda k: str(k).encode(), acks=1)
                 for i, z in enumerate(zonas):
                     md = prod.send(
                         "alertas-ciudadanas", key=z, partition=i,

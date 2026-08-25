@@ -37,7 +37,7 @@ def publicar_en_kafka(alerta):
     prod = KafkaProducer(
         bootstrap_servers=BOOTSTRAP,
         value_serializer=lambda v: json.dumps(v).encode(),
-        key_serializer=lambda k: k.encode(),
+        key_serializer=lambda k: str(k).encode(),
         acks=1,
     )
     for idx, zona in enumerate(ZONAS):
