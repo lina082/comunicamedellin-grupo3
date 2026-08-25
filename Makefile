@@ -6,7 +6,7 @@ CH    := docker exec -i clickhouse clickhouse-client --user demo --password demo
 
 .PHONY: help up down clean status schema seed demo-consistencia demo-fanout \
         demo-nodo-caido ch-demo ch-seed up-zk down-zk zk-shell kafka-topics \
-        latencia-on latencia-off grabar-demo docs \
+        latencia-on latencia-off grabar-demo docs ch-extra ch-play \
         kafka-consumer kafka-replay api frontend pdf slides logs
 
 help: ## Muestra esta ayuda
@@ -71,6 +71,12 @@ demo-nodo-caido: ## [EXTRA] Tumba un nodo y muestra que AP sigue respondiendo
 # ── ClickHouse (ruta analitica) ──────────────────────────────
 ch-seed: ## Genera eventos analiticos en ClickHouse
 	python3 demo/scripts/seed_clickhouse.py
+
+ch-extra: ## Consultas OLAP adicionales (percentiles, compresion, HLL)
+	@$(CH) --multiquery < infra/clickhouse/consultas-demo.sql
+
+ch-play: ## Abre la interfaz web de ClickHouse
+	@echo "http://localhost:8123/play   usuario: demo   clave: demo"
 
 ch-demo: ## Ejecuta las consultas OLAP de la exposicion
 	@$(CH) --multiquery < infra/clickhouse/consultas-demo.sql
