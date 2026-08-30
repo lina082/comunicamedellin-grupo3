@@ -431,7 +431,7 @@ footer a{color:var(--itm-cian);text-decoration:none;
         <text x="528" y="227" text-anchor="middle" class="t-s">OLAP columnar · Sec. 2.4</text>
       </svg>
     </div>
-    <figcaption>El log de Kafka alimenta dos rutas independientes: la operativa hacia Cassandra y la analítica hacia ClickHouse. Es una arquitectura Lambda (Sec. 4.1) con capa de velocidad y capa analítica sobre la misma fuente.</figcaption>
+    <figcaption>El log de Kafka alimenta dos rutas independientes: la operativa hacia Cassandra y la analítica hacia ClickHouse. No hay capa <em>batch</em>: es una arquitectura <strong>Kappa</strong> (Sec. 4.2) — un único pipeline de <em>streaming</em> con dos consumidores.</figcaption>
   </figure>
 
   <div class="col">

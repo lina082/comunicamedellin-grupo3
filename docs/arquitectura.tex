@@ -151,8 +151,9 @@ servidor en la nube no lo cambia: sigue siendo Cliente-Servidor. Ser distribuido
   {Kafka\\Engine};
 \end{tikzpicture}
 \caption{Arquitectura distribuida. La ruta operacional (Cassandra) y la analítica
-(ClickHouse) se alimentan del mismo log, configurando una arquitectura
-Lambda \sect{4.1}.}
+(ClickHouse) consumen el mismo log de eventos. No existe capa \emph{batch}: es una
+arquitectura \textbf{Kappa} \sect{4.2}, con un único pipeline de \emph{streaming}
+del que penden dos consumidores.}
 \end{figure}
 
 \subsection{Justificación de cada decisión}
@@ -190,6 +191,17 @@ arquitectura distribuida. Elegimos la zona geográfica como clave porque alinea
 tres planos: la partición de Kafka, el worker que consume y el criterio con que
 la Alcaldía segmenta sus alertas. Cada zona avanza en paralelo e
 independientemente de las demás.
+
+\item[Arquitectura Kappa, no Lambda \sect{4.1, 4.2, 4.3}]
+Lambda mantiene dos rutas de \emph{procesamiento} —una \emph{batch} que recalcula
+el histórico completo y otra de velocidad para lo reciente— más una capa que
+fusiona ambas vistas. Nuestro sistema no tiene capa \emph{batch}: no hay trabajos
+programados ni recálculos periódicos. Existe un único \emph{pipeline} de
+\emph{streaming} sobre el log de Kafka, del que penden dos consumidores con
+destinos distintos. Eso es Kappa \sect{4.2}. La tabla comparativa de la
+\sect{4.3} lo confirma: una sola capa, lógica no duplicada, latencia
+consistentemente baja. El reprocesamiento se resuelve releyendo el tópico desde
+el \emph{offset} 0, no con un trabajo \emph{batch} paralelo.
 
 \item[ClickHouse \sect{2.2, 2.4}]
 Cassandra está optimizada para lectura por clave de partición; una agregación
