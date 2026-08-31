@@ -51,12 +51,16 @@ services:
       cassandra-1: {condition: service_healthy}
     volumes: [cass2-data:/var/lib/cassandra]
 
+  # Nodo en el datacenter de respaldo. Declarar un DC distinto es lo
+  # que permite usar NetworkTopologyStrategy y los niveles LOCAL_*
+  # (Sec. 3.3: la replicacion es consciente de la topologia fisica).
   cassandra-3:
     <<: *cassandra-common
     container_name: cass3
     ports: ["9044:9042"]
     environment:
       <<: *cassandra-env
+      CASSANDRA_DC: miami
       CASSANDRA_SEEDS: cassandra-1
     depends_on:
       cassandra-2: {condition: service_healthy}

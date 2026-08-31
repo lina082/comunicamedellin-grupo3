@@ -7,6 +7,7 @@ CH    := docker exec -i clickhouse clickhouse-client --user demo --password demo
 .PHONY: help up down clean status schema seed demo-consistencia demo-fanout \
         demo-nodo-caido ch-demo ch-seed up-zk down-zk zk-shell kafka-topics \
         latencia-on latencia-off grabar-demo docs ch-extra ch-play cql cqlsh \
+        demo-multidc topologia \
         kafka-consumer kafka-replay api frontend pdf slides logs
 
 help: ## Muestra esta ayuda
@@ -70,6 +71,17 @@ demo-consistencia: ## [RETO] Compara ONE vs QUORUM leyendo de 2 nodos
 
 demo-fanout: ## [RETO] Fan-out de una alerta por particiones/zona
 	python3 demo/scripts/demo_fanout.py
+
+demo-multidc: ## [EXTRA] Multi-DC: compara ONE, LOCAL_QUORUM, QUORUM y EACH_QUORUM
+	@./demo/scripts/latencia_red.sh on
+	@echo ""
+	python3 demo/scripts/demo_multidc.py
+
+topologia: ## Muestra los datacenters y sus nodos
+	@docker exec cass1 nodetool status
+	@echo ""
+	@echo "Replicacion por keyspace:"
+	@$(CQLSH) -e "SELECT keyspace_name, replication FROM system_schema.keyspaces WHERE keyspace_name='comunica';"
 
 demo-nodo-caido: ## [EXTRA] Tumba un nodo y muestra que AP sigue respondiendo
 	python3 demo/scripts/demo_nodo_caido.py

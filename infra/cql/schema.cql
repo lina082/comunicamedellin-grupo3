@@ -16,10 +16,24 @@
 -- Esto es lo que permite comparar ONE vs QUORUM:
 --   ONE    -> responde 1 replica  (rapido, puede estar desactualizado)
 --   QUORUM -> responden 2 de 3    (consistente, mas lento)
+-- Topologia: cass1 y cass2 en el DC 'medellin', cass3 en 'miami'.
+--
+-- NetworkTopologyStrategy coloca las replicas POR DATACENTER, no
+-- solo por posicion en el anillo. Eso es lo que habilita los
+-- niveles LOCAL_* (Sec. 3.3: la replicacion es consciente de la
+-- topologia fisica).
+--
+-- {medellin:2, miami:1} = 3 replicas en total:
+--   2 en la ciudad principal, 1 en el respaldo.
+--
+-- Con SimpleStrategy (lo que teniamos antes) las 3 replicas
+-- podrian caer todas en la misma ciudad, y LOCAL_QUORUM no
+-- tendria sentido.
 CREATE KEYSPACE IF NOT EXISTS comunica
 WITH replication = {
-  'class': 'SimpleStrategy',
-  'replication_factor': 3
+  'class': 'NetworkTopologyStrategy',
+  'medellin': 2,
+  'miami': 1
 };
 
 USE comunica;
