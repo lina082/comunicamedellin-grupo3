@@ -157,6 +157,37 @@ $\Rightarrow$ \textbf{Dos decisiones CAP dentro del mismo sistema.}
 \end{frame}
 
 % ─────────────────────────────────────────────
+\begin{frame}{Las piezas y para qué sirve cada una}
+\quien{Julián}
+\centering
+\begin{tikzpicture}[font=\scriptsize,
+  caja/.style={rounded corners=2pt,draw=itmazul!60,fill=itmazul!8,minimum height=0.75cm,align=center,inner sep=4pt},
+  motor/.style={caja,fill=acento!14,draw=acento,thick},
+  fl/.style={-{Stealth[length=2mm]},draw=itmazul!70}]
+  \node[caja,minimum width=2cm] (api) {API};
+  \node[motor,minimum width=7.4cm,below=0.55cm of api] (k)
+    {\textbf{Kafka} \sect{4.2} — particiones: norte · centro · sur};
+  \node[caja,below=0.55cm of k,xshift=-2.5cm,minimum width=1.5cm] (w1) {worker};
+  \node[caja,below=0.55cm of k,minimum width=1.5cm] (w2) {worker};
+  \node[caja,below=0.55cm of k,xshift=2.5cm,minimum width=1.5cm] (w3) {worker};
+  \node[motor,below=0.6cm of w2,xshift=-2.1cm,minimum width=4cm] (c)
+    {\textbf{Cassandra} ×3 · AP\\ \sect{1.3, 3.3}};
+  \node[motor,below=0.6cm of w2,xshift=2.5cm,minimum width=3.2cm] (ch)
+    {\textbf{ClickHouse}\\ \sect{2.4}};
+  \draw[fl] (api) -- (k);
+  \foreach \w in {w1,w2,w3} \draw[fl] (k.south) -- (\w.north);
+  \draw[fl] (w1.south) -- (c.north west);
+  \draw[fl] (w2.south) -- (c.north);
+  \draw[fl,dashed,verde] (k.east) -- ++(0.6,0) |- (ch.east);
+\end{tikzpicture}
+\vspace{4pt}
+\footnotesize
+Dos rutas que salen del \textbf{mismo log}: una guarda y entrega, otra saca
+cuentas.\\
+Un solo flujo de eventos, sin procesos por lotes $\Rightarrow$
+\textbf{arquitectura Kappa} \sect{4.2}
+\end{frame}
+% ─────────────────────────────────────────────
 \begin{frame}{Cómo viaja la información}
 \quien{Elizabeth}
 \begin{columns}[T]
@@ -196,33 +227,6 @@ y es además un sistema \textbf{orientado a eventos} \sect{4.3}.
 \end{block}
 \end{frame}
 
-% ─────────────────────────────────────────────
-\begin{frame}{Las piezas y para qué sirve cada una}
-\quien{Elizabeth}
-\centering
-\begin{tikzpicture}[font=\scriptsize,
-  caja/.style={rounded corners=2pt,draw=itmazul!60,fill=itmazul!8,minimum height=0.75cm,align=center,inner sep=4pt},
-  motor/.style={caja,fill=acento!14,draw=acento,thick},
-  fl/.style={-{Stealth[length=2mm]},draw=itmazul!70}]
-  \node[caja,minimum width=2cm] (api) {API};
-  \node[motor,minimum width=7.4cm,below=0.55cm of api] (k)
-    {\textbf{Kafka} \sect{4.2} — particiones: norte · centro · sur};
-  \node[caja,below=0.55cm of k,xshift=-2.5cm,minimum width=1.5cm] (w1) {worker};
-  \node[caja,below=0.55cm of k,minimum width=1.5cm] (w2) {worker};
-  \node[caja,below=0.55cm of k,xshift=2.5cm,minimum width=1.5cm] (w3) {worker};
-  \node[motor,below=0.6cm of w2,xshift=-2.1cm,minimum width=4cm] (c)
-    {\textbf{Cassandra} ×3 · AP\\ \sect{1.3, 3.3}};
-  \node[motor,below=0.6cm of w2,xshift=2.5cm,minimum width=3.2cm] (ch)
-    {\textbf{ClickHouse}\\ \sect{2.4}};
-  \draw[fl] (api) -- (k);
-  \foreach \w in {w1,w2,w3} \draw[fl] (k.south) -- (\w.north);
-  \draw[fl] (w1.south) -- (c.north west);
-  \draw[fl] (w2.south) -- (c.north);
-  \draw[fl,dashed,verde] (k.east) -- ++(0.6,0) |- (ch.east);
-\end{tikzpicture}
-\vspace{4pt}
-\footnotesize Ruta operacional + ruta analítica sobre el mismo log $\Rightarrow$ Lambda \sect{4.1}
-\end{frame}
 
 % ─────────────────────────────────────────────
 \begin{frame}{No se puede tener todo: qué elegimos}
