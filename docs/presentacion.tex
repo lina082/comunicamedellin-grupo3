@@ -278,105 +278,92 @@ sirve}: en un caso con recursos en disputa sería la elección correcta.
 \end{frame}
 
 % ─────────────────────────────────────────────
-\begin{frame}{Demo en vivo}
+\begin{frame}{Cómo garantizamos la entrega}
 \quien{Lina}
+\centering
+\begin{tikzpicture}[
+  font=\scriptsize,
+  caja/.style={draw=itmazul!40,fill=itmazul!5,rounded corners=2pt,
+               minimum height=8mm,align=center,inner sep=3pt},
+  verde/.style={draw=verde!60,fill=verde!8,rounded corners=2pt,
+               minimum height=8mm,align=center,inner sep=3pt},
+  fl/.style={-{Stealth[length=1.6mm]},itmazul!55,thick}]
+
+\node[caja,minimum width=17mm] (a) at (0,0) {1 alerta};
+\node[caja,minimum width=26mm] (k) at (2.9,0) {\textbf{Kafka}\\3 particiones};
+\node[caja,minimum width=22mm] (w) at (6.1,0) {3 \emph{workers}\\en paralelo};
+\node[verde,minimum width=26mm] (c) at (9.3,0) {\textbf{Cassandra}\\\texttt{QUORUM}};
+
+\draw[fl] (a) -- (k);  \draw[fl] (k) -- (w);  \draw[fl] (w) -- (c);
+
+\node[font=\tiny,text=itmazul!70,below=1mm of k] {una zona = una partición};
+\node[font=\tiny,text=itmazul!70,below=1mm of w] {no se pisan entre sí};
+\node[font=\tiny,text=verde!60!black,below=1mm of c] {2 de 3 réplicas confirman};
+\end{tikzpicture}
+
+\vspace{7pt}
 \footnotesize
-\begin{enumerate}\itemsep2pt
-  \item \texttt{make status} — 3 nodos \texttt{UN}, tokens repartidos, RF=3
-  \item \textbf{Panel} — publicar una alerta: Kafka, 3 workers, Cassandra, dispositivos
-  \item \textbf{Panel} — la fila \emph{recién creada} en \texttt{historial\_usuario}
-  \item \texttt{make demo-consistencia} — \texttt{ONE} frente a \texttt{QUORUM}, 150 rondas
-  \item \texttt{make demo-nodo-caido} — tumbar un nodo: \texttt{ALL} falla, y debe fallar
-  \item \texttt{make ch-demo} — la agregación que Cassandra no puede resolver
-\end{enumerate}
-
-\vspace{4pt}
-\begin{block}{\small Metodología}
-\scriptsize
-Los tres nodos comparten una máquina y replican en microsegundos: una condición
-que \textbf{no existe en producción}. Con \texttt{tc netem} restituimos 250\,ms
-\textbf{solo} al tráfico de replicación (puerto 7000), no a las lecturas del
-cliente (9042). Sin eso, la demo mediría el laboratorio, no el sistema.
-\end{block}
-\end{frame}
-
-% ─────────────────────────────────────────────
-\begin{frame}{Resultados medidos}
-\quien{Lina}
-\begin{center}\small
-\begin{tabular}{@{}lrrl@{}}
+\begin{tabular}{@{}p{3.1cm}p{3.2cm}p{4.3cm}@{}}
 \toprule
-\textbf{Nivel} & \textbf{Divergencias} & \textbf{P50} & \textbf{Lectura} \\
+\textbf{El riesgo} & \textbf{La garantía} & \textbf{Medido en la demo} \\
 \midrule
-\texttt{ONE} & \textcolor{rojo}{\textbf{149/150 (99{,}3\%)}} & \textbf{1{,}14 ms}
-  & rápido, puede ir atrasado \\
-\texttt{QUORUM} & \textcolor{verde}{\textbf{0/150 (0{,}0\%)}} & \textbf{130{,}3 ms}
-  & consistente, 114$\times$ más lento \\
+Un servidor entrega en fila y el último espera
+  & Fan-out particionado por zona
+  & \textbf{10.127 entregas/s} · 2{,}6$\times$ frente a secuencial \\
+\addlinespace
+La alerta se pierde si cae un nodo
+  & Escritura con \texttt{QUORUM}
+  & con 1 nodo caído: \texttt{QUORUM} sigue en 752\,ms \\
+\addlinespace
+El reparto se desbalancea
+  & Zona como clave de partición
+  & \textbf{34 / 33 / 33} entregas por zona \\
 \bottomrule
 \end{tabular}
-\end{center}
-
-\vspace{6pt}
-\footnotesize
-\begin{tabular}{@{}p{3.5cm}p{3.4cm}p{3.6cm}@{}}
-\toprule
-\textbf{Demostración} & \textbf{Medición} & \textbf{Qué prueba} \\
-\midrule
-Fan-out particionado & 10.127 entregas/s & el paralelismo es real \\
-Reparto por zona & 34 / 33 / 33 & una zona = una partición \\
-Caída de un nodo & \texttt{ONE} 3{,}1\,ms · \texttt{QUORUM} 752\,ms · \texttt{ALL} falla
-  & a más consistencia, menos disponibilidad \\
-Compresión columnar & 1\,M filas · \texttt{zona} 206:1 & por qué existe ClickHouse \\
-\bottomrule
-\end{tabular}
-
-\vspace{4pt}
-\centering\footnotesize
-\textcolor{acento}{\textbf{Proyección: $\sim$10 s para los 100.000 suscriptores.}}
-\end{frame}
-
-% ─────────────────────────────────────────────
-\begin{frame}{Extra: dos centros de datos}
-\quien{Lina}
-\footnotesize
-Extendimos la topología al escenario de AeroMedellín: \texttt{cass1} y
-\texttt{cass2} en el DC \textbf{medellin}, \texttt{cass3} en \textbf{miami},
-con \texttt{NetworkTopologyStrategy \{medellin:2, miami:1\}} \sect{3.3}.
-
-\vspace{6pt}
-\begin{center}\small
-\begin{tabular}{@{}lrl@{}}
-\toprule
-\textbf{Nivel} & \textbf{Lectura desde Miami} & \textbf{Qué hace} \\
-\midrule
-\texttt{ONE} & 1{,}58 ms & responde su réplica local \\
-\texttt{LOCAL\_QUORUM} & \textcolor{verde}{\textbf{1{,}46 ms}} & mayoría \emph{dentro} de la ciudad \\
-\texttt{QUORUM} & \textcolor{rojo}{\textbf{753{,}74 ms}} & mayoría global: cruza el océano \\
-\texttt{EACH\_QUORUM} & 253{,}93 ms & mayoría en \emph{cada} ciudad \\
-\bottomrule
-\end{tabular}
-\end{center}
 
 \vspace{5pt}
-\begin{block}{\small}
-\footnotesize
-\texttt{LOCAL\_QUORUM} da consistencia real por \textbf{516 veces menos latencia}
-que \texttt{QUORUM} global. Por eso es el nivel estándar en producción multi-DC:
-si Miami queda incomunicado, Medellín sigue operando con normalidad.
-\end{block}
+\centering
+\textcolor{acento}{\footnotesize\textbf{Proyección: $\sim$10 segundos para los 100.000 suscriptores.}}
 \end{frame}
 
 % ─────────────────────────────────────────────
 \begin{frame}{Conclusiones}
-\begin{enumerate}\small
-  \item Cuatro cargas $\Rightarrow$ \textbf{dos decisiones CAP} en un mismo sistema.
-  \item La consistencia es un \textbf{parámetro por consulta}, no una propiedad global.
-  \item Sacrificamos C \textbf{donde el impacto de negocio es nulo}, no por comodidad.
-  \item Separar Cassandra (OLTP) de ClickHouse (OLAP) evita el conflicto de la \sect{2.2}.
+\quien{Lina}
+\centering
+
+\begin{tikzpicture}[font=\scriptsize,
+  pil/.style={rounded corners=3pt,minimum width=34mm,minimum height=15mm,align=center,inner sep=4pt}]
+\node[pil,draw=verde!55,fill=verde!8] (p) at (0,0)
+  {\textbf{Presencia}\\[2pt]\texttt{ONE} · 1{,}14 ms\\[1pt]
+   \tiny 99{,}3\% divergencia\\\tiny y no cuesta nada};
+\node[pil,draw=rojo!45,fill=rojo!5] (h) at (4.6,0)
+  {\textbf{Historial}\\[2pt]\texttt{QUORUM} · 130{,}3 ms\\[1pt]
+   \tiny 0\% divergencia\\\tiny y no se puede perder};
+\node[font=\tiny,text=itmazul!70] at (2.3,-1.25) {mismo motor, garantías opuestas};
+\end{tikzpicture}
+
+\vspace{8pt}
+\begin{minipage}{0.92\textwidth}\footnotesize
+\begin{enumerate}\itemsep3pt
+\item Cinco cargas, \textbf{cuatro perfiles}: OLTP, \emph{streaming}, OLAP y \emph{batch}.
+  Identificarlas antes de elegir tecnología es lo que evita forzar un motor a
+  resolver problemas de naturaleza distinta.
+\item La consistencia es un \textbf{parámetro por consulta}, no una propiedad del
+  sistema. \texttt{QUORUM} elimina la divergencia, pero cuesta \textbf{114$\times$}
+  más latencia.
+\item Sacrificamos C \textbf{donde el impacto de negocio es nulo} — nadie decide
+  nada con un estado de presencia — y la conservamos donde sí importa.
+\item Separar Cassandra (OLTP) de ClickHouse (OLAP) evita el conflicto de la
+  \sect{2.2}: cada motor atiende el perfil para el que está optimizado.
 \end{enumerate}
-\vfill
-\centering\footnotesize\texttt{github.com/lina082/comunicamedellin-grupo3}\\
-\scriptsize Todo el stack es software libre (Apache 2.0 / MIT)
+\end{minipage}
+
+\vspace{6pt}
+\begin{block}{\small}
+\centering\footnotesize
+La pregunta que organizó el diseño no fue \emph{cómo lograr que todo esté
+perfecto}, sino \textbf{qué podemos permitirnos tener desactualizado, y qué no}.
+\end{block}
 \end{frame}
 
 \begin{frame}[plain]\centering\vfill
