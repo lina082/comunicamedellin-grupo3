@@ -9,10 +9,20 @@
 \usetheme{default}
 % Sin usecolortheme: 'seabird' no viene en la instalacion estandar de
 % TeX Live y los colores institucionales se definen abajo a mano.
-\definecolor{itmazul}{RGB}{22,48,110}
-\definecolor{acento}{RGB}{0,120,160}
-\definecolor{verde}{RGB}{34,120,60}
-\definecolor{rojo}{RGB}{170,40,40}
+% Paleta de marca ComunicaMedellin
+\definecolor{cmAzul}{RGB}{20,58,120}     % azul institucional
+\definecolor{cmVerde}{RGB}{28,150,110}   % verde senal
+\definecolor{cmAmbar}{RGB}{200,120,30}   % ambar alerta
+\definecolor{cmGris}{RGB}{95,105,120}
+
+% Alias para no romper el contenido existente
+\colorlet{itmazul}{cmAzul}
+\colorlet{acento}{cmVerde}
+\colorlet{verde}{cmVerde}
+\colorlet{rojo}{cmAmbar}
+
+\usetikzlibrary{positioning}
+\input{logo}
 \setbeamercolor{structure}{fg=itmazul}
 \setbeamercolor{frametitle}{fg=white,bg=itmazul}
 \setbeamertemplate{navigation symbols}{}
@@ -21,7 +31,9 @@
 \setbeamercolor{itemize subitem}{fg=acento}
 \setbeamercolor{block title}{fg=white,bg=itmazul}
 \setbeamercolor{block body}{bg=itmazul!6}
-\setbeamertemplate{footline}[frame number]
+\setbeamertemplate{footline}{%
+  \hspace{6pt}\raisebox{1pt}{\logomarca[0.5]}%
+  \hfill\tiny\textcolor{cmGris}{\insertframenumber}\hspace{8pt}\vspace{3pt}}
 \setbeamerfont{frametitle}{size=\large}
 
 \newcommand{\sect}[1]{\textcolor{acento}{\small\textbf{[Sec.~#1]}}}
@@ -41,37 +53,56 @@
 
 \begin{document}
 
-\begin{frame}[plain]\titlepage\end{frame}
-
-% ─────────────────────────────────────────────
-\begin{frame}{El problema}
-\quien{Julián}
-\begin{columns}[T]
-\begin{column}{0.55\textwidth}
-\begin{itemize}
-  \item \textbf{100.000+} suscriptores
-  \item Una alerta debe llegar \textbf{casi simultáneamente}
-  \item Guardar el mensaje en el historial de cada usuario
-  \item Saber quién está \textbf{en línea} en todo momento
-  \item Sin caerse ante un pico de tráfico
-\end{itemize}
-\vspace{6pt}
-\footnotesize\textcolor{acento}{Cierres viales · alertas climáticas · cancelación de clases}
-\end{column}
-\begin{column}{0.42\textwidth}
-\begin{tikzpicture}[scale=0.72,font=\scriptsize]
-  \node[draw,rounded corners,fill=itmazul!10,minimum width=2.2cm] (a) at (0,2.4) {1 alerta};
-  \foreach \i/\x in {1/-1.7,2/-0.55,3/0.6,4/1.75}
-    \node[draw,circle,fill=acento!15,minimum size=0.5cm] (u\i) at (\x,0) {};
-  \foreach \i in {1,2,3,4} \draw[-{Stealth[length=1.5mm]},acento] (a) -- (u\i);
-  \node at (0,-0.75) {$\times$ 100.000 dispositivos};
-\end{tikzpicture}
-\end{column}
-\end{columns}
+\begin{frame}[plain]
+\vfill
+\centering
+{\logomarca[3.2]}\\[14pt]
+{\Huge\textcolor{cmAzul}{\textbf{Comunica}}\textcolor{cmVerde}{\textbf{Medellín}}}\\[8pt]
+{\large\textcolor{cmGris}{Alertas que llegan a tiempo. A todos.}}\\[20pt]
+\rule{0.35\textwidth}{0.4pt}\\[12pt]
+{\footnotesize\textcolor{cmGris}{Tópicos Avanzados de Bases de Datos · Módulo 1 · ITM}}\\[6pt]
+{\footnotesize\textbf{Grupo 3} \quad
+ \textcolor{cmGris}{Julián · Elizabeth · Simón · Nilton · Lina}}
+\vfill
 \end{frame}
 
 % ─────────────────────────────────────────────
-\begin{frame}{Primero las cargas, después la tecnología}
+\begin{frame}{Se cayó un puente. Hay que avisar ya.}
+\quien{Julián}
+\centering
+\vspace{4pt}
+\begin{tikzpicture}[font=\scriptsize]
+  \node[inner sep=0pt] (a) at (0,0) {\logomarca[1.5]};
+  \node[below=3pt of a,text=cmGris,font=\tiny] {1 alerta};
+  \foreach \i in {0,1,2,3,4,5,6,7}{
+    \node[draw=cmAzul!45,fill=cmAzul!10,rounded corners=1.5pt,
+          minimum width=3.6mm,minimum height=5.4mm,inner sep=0pt]
+      at ({2.4+mod(\i,4)*0.62},{0.42-floor(\i/4)*0.72}) {};
+  }
+  \node[text=cmGris,font=\tiny] at (3.35,-0.95) {…y 99.992 más};
+  \draw[-{Stealth[length=2mm]},cmVerde,thick] (0.75,0) -- (1.95,0);
+\end{tikzpicture}
+
+\vspace{10pt}
+\begin{minipage}{0.86\textwidth}\small
+La Alcaldía publica una alerta urgente —cierre vial, creciente, cancelación de
+clases— y tiene que llegar a \textbf{más de 100.000 celulares casi al mismo
+tiempo}.
+
+\vspace{6pt}
+Además el sistema necesita saber \textbf{quién está conectado} en cada momento,
+y guardar el mensaje en el historial de cada persona.
+\end{minipage}
+
+\vspace{10pt}
+\begin{block}{\small}
+\centering\footnotesize
+Si el último se entera media hora después, \textbf{la alerta ya no sirve}.
+\end{block}
+\end{frame}
+
+% ─────────────────────────────────────────────
+\begin{frame}{Qué tiene que hacer el sistema}
 \quien{Julián}
 \centering\small
 \begin{tabular}{@{}llll@{}}
@@ -93,7 +124,7 @@ $\Rightarrow$ \textbf{Dos decisiones CAP dentro del mismo sistema.}
 \end{frame}
 
 % ─────────────────────────────────────────────
-\begin{frame}{¿Por qué no basta un servidor?}
+\begin{frame}{¿Y si compramos un servidor más grande?}
 \quien{Julián}
 \begin{columns}[T]
 \begin{column}{0.48\textwidth}
@@ -126,7 +157,7 @@ $\Rightarrow$ \textbf{Dos decisiones CAP dentro del mismo sistema.}
 \end{frame}
 
 % ─────────────────────────────────────────────
-\begin{frame}{Lambda o Kappa: cómo se procesan los datos}
+\begin{frame}{Cómo viaja la información}
 \quien{Elizabeth}
 \begin{columns}[T]
 \begin{column}{0.48\textwidth}
@@ -166,7 +197,7 @@ y es además un sistema \textbf{orientado a eventos} \sect{4.3}.
 \end{frame}
 
 % ─────────────────────────────────────────────
-\begin{frame}{Arquitectura}
+\begin{frame}{Las piezas y para qué sirve cada una}
 \quien{Elizabeth}
 \centering
 \begin{tikzpicture}[font=\scriptsize,
@@ -194,33 +225,62 @@ y es además un sistema \textbf{orientado a eventos} \sect{4.3}.
 \end{frame}
 
 % ─────────────────────────────────────────────
-\begin{frame}{Decisión CAP}
+\begin{frame}{No se puede tener todo: qué elegimos}
 \quien{Simón}
+\footnotesize
+En un sistema repartido en varios nodos sólo se pueden garantizar
+\textbf{dos de estas tres} \sect{1.2}:
+
+\vspace{7pt}
 \begin{columns}[T]
-\begin{column}{0.42\textwidth}
-\begin{tikzpicture}[font=\scriptsize,scale=0.92]
-  \def\R{1.75}
-  \coordinate (C) at (90:\R); \coordinate (A) at (210:\R); \coordinate (P) at (330:\R);
-  \fill[acento!8] (C)--(A)--(P)--cycle;
-  \draw[thick,itmazul!70] (C)--(A)--(P)--cycle;
-  \node[above] at (C) {\textbf{C}}; \node[below left] at (A) {\textbf{A}}; \node[below right] at (P) {\textbf{P}};
-  \draw[very thick,rojo] ($(C)!0.5!(A)+(-0.12,0.12)$) -- ++(0.4,-0.4);
-  \node[align=center] at (0,-0.3) {\textbf{AP}};
+\begin{column}{0.31\textwidth}
+\begin{tikzpicture}
+\node[draw=cmGris!40,fill=cmGris!5,rounded corners=3pt,
+      minimum width=32mm,minimum height=13mm,align=left,inner sep=5pt,font=\scriptsize]
+  {\textbf{\textcolor{cmAmbar}{Consistencia}}\\[1pt]
+   \tiny todos ven lo mismo\\\tiny al mismo tiempo};
+\end{tikzpicture}\\[4pt]
+\begin{tikzpicture}
+\node[draw=cmVerde!50,fill=cmVerde!8,rounded corners=3pt,
+      minimum width=32mm,minimum height=13mm,align=left,inner sep=5pt,font=\scriptsize]
+  {\textbf{\textcolor{cmVerde}{Disponibilidad}}\\[1pt]
+   \tiny el sistema siempre\\\tiny responde};
+\end{tikzpicture}\\[4pt]
+\begin{tikzpicture}
+\node[draw=cmVerde!50,fill=cmVerde!8,rounded corners=3pt,
+      minimum width=32mm,minimum height=13mm,align=left,inner sep=5pt,font=\scriptsize]
+  {\textbf{\textcolor{cmVerde}{Tolerancia a fallos}}\\[1pt]
+   \tiny sigue aunque se corte\\\tiny la red entre nodos};
 \end{tikzpicture}
 \end{column}
-\begin{column}{0.55\textwidth}
-\textbf{Presencia $\rightarrow$ AP, nivel \texttt{ONE}}\\
-\footnotesize Se sacrifica C. Un desfase de 2\,s en «en línea» \textbf{no cambia ninguna decisión}.\\[6pt]
-\textbf{Historial $\rightarrow$ AP, escritura \texttt{QUORUM}}\\
-\footnotesize La alerta no se puede perder: es seguridad pública.\\[8pt]
-\scriptsize\textcolor{rojo}{Si eligiéramos CP:} durante una partición el sistema rechazaría heartbeats
-y la app mostraría a todos desconectados — parecería caída.
+
+\begin{column}{0.65\textwidth}
+\textbf{Sacrificamos consistencia inmediata.}\\[5pt]
+{\scriptsize Como los cortes de red son inevitables, la elección real es entre
+consistencia y disponibilidad. Elegimos que el canal \textbf{nunca deje de
+responder}.}
+
+\vspace{9pt}
+\begin{tikzpicture}[font=\scriptsize]
+\node[draw=cmVerde!50,fill=cmVerde!8,rounded corners=3pt,
+      minimum width=64mm,minimum height=12mm,align=left,inner sep=5pt] (a) at (0,0)
+  {\textbf{Quién está en línea} \; → \; nivel \texttt{ONE}\\[1pt]
+   \tiny Si llega 2 s tarde, nadie lo nota. \textbf{Costo: cero.}};
+\node[draw=cmAmbar!50,fill=cmAmbar!8,rounded corners=3pt,
+      minimum width=64mm,minimum height=12mm,align=left,inner sep=5pt,below=3pt of a]
+  {\textbf{La alerta enviada} \; → \; nivel \texttt{QUORUM}\\[1pt]
+   \tiny No se puede perder: es seguridad pública.};
+\end{tikzpicture}
+
+\vspace{7pt}
+{\scriptsize\textcolor{cmGris}{\textbf{Dos decisiones distintas} dentro del mismo
+sistema, según cuánto cueste equivocarse.}}
 \end{column}
 \end{columns}
 \end{frame}
 
 % ─────────────────────────────────────────────
-\begin{frame}{Contraste con TuBoleta}
+\begin{frame}{La misma teoría, decisión contraria}
 \quien{Simón}
 \centering\small
 \begin{tabular}{@{}lll@{}}
@@ -243,7 +303,7 @@ pagar consenso sería gasto puro.
 \end{frame}
 
 % ─────────────────────────────────────────────
-\begin{frame}{Por qué no otras soluciones}
+\begin{frame}{Qué más miramos, y por qué no}
 \quien{Nilton}
 \footnotesize
 \begin{tabular}{@{}p{2.5cm}p{8.4cm}@{}}
@@ -278,7 +338,7 @@ sirve}: en un caso con recursos en disputa sería la elección correcta.
 \end{frame}
 
 % ─────────────────────────────────────────────
-\begin{frame}{Cómo garantizamos la entrega}
+\begin{frame}{Cómo nos aseguramos de que llegue}
 \quien{Lina}
 \centering
 \begin{tikzpicture}[
