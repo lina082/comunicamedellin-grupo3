@@ -279,6 +279,46 @@ td.pk{color:var(--acc);font-weight:700}
 .consola .d{color:#34D399}
 .consola b{color:#FFFFFF;font-weight:700}
 
+
+/* ---------- laboratorio de red ---------- */
+.esc-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(212px,1fr));
+  gap:12px;margin:18px 0}
+.esc{background:var(--card);border-radius:var(--r);padding:16px 18px;
+  box-shadow:var(--sombra);cursor:pointer;border:2px solid transparent;
+  transition:border-color .16s,transform .16s;text-align:left;width:100%;
+  font:inherit;color:inherit;display:block}
+.esc:hover{transform:translateY(-1px)}
+.esc.act{border-color:var(--acc);background:var(--acc-s)}
+.esc:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+.esc .t{font-weight:800;font-size:15px;margin-bottom:5px}
+.esc.act .t{color:var(--acc)}
+.esc .d{font-size:13px;color:var(--ink-3);line-height:1.45;font-weight:600}
+
+.red-ctrl{background:var(--card);border-radius:var(--r);padding:18px 20px;
+  box-shadow:var(--sombra);margin-bottom:18px;display:flex;gap:18px;
+  align-items:flex-end;flex-wrap:wrap}
+.red-ctrl label{font-size:12.5px;color:var(--ink-3);display:block;
+  margin-bottom:6px;font-weight:700}
+.red-ctrl input[type=range]{width:190px;accent-color:var(--acc)}
+.red-val{font-family:var(--mono);font-size:14px;color:var(--acc);
+  font-weight:700;min-width:74px}
+
+.nodos-red{display:grid;grid-template-columns:repeat(auto-fit,minmax(196px,1fr));
+  gap:13px;margin:18px 0}
+.nred{background:var(--card);border-radius:var(--r);padding:16px 18px;
+  box-shadow:var(--sombra);border-left:3px solid var(--ok)}
+.nred.deg{border-left-color:var(--alert)}
+.nred .n{font-family:var(--mono);font-size:14px;font-weight:700;margin-bottom:4px}
+.nred .dc{font-size:11.5px;color:var(--ink-3);font-weight:700;margin-bottom:9px}
+.nred .est{font-size:13px;font-weight:700;color:var(--ok)}
+.nred.deg .est{color:var(--alert)}
+.nred .det{font-family:var(--mono);font-size:11px;color:var(--ink-3);
+  margin-top:5px;word-break:break-word}
+.nred .lat{font-family:var(--mono);font-size:19px;font-weight:800;
+  margin-top:11px;color:var(--ink);font-variant-numeric:tabular-nums}
+.nred .lat.slow{color:var(--alert)}
+.nred .lat small{font-size:11px;color:var(--ink-3);font-weight:600}
+
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style>
 </head>
@@ -302,6 +342,7 @@ td.pk{color:var(--acc);font-weight:700}
   <button class="tab" data-v="v-datos" role="tab">Datos guardados</button>
   <button class="tab" data-v="v-esquema" role="tab">Esquema</button>
   <button class="tab" data-v="v-reparto" role="tab">Reparto</button>
+  <button class="tab" data-v="v-red" role="tab">Laboratorio de red</button>
 </div>
 
 <!-- ═══ ENVIAR ALERTA ═══ -->
@@ -397,6 +438,45 @@ td.pk{color:var(--acc);font-weight:700}
       Log del recorrido</label>
     <div class="consola" id="consola">Escribe una alerta y pulsa <b>Publicar alerta</b>.</div>
   </div>
+</section>
+
+<!-- ═══ LABORATORIO DE RED ═══ -->
+<section class="vista" id="v-red">
+  <div class="expl">
+    <b>Qué estás viendo:</b> los tres nodos comparten una máquina, así que la red
+    entre ellos es <b>perfecta</b> — microsegundos, cero pérdida. Eso no existe en
+    producción. Aquí se degrada a propósito con <code>tc netem</code>, la herramienta
+    estándar de Linux para emular condiciones de red, y se mide el efecto en vivo.
+  </div>
+
+  <div class="red-ctrl">
+    <div>
+      <label for="red-nodo">Nodo a degradar</label>
+      <select id="red-nodo">
+        <option value="cass3">cass3 · miami</option>
+        <option value="cass2">cass2 · medellin</option>
+        <option value="cass1">cass1 · medellin</option>
+      </select>
+    </div>
+    <div>
+      <label for="red-valor">Intensidad · <span class="red-val" id="red-val">250 ms</span></label>
+      <input type="range" id="red-valor" min="10" max="800" step="10" value="250">
+    </div>
+    <div>
+      <label for="red-nivel">Nivel de lectura</label>
+      <select id="red-nivel">
+        <option value="ONE">ONE</option>
+        <option value="LOCAL_QUORUM">LOCAL_QUORUM</option>
+        <option value="QUORUM" selected>QUORUM</option>
+      </select>
+    </div>
+    <button class="p" id="red-medir">Medir ahora</button>
+  </div>
+
+  <div class="esc-grid" id="escenarios"></div>
+  <div class="nodos-red" id="nodos-red"></div>
+  <div class="hint">El retardo se aplica solo al puerto <b>7000</b> (replicación entre
+    nodos). El <b>9042</b>, por donde entran las consultas, queda intacto.</div>
 </section>
 
 <!-- ═══ RÉPLICAS ═══ -->
@@ -524,6 +604,7 @@ document.querySelectorAll(".tab").forEach(b => b.onclick = () => {
       Ejecuta <code>make up</code> y <code>make api</code>.`;
     $("nodos").innerHTML = "";
   }
+  if (b.dataset.v === "v-red")     cargarRed();
   if (b.dataset.v === "v-datos")   cargarDatos();
   if (b.dataset.v === "v-esquema") cargarEsquema();
   if (b.dataset.v === "v-reparto") cargarReparto();
@@ -792,6 +873,94 @@ function manejar(d){
     }
   }
 }
+
+
+/* ═══════════ LABORATORIO DE RED ═══════════ */
+let escSel = "normal", escenarios = [];
+
+const UNIDAD = {lento:"ms", inestable:"ms", perdida:"%", saturado:"kbit", normal:""};
+const DC = {cass1:"medellin", cass2:"medellin", cass3:"miami"};
+
+function unidad(){ return UNIDAD[escSel] || "ms"; }
+
+function pintarValor(){
+  const v = $("red-valor").value;
+  $("red-val").textContent = escSel === "normal" ? "—" : `${v} ${unidad()}`;
+}
+
+async function cargarRed(){
+  if (DEMO){
+    $("escenarios").innerHTML =
+      `<div class="err">Esta vista necesita el clúster corriendo: aplica reglas
+       reales de red sobre los contenedores.</div>`;
+    $("nodos-red").innerHTML = "";
+    return;
+  }
+  try{
+    const d = await (await fetch(API + "/red/estado")).json();
+    escenarios = d.escenarios;
+    $("escenarios").innerHTML = d.escenarios.map(e =>
+      `<button class="esc ${e.id === escSel ? "act" : ""}" data-esc="${e.id}">
+         <div class="t">${e.nombre}</div>
+         <div class="d">${e.desc}</div>
+       </button>`).join("");
+    document.querySelectorAll(".esc").forEach(b => b.onclick = () => aplicar(b.dataset.esc));
+    pintarNodosRed(d.nodos);
+  } catch(e){
+    $("escenarios").innerHTML = `<div class="err">API no disponible</div>`;
+  }
+}
+
+function pintarNodosRed(nodos, lecturas){
+  $("nodos-red").innerHTML = nodos.map(n => {
+    const l = lecturas?.find(x => x.nodo === n.nodo);
+    const ms = l?.latencia_ms;
+    const lento = ms != null && ms > 50;
+    return `<div class="nred ${n.degradado ? "deg" : ""}">
+      <div class="n">${n.nodo}</div>
+      <div class="dc">${DC[n.nodo] ?? ""}</div>
+      <div class="est">${n.degradado ? "degradado" : "red sana"}</div>
+      ${n.detalle ? `<div class="det">${n.detalle}</div>` : ""}
+      ${ms != null
+        ? `<div class="lat ${lento ? "slow" : ""}">${ms} <small>ms</small></div>`
+        : (l?.error ? `<div class="lat slow"><small>${l.error}</small></div>` : "")}
+    </div>`;
+  }).join("");
+}
+
+async function aplicar(id){
+  escSel = id;
+  pintarValor();
+  document.querySelectorAll(".esc").forEach(b =>
+    b.classList.toggle("act", b.dataset.esc === id));
+  try{
+    await fetch(API + "/red/aplicar", {
+      method: "POST", headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({nodo: $("red-nodo").value, escenario: id,
+                            valor: parseInt($("red-valor").value, 10)})});
+    await medirRed();
+  } catch(e){}
+}
+
+async function medirRed(){
+  const b = $("red-medir");
+  b.disabled = true; b.textContent = "midiendo…";
+  try{
+    const u = $("usuario").value || "CC65027980";
+    const [estado, medida] = await Promise.all([
+      (await fetch(API + "/red/estado")).json(),
+      (await fetch(`${API}/red/medir/${u}?nivel=${$("red-nivel").value}`)).json()
+    ]);
+    pintarNodosRed(estado.nodos, medida.lecturas);
+  } catch(e){}
+  b.disabled = false; b.textContent = "Medir ahora";
+}
+
+$("red-medir").onclick = medirRed;
+$("red-nivel").onchange = medirRed;
+$("red-valor").oninput = pintarValor;
+$("red-valor").onchange = () => { if (escSel !== "normal") aplicar(escSel); };
+$("red-nodo").onchange = () => aplicar(escSel);
 
 /* ── datos ── */
 async function cargarDatos(){

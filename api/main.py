@@ -349,6 +349,168 @@ async def ws_fanout(sock: WebSocket):
         pass
 
 
+
+# ─────────────────────────────────────────────────────────────
+# Laboratorio de red: simular fallos reales con tc netem
+# ─────────────────────────────────────────────────────────────
+#
+# Los tres nodos comparten una maquina, asi que la red entre
+# ellos es perfecta: microsegundos, cero perdida. Eso NO existe
+# en produccion. Aqui se degrada a proposito para poder observar
+# lo que el laboratorio esconde.
+#
+# tc = traffic control del kernel de Linux
+# netem = network emulator, su modulo de emulacion de red
+
+import subprocess
+
+# Puerto 7000 = comunicacion ENTRE nodos de Cassandra.
+# Se degrada solo ese: el 9042 (consultas del cliente) queda
+# intacto, para que el cliente lea rapido de una replica que
+# aun no recibio la escritura.
+PUERTO_REPLICACION = 7000
+
+
+def _tc(nodo: str, *args: str):
+    """Ejecuta tc dentro de un contenedor."""
+    r = subprocess.run(
+        ["docker", "exec", "--privileged", nodo, "tc", *args],
+        capture_output=True, text=True, timeout=15)
+    return r.returncode, (r.stderr or r.stdout).strip()
+
+
+def _limpiar(nodo: str):
+    _tc(nodo, "qdisc", "del", "dev", "eth0", "root")
+
+
+def _aplicar(nodo: str, netem_args: list[str]):
+    """Aplica una regla netem SOLO al trafico de replicacion."""
+    _limpiar(nodo)
+    # Tres bandas de prioridad; la 3 sera la degradada
+    c, e = _tc(nodo, "qdisc", "add", "dev", "eth0", "root",
+               "handle", "1:", "prio")
+    if c != 0:
+        return False, e
+    c, e = _tc(nodo, "qdisc", "add", "dev", "eth0", "parent", "1:3",
+               "handle", "30:", "netem", *netem_args)
+    if c != 0:
+        return False, e
+    # Filtrar por puerto de replicacion, en ambos sentidos
+    for direccion in ("dport", "sport"):
+        _tc(nodo, "filter", "add", "dev", "eth0", "protocol", "ip",
+            "parent", "1:0", "prio", "3", "u32",
+            "match", "ip", direccion, str(PUERTO_REPLICACION), "0xffff",
+            "flowid", "1:3")
+    return True, "ok"
+
+
+class ReglaRed(BaseModel):
+    nodo: str = "cass3"
+    escenario: str = "normal"   # normal | lento | inestable | saturado | perdida
+    valor: int = 250            # ms de retardo, o % de perdida
+
+
+ESCENARIOS = {
+    "normal": {
+        "nombre": "Red sana",
+        "desc": "Sin degradacion. Los tres nodos replican en microsegundos.",
+        "args": None,
+    },
+    "lento": {
+        "nombre": "Enlace intercontinental",
+        "desc": "Retardo constante, como un enlace Medellin-Miami.",
+        "args": lambda v: ["delay", f"{v}ms"],
+    },
+    "inestable": {
+        "nombre": "Red inestable",
+        "desc": "Retardo con jitter: la latencia varia entre paquetes.",
+        "args": lambda v: ["delay", f"{v}ms", f"{max(10, v//3)}ms",
+                           "distribution", "normal"],
+    },
+    "perdida": {
+        "nombre": "Perdida de paquetes",
+        "desc": "Un porcentaje de paquetes desaparece. Fuerza retransmisiones.",
+        "args": lambda v: ["loss", f"{v}%"],
+    },
+    "saturado": {
+        "nombre": "Ancho de banda limitado",
+        "desc": "Enlace saturado: pocos kbit/s entre nodos.",
+        "args": lambda v: ["rate", f"{max(64, v)}kbit"],
+    },
+}
+
+
+@app.get("/red/estado")
+def red_estado():
+    """Que reglas de red tiene cada nodo ahora mismo."""
+    out = []
+    for nodo in NODOS:
+        c, salida = _tc(nodo, "qdisc", "show", "dev", "eth0")
+        activo = "netem" in salida
+        detalle = ""
+        if activo:
+            for linea in salida.splitlines():
+                if "netem" in linea:
+                    detalle = linea.split("netem", 1)[1].strip()
+                    break
+        out.append({"nodo": nodo, "degradado": activo, "detalle": detalle})
+    return {"nodos": out, "escenarios": [
+        {"id": k, "nombre": v["nombre"], "desc": v["desc"]}
+        for k, v in ESCENARIOS.items()]}
+
+
+@app.post("/red/aplicar")
+def red_aplicar(r: ReglaRed):
+    """Degrada (o restaura) la red de un nodo."""
+    if r.nodo not in NODOS:
+        return {"ok": False, "error": "nodo desconocido"}
+    esc = ESCENARIOS.get(r.escenario)
+    if not esc:
+        return {"ok": False, "error": "escenario desconocido"}
+
+    if esc["args"] is None:
+        _limpiar(r.nodo)
+        return {"ok": True, "nodo": r.nodo, "escenario": "normal",
+                "mensaje": f"Red de {r.nodo} restaurada"}
+
+    ok, detalle = _aplicar(r.nodo, esc["args"](r.valor))
+    return {"ok": ok, "nodo": r.nodo, "escenario": r.escenario,
+            "valor": r.valor, "mensaje": detalle}
+
+
+@app.get("/red/medir/{usuario}")
+def red_medir(usuario: str, nivel: str = "ONE"):
+    """Escribe y lee desde los 3 nodos, devolviendo latencias.
+
+    Permite ver en vivo como una degradacion de red afecta a cada
+    nivel de consistencia.
+    """
+    if "cass1" not in conexiones:
+        return {"error": "sin conexion"}
+    from cassandra.query import SimpleStatement
+    cl = NIVELES.get(nivel, ConsistencyLevel.ONE)
+
+    _, s1 = conexiones["cass1"]
+    q_esc = SimpleStatement(
+        "UPDATE presencia SET estado=%s, last_seen=%s, "
+        "escrito_por=%s WHERE usuario_id=%s")
+    q_esc.consistency_level = cl
+    ahora = dt.datetime.now(dt.timezone.utc)
+    t0 = time.perf_counter()
+    escritura = None
+    try:
+        s1.execute(q_esc, ("online", ahora, "cass1", usuario))
+        escritura = round((time.perf_counter() - t0) * 1000, 2)
+    except Exception as e:
+        escritura = None
+        err_esc = type(e).__name__
+
+    lecturas = []
+    for nodo in NODOS:
+        lecturas.append(leer(nodo, usuario, nivel))
+    return {"nivel": nivel, "escritura_ms": escritura, "lecturas": lecturas}
+
+
 @app.get("/salud")
 def salud():
     return {"nodos_conectados": list(conexiones.keys())}
