@@ -345,31 +345,28 @@ sirve}: en un caso con recursos en disputa sería la elección correcta.
 \begin{frame}{Cómo nos aseguramos de que llegue}
 \quien{Lina}
 \centering
-\begin{tikzpicture}[
-  font=\scriptsize,
-  caja/.style={draw=itmazul!40,fill=itmazul!5,rounded corners=2pt,
+\vspace{2pt}
+\begin{tikzpicture}[font=\scriptsize,
+  caja/.style={draw=cmAzul!35,fill=cmAzul!5,rounded corners=2.5pt,
                minimum height=8mm,align=center,inner sep=3pt},
-  verde/.style={draw=verde!60,fill=verde!8,rounded corners=2pt,
+  ok/.style={draw=cmVerde!55,fill=cmVerde!8,rounded corners=2.5pt,
                minimum height=8mm,align=center,inner sep=3pt},
-  fl/.style={-{Stealth[length=1.6mm]},itmazul!55,thick}]
-
-\node[caja,minimum width=17mm] (a) at (0,0) {1 alerta};
-\node[caja,minimum width=26mm] (k) at (2.9,0) {\textbf{Kafka}\\3 particiones};
-\node[caja,minimum width=22mm] (w) at (6.1,0) {3 \emph{workers}\\en paralelo};
-\node[verde,minimum width=26mm] (c) at (9.3,0) {\textbf{Cassandra}\\\texttt{QUORUM}};
-
-\draw[fl] (a) -- (k);  \draw[fl] (k) -- (w);  \draw[fl] (w) -- (c);
-
-\node[font=\tiny,text=itmazul!70,below=1mm of k] {una zona = una partición};
-\node[font=\tiny,text=itmazul!70,below=1mm of w] {no se pisan entre sí};
-\node[font=\tiny,text=verde!60!black,below=1mm of c] {2 de 3 réplicas confirman};
+  fl/.style={-{Stealth[length=1.6mm]},cmAzul!50,thick}]
+\node[caja,minimum width=15mm] (a) at (0,0) {1 alerta};
+\node[caja,minimum width=25mm] (k) at (2.7,0) {\textbf{Kafka}\\3 particiones};
+\node[caja,minimum width=21mm] (w) at (5.8,0) {3 \emph{workers}\\en paralelo};
+\node[ok,minimum width=25mm] (c) at (8.9,0) {\textbf{Cassandra}\\\texttt{QUORUM}};
+\draw[fl] (a) -- (k); \draw[fl] (k) -- (w); \draw[fl] (w) -- (c);
+\node[font=\tiny,text=cmGris,below=1mm of k] {una zona = una partición};
+\node[font=\tiny,text=cmGris,below=1mm of w] {no se pisan entre sí};
+\node[font=\tiny,text=cmVerde!60!black,below=1mm of c] {2 de 3 confirman};
 \end{tikzpicture}
 
-\vspace{7pt}
+\vspace{9pt}
 \footnotesize
-\begin{tabular}{@{}p{3.1cm}p{3.2cm}p{4.3cm}@{}}
+\begin{tabular}{@{}p{3.0cm}p{3.1cm}p{4.4cm}@{}}
 \toprule
-\textbf{El riesgo} & \textbf{La garantía} & \textbf{Medido en la demo} \\
+\textbf{El riesgo} & \textbf{La garantía} & \textbf{Medido} \\
 \midrule
 Un servidor entrega en fila y el último espera
   & Fan-out particionado por zona
@@ -377,17 +374,84 @@ Un servidor entrega en fila y el último espera
 \addlinespace
 La alerta se pierde si cae un nodo
   & Escritura con \texttt{QUORUM}
-  & con 1 nodo caído: \texttt{QUORUM} sigue en 752\,ms \\
+  & con 1 nodo caído sigue respondiendo en 752\,ms \\
 \addlinespace
-El reparto se desbalancea
+Una zona recibe más que otra
   & Zona como clave de partición
-  & \textbf{34 / 33 / 33} entregas por zona \\
+  & \textbf{34 / 33 / 33} entregas \\
+\bottomrule
+\end{tabular}
+
+\vspace{6pt}
+\textcolor{cmVerde}{\footnotesize\textbf{Proyección: $\sim$10 segundos para los 100.000 suscriptores.}}
+\end{frame}
+
+% ─────────────────────────────────────────────
+\begin{frame}{La red real no es perfecta}
+\quien{Lina}
+\footnotesize
+Nuestros tres nodos comparten una máquina: replican en microsegundos, sin
+pérdidas. \textbf{Eso no existe en producción.} Con \texttt{tc netem} degradamos
+la red a propósito y medimos qué pasa.
+
+\vspace{8pt}
+\begin{center}\small
+\begin{tabular}{@{}lrrl@{}}
+\toprule
+\textbf{Condición de red} & \textbf{Nodo sano} & \textbf{Nodo afectado} & \textbf{Qué la causa} \\
+\midrule
+Red sana & 2{,}9 ms & 2{,}4 ms & — \\
+Latencia 250 ms & 7{,}0 ms & \textbf{258 ms} & distancia física \\
+\emph{Jitter} $\pm$80 ms & 6{,}1 ms & \textbf{310 ms} & congestión variable \\
+Pérdida 10\,\% & 7{,}8 ms & \textcolor{cmAmbar}{\textbf{333 ms}} & enlace inestable \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\vspace{7pt}
+\begin{block}{\small El hallazgo}
+\footnotesize
+\textbf{Perder paquetes duele más que la distancia.} Con 250\,ms de latencia el
+nodo responde en 258\,ms; con sólo 10\,\% de pérdida sube a 333\,ms, porque cada
+paquete perdido obliga a esperar el \emph{timeout} de TCP y retransmitir.
+Un enlace \textbf{intermitente} es peor que uno lento pero estable.
+\end{block}
+\end{frame}
+
+% ─────────────────────────────────────────────
+\begin{frame}{Cómo se defiende esto en producción}
+\quien{Lina}
+\footnotesize
+\begin{tabular}{@{}p{2.4cm}p{3.7cm}p{4.5cm}@{}}
+\toprule
+\textbf{Problema} & \textbf{Mecanismo} & \textbf{Por qué funciona} \\
+\midrule
+\textbf{Cae un nodo}
+  & \texttt{QUORUM} sobre RF=3
+  & basta con 2 réplicas; el sistema no se entera del tercero \\
+\addlinespace
+\textbf{Latencia entre ciudades}
+  & \texttt{LOCAL\_QUORUM} y \texttt{NetworkTopologyStrategy}
+  & la consulta se resuelve dentro de su datacenter, sin cruzar el enlace \\
+\addlinespace
+\textbf{\emph{Jitter} y picos}
+  & \emph{speculative retry} \newline (\texttt{99p} por defecto)
+  & si una réplica tarda más del percentil 99, pregunta a otra sin esperarla \\
+\addlinespace
+\textbf{Pérdida de paquetes}
+  & \emph{hinted handoff} + \emph{read repair}
+  & lo que no llegó se guarda y se reenvía; las réplicas se reconcilian al leer \\
+\addlinespace
+\textbf{Nodo lento, no caído}
+  & detector \emph{phi accrual}
+  & mide desviación, no un umbral fijo: evita expulsar nodos por un pico \\
 \bottomrule
 \end{tabular}
 
 \vspace{5pt}
-\centering
-\textcolor{acento}{\footnotesize\textbf{Proyección: $\sim$10 segundos para los 100.000 suscriptores.}}
+\centering\scriptsize
+\textcolor{cmGris}{Ninguno elimina el fallo: lo \textbf{absorben}. Esa es la
+diferencia entre un sistema distribuido y uno que sólo tiene copias.}
 \end{frame}
 
 % ─────────────────────────────────────────────
