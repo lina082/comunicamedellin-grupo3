@@ -3,6 +3,7 @@
 \usepackage[T1]{fontenc}
 \usepackage[spanish,es-noquoting]{babel}
 \usepackage{tikz,booktabs}
+\usepackage[absolute,overlay]{textpos}
 \usetikzlibrary{shapes.geometric,arrows.meta,positioning,calc}
 
 \usetheme{default}
@@ -25,9 +26,16 @@
 
 \newcommand{\sect}[1]{\textcolor{acento}{\small\textbf{[Sec.~#1]}}}
 
+% Marca de quien expone cada bloque, arriba a la derecha
+\newcommand{\quien}[1]{%
+  \begin{textblock*}{4cm}(8.6cm,0.32cm)
+    \tiny\textcolor{white}{\textbf{#1}}
+  \end{textblock*}}
+
 \title{\textbf{Fan-out Masivo y Presencia en Tiempo Real}}
 \subtitle{ComunicaMedellín — Canal de alertas ciudadanas}
-\author{Equipo 3}
+\author{Grupo 3 \\[4pt]
+  \small Julián \quad Elizabeth \quad Simón \quad Nilton \quad Lina}
 \institute{Tópicos Avanzados de Bases de Datos · Módulo 1 · ITM}
 \date{2026}
 
@@ -37,6 +45,7 @@
 
 % ─────────────────────────────────────────────
 \begin{frame}{El problema}
+\quien{Julián}
 \begin{columns}[T]
 \begin{column}{0.55\textwidth}
 \begin{itemize}
@@ -63,6 +72,7 @@
 
 % ─────────────────────────────────────────────
 \begin{frame}{Primero las cargas, después la tecnología}
+\quien{Julián}
 \centering\small
 \begin{tabular}{@{}llll@{}}
 \toprule
@@ -84,6 +94,7 @@ $\Rightarrow$ \textbf{Dos decisiones CAP dentro del mismo sistema.}
 
 % ─────────────────────────────────────────────
 \begin{frame}{¿Por qué no basta un servidor?}
+\quien{Julián}
 \begin{columns}[T]
 \begin{column}{0.48\textwidth}
 \centering\textbf{Cliente-Servidor} \sect{3.2}
@@ -115,7 +126,48 @@ $\Rightarrow$ \textbf{Dos decisiones CAP dentro del mismo sistema.}
 \end{frame}
 
 % ─────────────────────────────────────────────
+\begin{frame}{Lambda o Kappa: cómo se procesan los datos}
+\quien{Elizabeth}
+\begin{columns}[T]
+\begin{column}{0.48\textwidth}
+\textbf{Lambda} \sect{4.1}\\[2pt]
+\footnotesize
+Dos rutas de \emph{procesamiento}:
+\begin{itemize}\itemsep1pt
+\item capa \emph{batch}: recalcula el histórico
+\item capa de velocidad: lo reciente
+\item capa que fusiona ambas vistas
+\end{itemize}
+\vspace{3pt}
+Precio: \textbf{dos bases de código} para la misma lógica.
+\end{column}
+\begin{column}{0.48\textwidth}
+\textbf{Kappa} \sect{4.2} \quad\textcolor{verde}{\small\textbf{← la nuestra}}\\[2pt]
+\footnotesize
+Un solo \emph{pipeline} de \emph{streaming}:
+\begin{itemize}\itemsep1pt
+\item el log inmutable es la fuente de verdad
+\item los consumidores derivan sus vistas
+\item reprocesar = releer desde el \emph{offset} 0
+\end{itemize}
+\vspace{3pt}
+Una sola lógica, latencia consistentemente baja.
+\end{column}
+\end{columns}
+
+\vspace{6pt}
+\begin{block}{\small El matiz que importa}
+\footnotesize
+Que haya \textbf{dos destinos} no lo convierte en Lambda. Lambda son dos formas
+de \emph{procesar}. Nosotros tenemos \textbf{un pipeline con dos consumidores}:
+no hay capa \emph{batch}, ni \emph{cron}, ni trabajos programados. Eso es Kappa,
+y es además un sistema \textbf{orientado a eventos} \sect{4.3}.
+\end{block}
+\end{frame}
+
+% ─────────────────────────────────────────────
 \begin{frame}{Arquitectura}
+\quien{Elizabeth}
 \centering
 \begin{tikzpicture}[font=\scriptsize,
   caja/.style={rounded corners=2pt,draw=itmazul!60,fill=itmazul!8,minimum height=0.75cm,align=center,inner sep=4pt},
@@ -143,6 +195,7 @@ $\Rightarrow$ \textbf{Dos decisiones CAP dentro del mismo sistema.}
 
 % ─────────────────────────────────────────────
 \begin{frame}{Decisión CAP}
+\quien{Simón}
 \begin{columns}[T]
 \begin{column}{0.42\textwidth}
 \begin{tikzpicture}[font=\scriptsize,scale=0.92]
@@ -168,6 +221,7 @@ y la app mostraría a todos desconectados — parecería caída.
 
 % ─────────────────────────────────────────────
 \begin{frame}{Contraste con TuBoleta}
+\quien{Simón}
 \centering\small
 \begin{tabular}{@{}lll@{}}
 \toprule
@@ -189,17 +243,127 @@ pagar consenso sería gasto puro.
 \end{frame}
 
 % ─────────────────────────────────────────────
+\begin{frame}{Por qué no otras soluciones}
+\quien{Nilton}
+\footnotesize
+\begin{tabular}{@{}p{2.5cm}p{8.4cm}@{}}
+\toprule
+\textbf{Descartada} & \textbf{Razón} \\
+\midrule
+\textbf{CockroachDB} &
+Es \textcolor{rojo}{\textbf{CP}} con consenso Raft: los nodos nunca divergen.
+Correcta para TuBoleta, inservible aquí — sin niveles \texttt{ONE}/\texttt{QUORUM}
+el reto sería irrealizable. Licencia BSL, no \emph{open source}. \sect{1.3, 3.3} \\
+\addlinespace
+\textbf{PostgreSQL} &
+Cliente-Servidor: el servidor sigue siendo cuello de botella y punto único de
+falla, esté en la nube o no. \sect{3.2} \\
+\addlinespace
+\textbf{MongoDB} &
+Clasificada como \textcolor{rojo}{\textbf{CP}}. Prioriza consistencia sobre
+disponibilidad: lo contrario de lo que exige un canal de alertas. \sect{1.2} \\
+\addlinespace
+\textbf{Redis} &
+El módulo lo presenta como \emph{feature store} en memoria, no como base
+distribuida. Sin consistencia ajustable por consulta. \sect{4.4} \\
+\bottomrule
+\end{tabular}
+
+\vspace{5pt}
+\begin{block}{\small}
+\footnotesize
+No descartamos CockroachDB por desconocerla, sino \textbf{porque sabemos para qué
+sirve}: en un caso con recursos en disputa sería la elección correcta.
+\end{block}
+\end{frame}
+
+% ─────────────────────────────────────────────
 \begin{frame}{Demo en vivo}
-\begin{enumerate}\small
-  \item \texttt{make status} — 3 nodos, distribución de tokens
-  \item \texttt{make seed} — 10.000 usuarios concurrentes
-  \item \texttt{make demo-consistencia} — \texttt{ONE} vs \texttt{QUORUM}
-  \item \textbf{Frontend} — divergencia visible, conmutador en caliente
-  \item \texttt{make demo-fanout} — fan-out particionado por zona
-  \item \textcolor{acento}{\texttt{make demo-nodo-caido}} — AP bajo falla \emph{(extra)}
-  \item \textcolor{acento}{\texttt{make ch-demo}} — agregación columnar \emph{(extra)}
-  \item \textcolor{acento}{\texttt{make kafka-replay}} — Kappa desde offset 0 \emph{(extra)}
+\quien{Lina}
+\footnotesize
+\begin{enumerate}\itemsep2pt
+  \item \texttt{make status} — 3 nodos \texttt{UN}, tokens repartidos, RF=3
+  \item \textbf{Panel} — publicar una alerta: Kafka, 3 workers, Cassandra, dispositivos
+  \item \textbf{Panel} — la fila \emph{recién creada} en \texttt{historial\_usuario}
+  \item \texttt{make demo-consistencia} — \texttt{ONE} frente a \texttt{QUORUM}, 150 rondas
+  \item \texttt{make demo-nodo-caido} — tumbar un nodo: \texttt{ALL} falla, y debe fallar
+  \item \texttt{make ch-demo} — la agregación que Cassandra no puede resolver
 \end{enumerate}
+
+\vspace{4pt}
+\begin{block}{\small Metodología}
+\scriptsize
+Los tres nodos comparten una máquina y replican en microsegundos: una condición
+que \textbf{no existe en producción}. Con \texttt{tc netem} restituimos 250\,ms
+\textbf{solo} al tráfico de replicación (puerto 7000), no a las lecturas del
+cliente (9042). Sin eso, la demo mediría el laboratorio, no el sistema.
+\end{block}
+\end{frame}
+
+% ─────────────────────────────────────────────
+\begin{frame}{Resultados medidos}
+\quien{Lina}
+\begin{center}\small
+\begin{tabular}{@{}lrrl@{}}
+\toprule
+\textbf{Nivel} & \textbf{Divergencias} & \textbf{P50} & \textbf{Lectura} \\
+\midrule
+\texttt{ONE} & \textcolor{rojo}{\textbf{149/150 (99{,}3\%)}} & \textbf{1{,}14 ms}
+  & rápido, puede ir atrasado \\
+\texttt{QUORUM} & \textcolor{verde}{\textbf{0/150 (0{,}0\%)}} & \textbf{130{,}3 ms}
+  & consistente, 114$\times$ más lento \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\vspace{6pt}
+\footnotesize
+\begin{tabular}{@{}p{3.5cm}p{3.4cm}p{3.6cm}@{}}
+\toprule
+\textbf{Demostración} & \textbf{Medición} & \textbf{Qué prueba} \\
+\midrule
+Fan-out particionado & 10.127 entregas/s & el paralelismo es real \\
+Reparto por zona & 34 / 33 / 33 & una zona = una partición \\
+Caída de un nodo & \texttt{ONE} 3{,}1\,ms · \texttt{QUORUM} 752\,ms · \texttt{ALL} falla
+  & a más consistencia, menos disponibilidad \\
+Compresión columnar & 1\,M filas · \texttt{zona} 206:1 & por qué existe ClickHouse \\
+\bottomrule
+\end{tabular}
+
+\vspace{4pt}
+\centering\footnotesize
+\textcolor{acento}{\textbf{Proyección: $\sim$10 s para los 100.000 suscriptores.}}
+\end{frame}
+
+% ─────────────────────────────────────────────
+\begin{frame}{Extra: dos centros de datos}
+\quien{Lina}
+\footnotesize
+Extendimos la topología al escenario de AeroMedellín: \texttt{cass1} y
+\texttt{cass2} en el DC \textbf{medellin}, \texttt{cass3} en \textbf{miami},
+con \texttt{NetworkTopologyStrategy \{medellin:2, miami:1\}} \sect{3.3}.
+
+\vspace{6pt}
+\begin{center}\small
+\begin{tabular}{@{}lrl@{}}
+\toprule
+\textbf{Nivel} & \textbf{Lectura desde Miami} & \textbf{Qué hace} \\
+\midrule
+\texttt{ONE} & 1{,}58 ms & responde su réplica local \\
+\texttt{LOCAL\_QUORUM} & \textcolor{verde}{\textbf{1{,}46 ms}} & mayoría \emph{dentro} de la ciudad \\
+\texttt{QUORUM} & \textcolor{rojo}{\textbf{753{,}74 ms}} & mayoría global: cruza el océano \\
+\texttt{EACH\_QUORUM} & 253{,}93 ms & mayoría en \emph{cada} ciudad \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\vspace{5pt}
+\begin{block}{\small}
+\footnotesize
+\texttt{LOCAL\_QUORUM} da consistencia real por \textbf{516 veces menos latencia}
+que \texttt{QUORUM} global. Por eso es el nivel estándar en producción multi-DC:
+si Miami queda incomunicado, Medellín sigue operando con normalidad.
+\end{block}
 \end{frame}
 
 % ─────────────────────────────────────────────
