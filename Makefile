@@ -47,8 +47,8 @@ logs: ## Sigue los logs de todos los servicios
 cql: ## Ejecuta el catalogo de consultas CQL de ejemplo
 	@$(CQLSH) < infra/cql/consultas.cql
 
-cqlsh: ## Abre una sesion interactiva de cqlsh
-	docker exec -it cass1 cqlsh
+cqlsh: ## Abre cqlsh directamente en el keyspace comunica
+	docker exec -it cass1 cqlsh -k comunica
 
 schema: ## Crea el keyspace y las tablas en Cassandra
 	$(CQLSH) < infra/cql/schema.cql
