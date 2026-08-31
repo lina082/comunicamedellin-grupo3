@@ -161,6 +161,7 @@ familias y saber cuándo aplica cada una.
 | PDF | `docs/arquitectura.pdf` — documento de entrega, 5 páginas A4 | `make pdf` |
 | PDF | `docs/presentacion.pdf` — 10 diapositivas 16:9 | `make slides` |
 | HTML | `docs/web/` — cuatro documentos, ya versionados | — |
+| MD | `docs/costos.md` — análisis de TCO | — |
 
 ```bash
 make docs     # compila los dos PDFs
