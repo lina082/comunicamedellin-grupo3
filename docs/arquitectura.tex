@@ -56,57 +56,29 @@ perfiles distintos, que abarcan los cuatro tipos: transaccional (OLTP),
 \emph{streaming}, analítico (OLAP) y \emph{batch}.
 
 \begin{center}\small
-\begin{tabular}{@{}p{0.5cm}p{3.6cm}p{2.9cm}p{4.5cm}p{1.7cm}@{}}
+\begin{tabular}{@{}p{0.4cm}p{3.2cm}p{2.4cm}p{5.5cm}p{1.4cm}@{}}
 \toprule
 \textbf{} & \textbf{Carga} & \textbf{Tipo} & \textbf{Patrón de acceso} & \textbf{Sección} \\
 \midrule
-C1 & Publicar alerta & OLTP & 1 escritura, baja frecuencia & 2.1 \\
-C2 & Fan-out a 100.000 & Streaming & 1 escritura $\rightarrow$ 100K entregas & 4.2 \\
-C3 & Historial por usuario & OLTP escritura masiva & 100K inserciones por alerta & 1.3, 2.1 \\
-C4 & Presencia (\emph{online}) & OLTP clave-valor & $\sim$10K escrituras/s, alta rotación & 1.2, 1.3 \\
-C5 & Métricas de operación & OLAP + \emph{batch} & Agregaciones sobre millones de eventos & 2.2, 2.4 \\
+C1 & Publicar alerta & OLTP & Transacción corta, poco frecuente & 2.1 \\
+C2 & Fan-out a 100.000 & Streaming & Flujo continuo: se produce una vez, se consume en paralelo & 4.2 \\
+C3 & Historial por usuario & OLTP masivo & \emph{Fan-out on write}: 100K inserciones por alerta; la lectura toca una sola partición & 1.3, 2.1 \\
+C4 & Presencia & Clave-valor & $\sim$10K escrituras/s; acceso único por identificador, sin \textsc{join} & 1.2, 1.3 \\
+C5 & Métricas de operación & OLAP + \emph{batch} & Agregaciones sobre millones de eventos; latencia de segundos aceptable & 2.2 \\
 \bottomrule
 \end{tabular}
 \end{center}
 
-\paragraph{Detalle de cada carga.}
-\begin{description}[leftmargin=1.1cm,style=nextline,itemsep=2pt]
-\item[C1 — OLTP] Publicar una alerta es una transacción corta y poco frecuente:
-pocas escrituras al día, con requisito de baja latencia \sect{2.1}.
+\paragraph{Observación central.} C3 y C4 escriben en el mismo motor pero exigen
+garantías opuestas: la presencia tolera llegar dos segundos tarde; la alerta no
+tolera perderse, porque es seguridad pública. Esa diferencia obliga a un nivel de
+consistencia distinto para cada una \sect{1.2}, y es el eje del diseño.
 
-\item[C2 — Streaming] La entrega a 100.000 dispositivos es un flujo continuo de
-eventos, no una consulta. Corresponde al procesamiento de flujos \sect{4.2},
-donde el dato se produce una vez y se consume en paralelo.
-
-\item[C3 — OLTP de escritura masiva] El historial aplica \emph{fan-out on write}:
-una alerta genera 100.000 inserciones. Se privilegia la lectura posterior, que
-toca una sola partición \sect{1.3}.
-
-\item[C4 — OLTP clave-valor] La presencia es alta rotación con patrón de acceso
-único: obtener el estado de un usuario por su identificador. No requiere
-\textsc{join} ni normalización \sect{2.1}.
-
-\item[C5 — OLAP y batch] Las métricas de operación (usuarios conectados por zona
-y hora, efectividad de entrega, percentiles de latencia) son agregaciones sobre
-millones de eventos históricos. Perfil analítico: lectura intensiva, modelo
-desnormalizado, latencia de segundos aceptable \sect{2.2}. El cálculo periódico
-de estadísticas para informes es el componente \emph{batch}.
-\end{description}
-
-\paragraph{Observación central.} C3 y C4 escriben en el mismo motor y parecen la
-misma carga, pero exigen garantías opuestas. La \textbf{presencia} (C4) tolera
-desactualización: si el estado de un usuario llega dos segundos tarde, nadie lo
-nota. La \textbf{entrega de la alerta} (C3) no tolera pérdida: es información de
-seguridad pública. Esa diferencia obliga a configurar distinto nivel de
-consistencia para cada una \sect{1.2}, y es el eje del diseño.
-
-\paragraph{Por qué no basta un servidor.} Responde la pregunta (a) del enunciado.
-Una arquitectura Cliente-Servidor \sect{3.2} concentra la entrega en un proceso:
-100.000 notificaciones salen en serie desde un mismo punto, y el servidor es a la
-vez cuello de botella y punto único de falla (SPOF, \sect{3.1}). Alojar ese
-servidor en la nube no lo cambia: sigue siendo Cliente-Servidor. Ser distribuido
-\sect{3.3} exige repartir datos y procesamiento entre nodos que cooperan mediante
-\emph{sharding} y replicación.
+\paragraph{Por qué no basta un servidor.} Cliente-Servidor \sect{3.2} concentra la
+entrega en un proceso: las notificaciones salen en serie y el servidor es a la vez
+cuello de botella y punto único de falla \sect{3.1}. Alojarlo en la nube no lo
+cambia; ser distribuido \sect{3.3} exige repartir datos y procesamiento entre
+nodos que cooperan mediante \emph{sharding} y replicación.
 
 % ============================================================
 \section{Arquitectura propuesta}
@@ -159,25 +131,22 @@ del que penden dos consumidores.}
 \subsection{Justificación de cada decisión}
 
 \begin{description}[leftmargin=0.9cm,style=nextline]
-\item[Arquitectura distribuida, no Cliente-Servidor \sect{3.2, 3.3, 3.4}]
-La tabla comparativa de la \sect{3.4} es explícita: Cliente-Servidor escala de
-forma vertical y mantiene el servidor como cuello de botella, mientras que la
-arquitectura distribuida \emph{shared-nothing} escala linealmente en horizontal y
-ofrece alta disponibilidad multinodo. Con 100.000 entregas casi simultáneas y un
-requisito de continuidad durante emergencias, la segunda es la única viable.
+\item[Arquitectura distribuida \sect{3.2, 3.3, 3.4}]
+La tabla de la \sect{3.4} es explícita: Cliente-Servidor escala en vertical y
+mantiene el servidor como cuello de botella; la distribuida \emph{shared-nothing}
+escala en horizontal con alta disponibilidad multinodo. Con 100.000 entregas
+simultáneas y continuidad exigida durante emergencias, es la única viable.
 
 \item[Apache Cassandra \sect{1.3, 3.3}]
 El módulo la clasifica como \emph{«Cassandra (AP, wide-column)»} y documenta el
-caso Netflix: arquitectura \emph{peer-to-peer} sin punto único de falla, más de un
-billón de peticiones diarias. Es el único motor del stack de referencia que ofrece
-\textbf{consistencia ajustable por consulta}, requisito literal del reto
-(\texttt{ONE} frente a \texttt{QUORUM}).
+caso Netflix: \emph{peer-to-peer} sin punto único de falla. Es el único motor del
+stack de referencia con \textbf{consistencia ajustable por consulta}, requisito
+literal del reto (\texttt{ONE} frente a \texttt{QUORUM}).
 
 \item[Modelo clave-valor \sect{1.3}]
-Responde la pregunta (b). El patrón de acceso a presencia es único: obtener el
-estado de un usuario por su identificador. No hay \textsc{join}s, ni integridad
-referencial que preservar, ni consultas por atributos secundarios. Un modelo
-normalizado 3NF \sect{2.1} añadiría costo sin aportar garantías útiles.
+El patrón de acceso a presencia es único: obtener el estado de un usuario por su
+identificador. Sin \textsc{join}s ni integridad referencial que preservar, un
+modelo 3NF \sect{2.1} añadiría costo sin aportar garantías útiles.
 
 \item[Apache Kafka \sect{4.2}]
 Log distribuido, inmutable y particionado. Responde la pregunta (d): la zona actúa
@@ -186,11 +155,9 @@ independiente. Escalar consiste en añadir particiones y consumidores, no en
 agrandar un servidor.
 
 \item[\emph{Sharding} por zona \sect{3.3}]
-La \sect{3.3} enumera el particionamiento como componente esencial de una
-arquitectura distribuida. Elegimos la zona geográfica como clave porque alinea
-tres planos: la partición de Kafka, el worker que consume y el criterio con que
-la Alcaldía segmenta sus alertas. Cada zona avanza en paralelo e
-independientemente de las demás.
+Elegimos la zona geográfica como clave porque alinea tres planos: la partición de
+Kafka, el \emph{worker} que consume y el criterio con que la Alcaldía segmenta sus
+alertas. Cada zona avanza en paralelo, independiente de las demás.
 
 \item[Arquitectura Kappa, no Lambda \sect{4.1, 4.2, 4.3}]
 Lambda mantiene dos rutas de \emph{procesamiento} —una \emph{batch} que recalcula
@@ -204,10 +171,9 @@ consistentemente baja. El reprocesamiento se resuelve releyendo el tópico desde
 el \emph{offset} 0, no con un trabajo \emph{batch} paralelo.
 
 \item[ClickHouse \sect{2.2, 2.4}]
-Cassandra está optimizada para lectura por clave de partición; una agregación
-\texttt{GROUP BY} sobre 100.000 usuarios la obligaría a recorrer el clúster
-completo. Es el conflicto OLTP/OLAP de la \sect{2.2}. ClickHouse resuelve esas
-agregaciones en milisegundos, como en el caso Mercado Libre \sect{2.4}.
+Cassandra rechaza un \texttt{GROUP BY} fuera de la clave primaria: obligaría a
+recorrer el clúster. Es el conflicto OLTP/OLAP de la \sect{2.2}. ClickHouse
+resuelve esas agregaciones en milisegundos, como en el caso Mercado Libre.
 
 \end{description}
 
@@ -215,25 +181,21 @@ agregaciones en milisegundos, como en el caso Mercado Libre \sect{2.4}.
 
 \begin{description}[leftmargin=0.9cm,style=nextline]
 \item[CockroachDB \sect{1.3, 3.3}]
-Es la opción correcta para TuBoleta, no para este caso. Al ser CP con consenso
-Raft, garantiza serializabilidad en toda escritura: los nodos nunca divergen. Eso
-hace que el \emph{trade-off} que debemos demostrar sea inobservable, y encarece
-cada \emph{heartbeat} de presencia sin beneficio.
+Correcta para TuBoleta, no para este caso. Al ser CP con consenso Raft los nodos
+nunca divergen: el \emph{trade-off} que debemos demostrar sería inobservable, y
+encarece cada \emph{heartbeat} sin beneficio.
 
 \item[PostgreSQL aislado \sect{3.2}]
-Arquitectura Cliente-Servidor. Aun alojado en la nube, el servidor sigue siendo
-cuello de botella y punto único de falla; el enunciado advierte expresamente
-contra confundir «estar en la nube» con «ser distribuido».
+Cliente-Servidor: aun en la nube, el servidor sigue siendo cuello de botella y
+punto único de falla.
 
 \item[MongoDB \sect{1.2}]
-El módulo lo clasifica entre los motores CP. Prioriza consistencia sobre
-disponibilidad, criterio opuesto al que exige un canal de alertas que debe
-responder durante una emergencia.
+Clasificada como CP. Prioriza consistencia sobre disponibilidad, lo contrario de
+lo que exige un canal que debe responder durante una emergencia.
 
 \item[Redis \sect{4.4}]
-El módulo lo presenta como almacén en memoria empleado como \emph{feature store}
-para alimentar modelos en tiempo real, no como base de datos distribuida para la
-ruta operacional. Tampoco ofrece consistencia ajustable por consulta.
+El módulo lo presenta como \emph{feature store} en memoria, no como base
+distribuida. Tampoco ofrece consistencia ajustable por consulta.
 \end{description}
 
 % ============================================================
@@ -241,29 +203,22 @@ ruta operacional. Tampoco ofrece consistencia ajustable por consulta.
 \section{Conclusiones}
 % ============================================================
 \begin{enumerate}[leftmargin=*,itemsep=3pt]
-\item El caso no contiene una carga sino \textbf{cinco}, que abarcan los cuatro
-perfiles del módulo: transaccional, \emph{streaming}, analítico y \emph{batch}.
-Identificarlas antes de elegir tecnología es lo que evita forzar un único motor a
+\item El caso contiene \textbf{cinco cargas} que abarcan los cuatro perfiles del
+módulo. Identificarlas antes de elegir tecnología evita forzar un único motor a
 resolver problemas de naturaleza distinta.
 
-\item Dos cargas que escriben en el mismo motor —historial y presencia— exigen
-\textbf{garantías opuestas}. Esa diferencia, y no el volumen, es la que estructura
-el diseño.
+\item Dos cargas que escriben en el mismo motor exigen \textbf{garantías
+opuestas}. Esa diferencia, y no el volumen, estructura el diseño.
 
-\item La distinción entre estar en la nube y ser distribuido \sect{3.2, 3.3} es
-determinante: un servidor único replicado sigue concentrando la entrega en un
-proceso. Sólo el particionamiento por zona convierte una escritura en flujos
-paralelos independientes.
+\item Estar en la nube no es ser distribuido \sect{3.2, 3.3}: sólo el
+particionamiento por zona convierte una escritura en flujos paralelos.
 
 \item Separar la ruta operacional (Cassandra) de la analítica (ClickHouse) evita
-el conflicto OLTP/OLAP descrito en la \sect{2.2}: cada motor atiende el perfil de
-acceso para el que está optimizado, alimentados ambos por el mismo log de eventos
-\sect{4.1, 4.2}.
+el conflicto OLTP/OLAP \sect{2.2}; ambas se alimentan del mismo log \sect{4.2}.
 
-\item Ninguna decisión se tomó por preferencia técnica. Cada una se sostiene en
-una sección del módulo, y las alternativas se descartaron por razones explícitas
-—no por desconocimiento— empezando por CockroachDB, que sería la elección correcta
-en un caso con recursos en disputa.
+\item Cada decisión se sostiene en una sección del módulo, y los descartes son
+explícitos: CockroachDB sería la elección correcta en un caso con recursos en
+disputa.
 \end{enumerate}
 
 \vfill
