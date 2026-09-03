@@ -338,7 +338,6 @@ td.pk{color:var(--acc);font-weight:700}
 
 <div class="tabs" role="tablist">
   <button class="tab act" data-v="v-envio" role="tab">Enviar alerta</button>
-  <button class="tab" data-v="v-repl" role="tab">Réplicas en vivo</button>
   <button class="tab" data-v="v-datos" role="tab">Datos guardados</button>
   <button class="tab" data-v="v-esquema" role="tab">Esquema</button>
   <button class="tab" data-v="v-reparto" role="tab">Reparto</button>
@@ -451,6 +450,10 @@ td.pk{color:var(--acc);font-weight:700}
 
   <div class="red-ctrl">
     <div>
+      <label for="usuario">Suscriptor de prueba</label>
+      <select id="usuario"><option>cargando…</option></select>
+    </div>
+    <div>
       <label for="red-nodo">Nodo a degradar</label>
       <select id="red-nodo">
         <option value="cass3">cass3 · miami</option>
@@ -477,38 +480,6 @@ td.pk{color:var(--acc);font-weight:700}
   <div class="nodos-red" id="nodos-red"></div>
   <div class="hint">El retardo se aplica solo al puerto <b>7000</b> (replicación entre
     nodos). El <b>9042</b>, por donde entran las consultas, queda intacto.</div>
-</section>
-
-<!-- ═══ RÉPLICAS ═══ -->
-<section class="vista" id="v-repl">
-  <div class="expl">
-    <b>Qué estás viendo:</b> el mismo usuario leído desde los <b>tres nodos a la vez</b>.
-    Con <code>RF=3</code> el dato vive en los tres, pero pueden no estar sincronizados.
-    Si un panel muestra <b>otra hora</b>, esa es la consistencia eventual del teorema CAP.
-  </div>
-
-  <div class="ctrl">
-    <div>
-      <label for="usuario">Suscriptor</label>
-      <select id="usuario"><option>cargando…</option></select>
-    </div>
-    <div>
-      <label for="nivel">Nivel de consistencia</label>
-      <select id="nivel">
-        <option value="ONE">ONE · 1 réplica</option>
-        <option value="QUORUM">QUORUM · 2 de 3</option>
-        <option value="ALL">ALL · las 3</option>
-      </select>
-    </div>
-    <div>
-      <label for="escribir">&nbsp;</label>
-      <button class="p" id="escribir">Escribir presencia ahora</button>
-    </div>
-  </div>
-
-  <div class="banner ok" id="banner">Esperando lecturas…</div>
-  <div class="nodos" id="nodos"></div>
-  <div class="hint">Para ver divergencia: <b>make latencia-on</b> en la terminal.</div>
 </section>
 
 <!-- ═══ DATOS ═══ -->
@@ -597,13 +568,6 @@ document.querySelectorAll(".tab").forEach(b => b.onclick = () => {
   document.querySelectorAll(".vista").forEach(x => x.classList.remove("act"));
   b.classList.add("act");
   $(b.dataset.v).classList.add("act");
-  if (b.dataset.v === "v-repl" && DEMO){
-    $("banner").className = "banner";
-    $("banner").innerHTML = `Esta vista necesita el clúster corriendo:
-      lee el mismo dato de los 3 nodos <b>en vivo</b> y no se puede grabar.
-      Ejecuta <code>make up</code> y <code>make api</code>.`;
-    $("nodos").innerHTML = "";
-  }
   if (b.dataset.v === "v-red")     cargarRed();
   if (b.dataset.v === "v-datos")   cargarDatos();
   if (b.dataset.v === "v-esquema") cargarEsquema();
@@ -626,78 +590,10 @@ document.querySelectorAll(".tab").forEach(b => b.onclick = () => {
     if (us.length)
       $("usuario").innerHTML = us.map(u =>
         `<option value="${u.usuario_id}">${u.nombre} · ${u.comuna}</option>`).join("");
-    conectarWS();
+    $("conn").textContent = "conectado";
+    $("dot").classList.add("on");
   } catch(e){ $("conn").textContent = "API no disponible"; }
 })();
-
-/* ── WebSocket ── */
-function conectarWS(){
-  ws = new WebSocket("ws://localhost:8765/ws");
-  ws.onopen = () => { $("conn").textContent = "conectado";
-                      $("dot").classList.add("on"); suscribir(); };
-  ws.onclose = () => { $("conn").textContent = "desconectado — reintentando";
-                       $("dot").classList.remove("on"); setTimeout(conectarWS, 2000); };
-  ws.onmessage = e => pintarNodos(JSON.parse(e.data));
-}
-function suscribir(){
-  if (ws && ws.readyState === 1)
-    ws.send(JSON.stringify({usuario: $("usuario").value, nivel: $("nivel").value}));
-}
-$("usuario").onchange = suscribir;
-$("nivel").onchange   = suscribir;
-
-/* ── escribir presencia ── */
-$("escribir").onclick = async () => {
-  if (DEMO) return;
-  const b = $("escribir"); b.disabled = true; b.textContent = "escribiendo…";
-  try{
-    await fetch(API + "/presencia", {
-      method: "POST", headers: {"Content-Type": "application/json"},
-      body: JSON.stringify({usuario_id: $("usuario").value, estado: "online",
-                            zona: "centro", nivel: $("nivel").value})});
-  } catch(e){}
-  b.disabled = false; b.textContent = "Escribir presencia ahora";
-};
-
-/* ── pintar réplicas ── */
-function pintarNodos(d){
-  const ns = d.nodos || [d.nodo1, d.nodo3].filter(Boolean);
-  const ts = ns.map(n => n && n.last_seen).filter(Boolean);
-  const hayDif = new Set(ts).size > 1;
-
-  $("nodos").innerHTML = ns.map(n => {
-    if (!n) return "";
-    const dif  = hayDif && n.last_seen !== ts[0];
-    const slow = n.latencia_ms > 50;
-    return `<div class="nodo ${dif ? "dif" : ""}">
-      <h3><span>${n.nodo || "?"}</span>
-          <span class="lat ${slow ? "slow" : ""}">${
-            n.latencia_ms != null ? n.latencia_ms + " ms" : "—"}</span></h3>
-      <div class="campos">
-        <div class="campo"><span class="k">nombre</span>
-          <span class="v">${n.nombre ?? "—"}</span></div>
-        <div class="campo"><span class="k">estado</span>
-          <span class="v ${n.estado === "online" ? "hl" : ""}">${n.estado ?? (n.error ?? "—")}</span></div>
-        <div class="campo"><span class="k">last_seen</span>
-          <span class="v ${dif ? "dif" : ""}">${(n.last_seen ?? "—").replace("T", " ").slice(0, 23)}</span></div>
-        <div class="campo"><span class="k">zona</span>
-          <span class="v">${n.zona ?? "—"}</span></div>
-        <div class="campo"><span class="k">comuna</span>
-          <span class="v">${n.comuna ?? "—"}</span></div>
-      </div></div>`;
-  }).join("");
-
-  const b = $("banner");
-  if (hayDif){
-    b.className = "banner dif";
-    b.innerHTML = `<b>Los nodos NO coinciden.</b> Con nivel <b>${d.nivel ?? ""}</b>
-      cada réplica responde lo que tiene. Esto es consistencia eventual (AP).`;
-  } else {
-    b.className = "banner ok";
-    b.innerHTML = `<b>Los ${ns.length} nodos coinciden.</b> Nivel <b>${d.nivel ?? ""}</b>.`;
-  }
-}
-
 
 /* ═══════════ SIMULADOR DE FAN-OUT ═══════════ */
 let wsF = null, severidad = "critica", lats = [], entregados = 0;
