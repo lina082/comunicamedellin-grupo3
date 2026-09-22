@@ -34,12 +34,20 @@ def publicar_en_kafka(alerta):
         print(color("  kafka-python no instalado; se omite el paso Kafka.", "amarillo"))
         return False
 
-    prod = KafkaProducer(
-        bootstrap_servers=BOOTSTRAP,
-        value_serializer=lambda v: json.dumps(v).encode(),
-        key_serializer=lambda k: str(k).encode(),
-        acks=1,
-    )
+    try:
+        prod = KafkaProducer(
+            bootstrap_servers=BOOTSTRAP,
+            value_serializer=lambda v: json.dumps(v).encode(),
+            key_serializer=lambda k: str(k).encode(),
+            acks=1,
+        )
+    except Exception as e:
+        # Kafka apagado no debe tumbar la demo: el fan-out a Cassandra,
+        # que es el nucleo del reto, no depende de el.
+        print(color(f"  Kafka no disponible ({type(e).__name__}); se omite este paso.",
+                    "amarillo"))
+        print(color("  Levantalo con: docker compose up -d kafka", "dim"))
+        return False
     for idx, zona in enumerate(ZONAS):
         msg = dict(alerta, zona_destino=zona)
         # Particion explicita por zona.
@@ -68,10 +76,17 @@ def entregar_zona(zona, alerta, n):
     # QUORUM: la alerta NO se puede perder (seguridad publica)
     prep.consistency_level = ConsistencyLevel.QUORUM
 
+    # Se mide la latencia de CADA escritura, no solo el tiempo total.
+    # El docente pide throughput Y latencia: el throughput dice cuanto
+    # entrega el sistema, la latencia dice que experimenta un usuario
+    # concreto. Con 400 peticiones en vuelo el throughput sube pero la
+    # latencia individual empeora, y esa tension es la que hay que ver.
+    latencias = []
     t0 = time.perf_counter()
     futuros = []
     for i in range(n):
-        futuros.append(s.execute_async(prep, (
+        envio = time.perf_counter()
+        futuros.append((envio, s.execute_async(prep, (
             f"usuario:{zona}:{i:06d}",
             dt.datetime.now(dt.timezone.utc),
             alerta["alerta_id"],
@@ -79,17 +94,19 @@ def entregar_zona(zona, alerta, n):
             alerta["cuerpo"],
             alerta["severidad"],
             zona,
-        )))
+        ))))
         if len(futuros) >= 400:
-            for f in futuros:
+            for envio, f in futuros:
                 f.result()
+                latencias.append((time.perf_counter() - envio) * 1000)
             futuros.clear()
-    for f in futuros:
+    for envio, f in futuros:
         f.result()
+        latencias.append((time.perf_counter() - envio) * 1000)
 
     dur = time.perf_counter() - t0
     cluster.shutdown()
-    return zona, n, dur
+    return zona, n, dur, latencias
 
 
 def main():
@@ -123,7 +140,7 @@ def main():
     total_dur = time.perf_counter() - t0
 
     print()
-    for zona, n, dur in resultados:
+    for zona, n, dur, _ in resultados:
         print(f"    zona {zona:<8} {n:>6,} entregas en {dur:>5.2f}s "
               f"({n/dur:>7,.0f}/s)")
 
@@ -136,6 +153,26 @@ def main():
     secuencial = sum(r[2] for r in resultados)
     print(f"  {'Si fuera secuencial:':<22} {secuencial:.2f} s "
           f"({color(f'{secuencial/total_dur:.1f}x mas lento', 'amarillo')})")
+
+    seccion("PASO 3 — Latencia por escritura (no solo throughput)")
+    todas = sorted(l for r in resultados for l in r[3])
+    if todas:
+        def pct(p):
+            return todas[min(int(len(todas) * p), len(todas) - 1)]
+        media = sum(todas) / len(todas)
+        print("    El throughput mide el caudal del sistema; la latencia mide")
+        print("    lo que espera UNA escritura concreta. Con 400 peticiones en")
+        print("    vuelo el caudal sube y la latencia individual empeora.")
+        print()
+        print(f"      {'muestras':<14} {len(todas):>10,}")
+        print(f"      {'media':<14} {media:>10.2f} ms")
+        print(f"      {'p50':<14} {pct(0.50):>10.2f} ms")
+        print(f"      {'p95':<14} {color(f'{pct(0.95):.2f} ms', 'amarillo'):>10}")
+        print(f"      {'p99':<14} {color(f'{pct(0.99):.2f} ms', 'rojo'):>10}")
+        print(f"      {'maxima':<14} {max(todas):>10.2f} ms")
+        print()
+        print(color("    Escrituras con CONSISTENCY QUORUM: cada una espera", "dim"))
+        print(color("    confirmacion de 2 de las 3 replicas (Modulo 1, Sec. 1.2).", "dim"))
 
     seccion("CONCLUSION")
     print(f"""  El particionado por zona convierte 1 escritura en N flujos
