@@ -108,7 +108,30 @@ Muestra la lectura del mismo usuario desde los nodos 1 y 3 en paralelo, con
 conmutador `ONE`/`QUORUM` en caliente. Con `ONE` y el botón «Martillo»
 aparecen divergencias; con `QUORUM` desaparecen y sube la latencia.
 
-### Módulo 2 — modelado de datos
+### Módulo 2 — pipelines del taller (recomendado para la sustentación)
+
+Una página local con **un botón por cada punto del enunciado**. Al pulsarlo
+ejecuta la operación real contra el clúster y muestra el pipeline por dentro:
+el comando que corre, lo que responde y por qué.
+
+```bash
+make api       # terminal 1 → API en :8765
+make taller    # terminal 2 → http://localhost:4173/taller.html
+```
+
+| Punto | Qué ejecuta de verdad |
+|---|---|
+| 01 · Las cinco consultas | Q1–Q5 medidas, con el token y las réplicas donde vive el dato |
+| 02 · Fan-out a 10.000 | escribe 10.000 filas con QUORUM; throughput y p50/p95/p99 |
+| 03 · Caída real de un nodo | `docker stop` de verdad mientras se escribe |
+| 04 · Reparación | conteo de particiones, `nodetool repair`, conteo otra vez |
+| 05 · Idempotencia | reenvía el mismo evento 3 veces, con y sin el bug |
+| 06 · Analítica | la agregación en ClickHouse y forzada en Cassandra |
+
+Los puntos 03 y 04 están encadenados a propósito: el 03 deja el nodo caído y el
+04 lo devuelve y lo repara. La cabecera de la página avisa si un nodo quedó abajo.
+
+### Módulo 2 — demos por terminal
 
 ```bash
 make demo-fanout         # fan-out a 10.000: throughput + p50/p95/p99

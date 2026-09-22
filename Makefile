@@ -8,7 +8,7 @@ CH    := docker exec -i clickhouse clickhouse-client --user demo --password demo
         demo-nodo-caido ch-demo ch-seed up-zk down-zk zk-shell kafka-topics \
         latencia-on latencia-off grabar-demo docs ch-extra ch-play cql cqlsh \
         demo-multidc topologia demo-idempotencia demo-reparacion \
-        modelo hotspot demo-analitica slides-m2 \
+        modelo hotspot demo-analitica slides-m2 taller \
         kafka-consumer kafka-replay api frontend pdf slides logs
 
 help: ## Muestra esta ayuda
@@ -154,6 +154,11 @@ api: ## Arranca la API (FastAPI + WebSocket)
 
 grabar-demo: ## Graba una corrida real para el modo demo de Vercel
 	python3 demo/scripts/grabar_demo.py
+
+taller: ## [M2] Pagina de pipelines: un boton por punto del taller
+	@echo "  Abre http://localhost:4173/taller.html"
+	@echo "  Requiere 'make api' corriendo en otra terminal."
+	@cd frontend && python3 -m http.server 4173
 
 frontend: ## Sirve el frontend en http://localhost:4173
 	cd frontend && python3 -m http.server 4173

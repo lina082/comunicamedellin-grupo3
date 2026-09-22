@@ -54,6 +54,12 @@ app = FastAPI(title="ComunicaMedellin - Grupo 3", lifespan=lifespan)
 app.add_middleware(CORSMiddleware, allow_origins=["*"],
                    allow_methods=["*"], allow_headers=["*"])
 
+# Pipelines del taller del Modulo 2 (un endpoint por punto del enunciado).
+# Comparten el pool de conexiones de arriba en vez de abrir uno propio.
+from taller import router as taller_router, ctx as taller_ctx  # noqa: E402
+taller_ctx["conexiones"] = conexiones
+app.include_router(taller_router)
+
 
 def leer(nodo: str, usuario: str, nivel: str):
     """Lee la presencia de un usuario desde un nodo concreto."""
