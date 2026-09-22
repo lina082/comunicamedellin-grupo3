@@ -101,12 +101,52 @@ make demo-fanout         # Fan-out particionado por zona
 
 ```bash
 make api        # terminal 1 → http://localhost:8765
-make frontend   # terminal 2 → http://localhost:3000
+make frontend   # terminal 2 → http://localhost:4173
 ```
 
 Muestra la lectura del mismo usuario desde los nodos 1 y 3 en paralelo, con
 conmutador `ONE`/`QUORUM` en caliente. Con `ONE` y el botón «Martillo»
 aparecen divergencias; con `QUORUM` desaparecen y sube la latencia.
+
+### Módulo 2 — modelado de datos
+
+```bash
+make demo-fanout         # fan-out a 10.000: throughput + p50/p95/p99
+make demo-idempotencia   # reenvía el mismo evento: no duplica
+make demo-reparacion     # nodo caído prolongado → hints, repair
+make demo-analitica      # misma consulta OLAP: ClickHouse vs Cassandra
+make hotspot             # tamaño de partición por tabla
+make modelo              # compila docs/modelo-datos.pdf
+```
+
+Diapositivas del Módulo 2: [`docs/presentacion-modulo2.pdf`](docs/presentacion-modulo2.pdf)
+(`make slides-m2`). Guion con tiempos, reparto y preguntas probables:
+[`demo/GUION-EXPOSICION.md`](demo/GUION-EXPOSICION.md).
+
+`demo-fanout` entrega 9.999 alertas en 1,33 s (**7.509/s**) con latencia p50
+93 ms / p95 143 ms / p99 156 ms. El *throughput* mide el caudal del sistema; la
+latencia, lo que espera una escritura concreta.
+
+`demo-analitica` ejecuta la misma agregación en los dos motores: Cassandra
+**rechaza** el `GROUP BY` fuera de la clave primaria, y forzada con
+`ALLOW FILTERING` cuesta 7,79 µs/fila frente a 0,04 en ClickHouse (200× más).
+
+`demo-idempotencia` contrasta el timestamp del evento (1 fila tras 3 reenvíos)
+con el del *worker* (3 filas: el bug clásico del fan-out).
+
+`demo-reparacion` desactiva *hinted handoff*, tumba un nodo, escribe 2.000
+particiones sin él y mide el hueco antes y después de `nodetool repair`:
+
+| Particiones en disco | cass1 | cass2 *(caído)* | cass3 |
+|---|---|---|---|
+| línea base | 0 | 0 | 0 |
+| tras escribir sin cass2 | 1.999 | **0** | 1.999 |
+| tras `nodetool repair` | 1.999 | **1.999** | 1.999 |
+
+> El hueco **no** se ve con un `SELECT`: con RF=3 sobre 3 nodos los tres son
+> réplica de todo, así que una lectura con `ONE` dirigida a cass2 la sirve
+> cualquier réplica viva. La divergencia es interna — solo visible con
+> `nodetool tablestats`. Eso *es* la consistencia eventual.
 
 ### Extras (más allá de lo pedido)
 
@@ -117,6 +157,210 @@ make ch-demo           # agregaciones columnares + ratio de compresión
 make kafka-replay      # relectura desde offset 0 (Kappa, Sec. 4.2)
 make up-zk && make zk-shell   # coordinación con Zookeeper
 ```
+
+---
+
+## Demo dentro de Cassandra (CQL en vivo)
+
+Los `make` de arriba orquestan desde fuera. Esta sección es para **entrar al
+motor y mostrar los datos y el comportamiento distribuido en vivo**, que es lo
+que se defiende en la sustentación.
+
+### Entrar al shell
+
+```bash
+docker exec -it cass1 cqlsh     # nodo de medellin
+docker exec -it cass3 cqlsh     # nodo de miami (para contrastar)
+```
+
+Ya dentro, todo lo que sigue se escribe en el prompt `cqlsh>`.
+
+### 1. Reconocer el terreno
+
+```sql
+DESCRIBE KEYSPACES;
+DESCRIBE KEYSPACE comunica;     -- muestra el RF por datacenter
+USE comunica;
+DESCRIBE TABLES;                -- alertas, historial_usuario, presencia
+DESCRIBE TABLE presencia;
+```
+
+El `DESCRIBE KEYSPACE` imprime la línea que sustenta toda la decisión de diseño:
+
+```
+replication = {'class': 'NetworkTopologyStrategy', 'medellin': '2', 'miami': '1'}
+```
+
+### 2. Ver los datos
+
+```sql
+-- usuarios (10.000 sembrados por seed_usuarios.py)
+SELECT usuario_id, nombre, comuna, zona FROM presencia LIMIT 10;
+
+-- consulta eficiente: por partition key, va directo a la réplica
+SELECT * FROM presencia WHERE usuario_id = 'CC65027980';
+
+-- alertas publicadas
+SELECT titulo, severidad, zona_destino, total_envios FROM alertas LIMIT 10;
+
+-- historial de un usuario, ya ordenado por CLUSTERING ORDER (enviado_en DESC)
+SELECT enviado_en, titulo, severidad
+  FROM historial_usuario
+  WHERE usuario_id = 'CC65027980';
+```
+
+### 3. Dónde vive físicamente cada dato
+
+Esto hace visible el particionado por token — el corazón del modelo:
+
+```sql
+SELECT token(usuario_id), usuario_id, nombre
+  FROM presencia WHERE usuario_id = 'CC65027980';
+```
+
+```
+ system.token(usuario_id) | usuario_id | nombre
+--------------------------+------------+-------------------------------
+     -9222786510659648211 | CC65027980 | Jorge Libardo Hernández Gómez
+```
+
+Y desde fuera, qué nodos guardan esa partición:
+
+```bash
+docker exec cass1 nodetool getendpoints comunica presencia CC65027980
+# 172.24.0.4  → cass1  (medellin)
+# 172.24.0.6  → cass3  (miami)
+# 172.24.0.5  → cass2  (medellin)
+```
+
+Tres réplicas: dos en medellin (RF=2) y una en miami (RF=1). Coincide con el
+keyspace.
+
+### 4. LOCAL_QUORUM vs QUORUM, demostrado con TRACING
+
+**Esta es la demo central.** `TRACING ON` imprime cada mensaje entre nodos, así
+que la diferencia deja de ser teórica y se ve en pantalla.
+
+```sql
+CONSISTENCY LOCAL_QUORUM;
+TRACING ON;
+SELECT nombre FROM presencia WHERE usuario_id = 'CC65027980';
+```
+
+En el trace solo aparecen nodos de **medellin** (`172.24.0.4` y `172.24.0.5`):
+
+```
+reading digest from /172.24.0.5:7000
+Sending READ_REQ message to /172.24.0.5:7000
+```
+
+Ahora el contraste:
+
+```sql
+CONSISTENCY QUORUM;
+SELECT nombre FROM presencia WHERE usuario_id = 'CC65027980';
+```
+
+Aparece **miami** (`172.24.0.6`) — la consulta cruza entre datacenters:
+
+```
+reading digest from /172.24.0.6:7000
+Sending READ_REQ message to /172.24.0.6:7000
+```
+
+Ese salto es exactamente la latencia que `LOCAL_QUORUM` evita. Para cerrar:
+
+```sql
+TRACING OFF;
+CONSISTENCY LOCAL_ONE;    -- vuelta al modo rápido
+```
+
+### 5. Escribir y ver la replicación
+
+```sql
+CONSISTENCY LOCAL_QUORUM;
+
+INSERT INTO alertas (alerta_id, titulo, cuerpo, severidad, zona_destino, publicada_en, total_envios)
+VALUES (uuid(), 'Simulacro de sismo', 'Evacuación preventiva 10:00 a.m.',
+        'alta', 'norte', toTimestamp(now()), 0);
+
+SELECT titulo, severidad, publicada_en FROM alertas LIMIT 3;
+```
+
+Salir (`exit`) y leer **desde el otro datacenter** para comprobar que replicó:
+
+```bash
+docker exec cass3 cqlsh -e "SELECT titulo, zona_destino FROM comunica.alertas LIMIT 5;"
+```
+
+### 6. Tolerancia a fallos, en vivo
+
+```bash
+docker stop cass2                       # cae un nodo de medellin
+docker exec cass1 nodetool status       # cass2 aparece como 'DN'
+```
+
+Ya con el nodo caído, desde `cqlsh`:
+
+```sql
+CONSISTENCY ONE;
+SELECT nombre FROM presencia WHERE usuario_id = 'CC65027980';   -- ✅ responde
+
+CONSISTENCY LOCAL_QUORUM;
+SELECT nombre FROM presencia WHERE usuario_id = 'CC65027980';   -- ❌ falla
+```
+
+El error es el resultado esperado, y conviene explicarlo así:
+
+> `medellin` tiene RF=2, luego `LOCAL_QUORUM = floor(2/2)+1 = 2`. Con un nodo
+> caído solo queda 1 réplica viva, así que no hay quórum. Es la elección **AP**
+> del teorema CAP hecha explícita: con `ONE` se sacrifica consistencia y se
+> conserva disponibilidad; con `LOCAL_QUORUM` ocurre lo contrario.
+
+Restaurar:
+
+```bash
+docker start cass2
+docker exec cass1 nodetool status       # esperar a que vuelva a 'UN'
+```
+
+### 7. Qué NO se puede consultar (y por qué)
+
+Vale la pena mostrarlo: justifica el modelado de datos ante el jurado.
+
+```sql
+SELECT * FROM presencia WHERE comuna = 'Manrique';
+```
+
+```
+InvalidRequest: ... cannot be restricted as the query would require filtering
+```
+
+`comuna` no es partition key, así que Cassandra tendría que barrer todos los
+nodos. Se puede forzar con `ALLOW FILTERING`, pero eso es precisamente la señal
+de que **la tabla no se diseñó para esa consulta**. La regla del modelo: una
+tabla por patrón de acceso, y la partition key se elige desde la consulta, no
+desde la entidad.
+
+Lo mismo con agregaciones:
+
+```sql
+SELECT zona, COUNT(*) FROM presencia GROUP BY zona;
+-- InvalidRequest: Group by is currently only supported on the columns of the PRIMARY KEY
+```
+
+Ese trabajo analítico es el que se delega a **ClickHouse** (`make ch-demo`).
+
+### Chuleta de operación (fuera de cqlsh)
+
+```bash
+docker exec cass1 nodetool status                 # UN/DN por nodo y datacenter
+docker exec cass1 nodetool describecluster        # snitch, partitioner, esquema
+docker exec cass1 nodetool ring                   # distribución de tokens
+docker exec cass1 nodetool tablestats comunica.presencia
+docker exec cass1 nodetool netstats               # replicación en curso
+```
+
 
 ---
 

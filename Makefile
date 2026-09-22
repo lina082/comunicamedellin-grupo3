@@ -7,7 +7,8 @@ CH    := docker exec -i clickhouse clickhouse-client --user demo --password demo
 .PHONY: help up down clean status schema seed demo-consistencia demo-fanout \
         demo-nodo-caido ch-demo ch-seed up-zk down-zk zk-shell kafka-topics \
         latencia-on latencia-off grabar-demo docs ch-extra ch-play cql cqlsh \
-        demo-multidc topologia \
+        demo-multidc topologia demo-idempotencia demo-reparacion \
+        modelo hotspot demo-analitica slides-m2 \
         kafka-consumer kafka-replay api frontend pdf slides logs
 
 help: ## Muestra esta ayuda
@@ -86,6 +87,23 @@ topologia: ## Muestra los datacenters y sus nodos
 demo-nodo-caido: ## [EXTRA] Tumba un nodo y muestra que AP sigue respondiendo
 	python3 demo/scripts/demo_nodo_caido.py
 
+# -- Modulo 2: modelado de datos --------------------------------
+demo-idempotencia: ## [M2] Reenvia el mismo evento y prueba que no duplica
+	python3 demo/scripts/demo_idempotencia.py
+
+demo-reparacion: ## [M2] Nodo caido prolongado: hints, read repair y nodetool repair
+	python3 demo/scripts/demo_reparacion.py
+
+demo-analitica: ## [M2] Misma consulta OLAP en ClickHouse vs forzada en Cassandra
+	python3 demo/scripts/demo_analitica.py
+
+hotspot: ## [M2] Tamano de particion por tabla (evidencia del bucketing)
+	@for t in estado_entrega entrega_sin_bucket historial_usuario presencia_por_comuna; do \
+		echo "-- $$t"; \
+		docker exec cass1 nodetool tablestats comunica.$$t 2>/dev/null \
+		  | grep -E 'Number of partitions|Compacted partition (mean|maximum)'; \
+	done
+
 # ── ClickHouse (ruta analitica) ──────────────────────────────
 ch-seed: ## Genera eventos analiticos en ClickHouse
 	python3 demo/scripts/seed_clickhouse.py
@@ -148,6 +166,13 @@ pdf: ## Compila el documento principal (docs/arquitectura.pdf)
 		     cd docs && pdflatex -interaction=nonstopmode arquitectura.tex 2>&1 | grep -A4 "^! " | head -8; exit 1; }
 	@echo "docs/arquitectura.pdf"
 
+modelo: ## Compila el informe del Modulo 2 (docs/modelo-datos.pdf)
+	@cd docs && pdflatex -interaction=nonstopmode -halt-on-error modelo-datos.tex >/dev/null \
+		&& pdflatex -interaction=nonstopmode modelo-datos.tex >/dev/null \
+		|| { echo "Fallo la compilacion. Detalle:"; \
+		     cd docs && pdflatex -interaction=nonstopmode modelo-datos.tex 2>&1 | grep -A4 "^! " | head -8; exit 1; }
+	@echo "docs/modelo-datos.pdf"
+
 slides: ## Compila las diapositivas (docs/presentacion.pdf)
 	@cd docs && pdflatex -interaction=nonstopmode -halt-on-error presentacion.tex >/dev/null \
 		&& pdflatex -interaction=nonstopmode presentacion.tex >/dev/null \
@@ -155,4 +180,11 @@ slides: ## Compila las diapositivas (docs/presentacion.pdf)
 		     cd docs && pdflatex -interaction=nonstopmode presentacion.tex 2>&1 | grep -A4 "^! " | head -8; exit 1; }
 	@echo "docs/presentacion.pdf"
 
-docs: pdf slides ## Compila documento y diapositivas
+slides-m2: ## Compila las diapositivas del Modulo 2 (docs/presentacion-modulo2.pdf)
+	@cd docs && pdflatex -interaction=nonstopmode -halt-on-error presentacion-modulo2.tex >/dev/null \
+		&& pdflatex -interaction=nonstopmode presentacion-modulo2.tex >/dev/null \
+		|| { echo "Fallo la compilacion. Detalle:"; \
+		     cd docs && pdflatex -interaction=nonstopmode presentacion-modulo2.tex 2>&1 | grep -A4 "^! " | head -8; exit 1; }
+	@echo "docs/presentacion-modulo2.pdf"
+
+docs: pdf slides modelo slides-m2 ## Compila documento y diapositivas
