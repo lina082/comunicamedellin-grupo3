@@ -1,0 +1,643 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[spanish,es-noquoting]{babel}
+\usepackage[margin=2.2cm]{geometry}
+\usepackage{graphicx,booktabs,longtable,array,xcolor,hyperref,fancyhdr,enumitem}
+\usepackage{needspace}
+\usepackage{tikz}
+\usepackage{listings}
+\usetikzlibrary{shapes.geometric,arrows.meta,positioning,fit,backgrounds,calc}
+
+\definecolor{itmazul}{RGB}{22,48,110}
+\definecolor{acento}{RGB}{0,120,160}
+\definecolor{gris}{RGB}{242,244,247}
+\definecolor{verde}{RGB}{34,120,60}
+\definecolor{rojo}{RGB}{170,40,40}
+\definecolor{ambar}{RGB}{176,120,20}
+
+\hypersetup{colorlinks=true,linkcolor=itmazul,urlcolor=acento}
+\pagestyle{fancy}\fancyhf{}
+\lhead{\small ComunicaMedellín — Grupo 3}
+\rhead{\small Módulo 2 · ITM 2026}
+\cfoot{\small\thepage}
+
+% Referencia al material del curso, con modulo explicito.
+% (Retroalimentacion del Modulo 1: "especificar siempre el origen
+%  de las referencias, por ejemplo Modulo 1, Sec. 3.3")
+\newcommand{\mI}[1]{\textcolor{acento}{\small[M1,~Sec.~#1]}}
+\newcommand{\mII}[1]{\textcolor{acento}{\small[M2,~Sec.~#1]}}
+
+\lstset{
+  basicstyle=\ttfamily\scriptsize,
+  keywordstyle=\color{itmazul}\bfseries,
+  commentstyle=\color{gray},
+  backgroundcolor=\color{gris},
+  frame=leftline, framerule=1.2pt, rulecolor=\color{acento},
+  xleftmargin=8pt, framexleftmargin=6pt,
+  breaklines=true, showstringspaces=false,
+  morekeywords={CREATE,TABLE,PRIMARY,KEY,WITH,CLUSTERING,ORDER,BY,SELECT,
+    FROM,WHERE,INSERT,INTO,VALUES,UPDATE,SET,DELETE,USING,TTL,IF,NOT,
+    EXISTS,AND,LIMIT,DESC,ASC,text,uuid,timestamp,int,double,boolean,
+    CONSISTENCY,QUORUM,ONE,ALLOW,FILTERING,TRUNCATE,COUNTER,counter}
+}
+
+\title{\vspace{-1.5cm}
+  \textcolor{itmazul}{\Large\textbf{Modelado de Datos en Cassandra}}\\[4pt]
+  \large ComunicaMedellín — Fan-out masivo, presencia y consistencia\\[10pt]
+  \normalsize Tópicos Avanzados de Bases de Datos — Módulo 2}
+\author{\normalsize Equipo 3}
+\date{\normalsize Institución Universitaria ITM · 2026}
+
+\begin{document}
+\maketitle
+\vspace{-0.6cm}
+
+\begin{center}
+\begin{minipage}{0.95\textwidth}\small
+\textbf{Resumen.} El Módulo 1 respondió \emph{qué motor}; este documento responde
+\emph{qué modelo}. De cinco consultas reales derivamos siete tablas con su clave de
+partición, agrupamiento, factor de replicación y nivel de consistencia. Todas las
+cifras marcadas \emph{medido} provienen de un clúster Cassandra 4.1 de tres nodos
+(dos en \texttt{medellin}, uno en \texttt{miami}) desplegado con Docker Compose y
+consultado con \texttt{nodetool}; cada sección cita el objetivo del
+\texttt{Makefile} que la reproduce.
+\end{minipage}
+\end{center}
+\vspace{2pt}
+
+% ============================================================
+\section{De las consultas al modelo}
+% ============================================================
+En un modelo relacional se normaliza y después se consulta \mI{2.1}. En Cassandra
+el orden se invierte: los datos se distribuyen por el \emph{hash} de la clave de
+partición \mI{3.3}, así que el modelo se deriva de las consultas.
+
+\begin{center}\small
+\begin{tabular}{@{}p{0.7cm}p{6.1cm}p{2.3cm}p{1.7cm}p{2.9cm}@{}}
+\toprule
+& \textbf{Consulta real} & \textbf{Frecuencia} & \textbf{Latencia} & \textbf{Tabla que la sirve} \\
+\midrule
+Q1 & Presencia actual de un usuario & $\sim$10.000/s & $<$10 ms & \texttt{presencia} \\
+Q2 & Historial de alertas de un usuario & $\sim$500/s & $<$50 ms & \texttt{historial\_usuario} \\
+Q3 & Alertas de un usuario en un rango de fechas & $\sim$100/s & $<$50 ms & \texttt{historial\_usuario} \\
+Q4 & Usuarios en línea de una zona & $\sim$20/día & $<$500 ms & \texttt{presencia\_por\_comuna} \\
+Q5 & Usuarios con una alerta pendiente & $\sim$50/día & $<$1 s & \texttt{estado\_entrega} \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\noindent\textbf{Hallazgo.} Dos consultas quedaron sin tabla. Q4 no se puede
+responder desde \texttt{presencia}, particionada por \texttt{usuario\_id}: la zona
+no participa en el \emph{hash} y exigiría \texttt{ALLOW FILTERING} sobre todo el
+clúster. Q5 no se almacenaba. La respuesta de Cassandra no es un índice secundario
+sino \textbf{otra tabla}: se duplica el dato para servir otra consulta \mI{2.2}.
+Por eso el modelo pasó de tres a siete tablas.
+
+% ============================================================
+\section{Modelo de datos}
+% ============================================================
+\textbf{RF~=~3}, como \texttt{\{medellin:2, miami:1\}} con
+\texttt{NetworkTopologyStrategy}: solo ella coloca las réplicas \emph{por centro de
+datos} \mI{3.3}, sin lo cual los niveles \texttt{LOCAL\_*} no tendrían sentido. Con
+RF~=~3 el quórum es 2, así que el sistema tolera perder un nodo sin perder
+disponibilidad ni durabilidad. Es el mínimo que lo garantiza: con RF~=~2 el quórum
+serían las dos réplicas y perder un nodo bloquearía las escrituras.
+
+\begin{figure}[htbp]\centering
+\begin{tikzpicture}[
+  font=\scriptsize,
+  tabla/.style={rounded corners=2pt,draw=itmazul!55,fill=white,
+                text width=4.5cm,align=left,inner sep=4.5pt},
+  consulta/.style={rounded corners=7pt,draw=acento!70,fill=acento!8,
+                   text width=2.3cm,align=center,inner sep=3.5pt},
+  fuente/.style={rounded corners=2pt,draw=verde!55!black,fill=verde!8,
+                 text width=4.5cm,align=center,inner sep=4.5pt},
+  liga/.style={-{Stealth[length=1.5mm]},draw=acento!65},
+  escr/.style={-{Stealth[length=1.7mm]},draw=verde!50!black,thick},
+  nota/.style={font=\scriptsize\itshape,text=gray!85!black}]
+
+\def\dy{1.62}   % separacion vertical entre tablas
+
+% ---- origen de la escritura ----
+\node[fuente] (kafka) at (0,0.35) {%
+  \textbf{Kafka} — 1 alerta publicada\\[1pt]
+  \textcolor{gray}{particionado por zona \mI{4.2}}};
+
+\node[tabla,anchor=west] (alertas) at (3.4,0.35) {%
+  \textbf{\texttt{alertas}} \hfill \textcolor{gray}{catálogo}\\[1pt]
+  \textcolor{itmazul}{PK} \texttt{(alerta\_id)}\\
+  \textcolor{verde!45!black}{\texttt{QUORUM}} lectura y escritura};
+
+\draw[escr] (kafka.east) -- (alertas.west)
+  node[midway,above,nota,yshift=-1pt] {1 escritura};
+
+% ---- consulta -> tabla ----
+\node[consulta] (q1) at (-1.05,-\dy)   {\textbf{Q1} presencia\\de un usuario};
+\node[consulta] (q2) at (-1.05,-2*\dy) {\textbf{Q2--Q3} historial\\de un usuario};
+\node[consulta] (q3) at (-1.05,-3*\dy) {\textbf{Q4} en línea\\por zona};
+\node[consulta] (q4) at (-1.05,-4*\dy) {\textbf{Q5} entrega\\de una alerta};
+
+\node[tabla,anchor=west] (t1) at (0.5,-\dy) {%
+  \textbf{\texttt{presencia}}\\[1pt]
+  \textcolor{itmazul}{PK} \texttt{(usuario\_id)}\\
+  \textcolor{rojo!80!black}{\texttt{ONE}} lectura y escritura};
+
+\node[tabla,anchor=west] (t2) at (0.5,-2*\dy) {%
+  \textbf{\texttt{historial\_usuario}}\\[1pt]
+  \textcolor{itmazul}{PK} \texttt{((usuario\_id), enviado\_en}\,\textsc{desc}\texttt{)}\\
+  \textcolor{verde!45!black}{\texttt{QUORUM}} escr. · \textcolor{rojo!80!black}{\texttt{ONE}} lect.};
+
+\node[tabla,anchor=west] (t3) at (0.5,-3*\dy) {%
+  \textbf{\texttt{presencia\_por\_comuna}}\\[1pt]
+  \textcolor{itmazul}{PK} \texttt{((comuna, estado), usuario\_id)}\\
+  \textcolor{gray}{32 particiones} · \texttt{TTL} 900 s · \textcolor{rojo!80!black}{\texttt{ONE}}};
+
+\node[tabla,anchor=west] (t4) at (0.5,-4*\dy) {%
+  \textbf{\texttt{estado\_entrega}}\\[1pt]
+  \textcolor{itmazul}{PK} \texttt{((alerta\_id, bucket), usuario\_id)}\\
+  \textcolor{gray}{bucket = hash mod 32} · \textcolor{verde!45!black}{\texttt{QUORUM}} lect.};
+
+\foreach \i in {1,2,3,4} { \draw[liga] (q\i.east) -- (t\i.west); }
+
+% ---- guardia de idempotencia ----
+\node[tabla,anchor=west] (eventos) at (7.05,-2.55) {%
+  \textbf{\texttt{eventos\_procesados}}\\[1pt]
+  \textcolor{itmazul}{PK} \texttt{(evento\_id)}\\
+  \textcolor{verde!45!black}{\texttt{LWT}} guardia del \emph{push} · \texttt{TTL} 7 d};
+
+% ---- ruta de escritura ----
+% presencia se escribe directo desde el borde inferior de Kafka
+\draw[escr] (kafka.south) ++(1.2,0) -- ++(0,-0.62) -| (t1.north);
+% el fan-out baja por fuera, a la izquierda, para no cruzar cajas
+\draw[escr] (kafka.west) -- ++(-0.4,0) |- (t2.west)
+  node[pos=0.28,left,nota,align=right,xshift=2pt] {fan-out\\100.000\\filas};
+\draw[escr,dashed] (t2.east) -- ++(0.45,0) |- (eventos.west)
+  node[pos=0.55,above,nota,yshift=0pt] {idempotencia};
+
+% ---- vista derivada ----
+\draw[gray!45,dashed,rounded corners=2pt]
+  ($(t1.north east)+(0.14,0.08)$) -- ($(t1.north east)+(0.42,0.08)$)
+  -- ($(t3.south east)+(0.42,-0.08)$) -- ($(t3.south east)+(0.14,-0.08)$);
+\node[nota,anchor=west,align=left] at ($(t3.east)+(0.5,-0.34)$)
+  {misma información,\\indexada al revés};
+
+\end{tikzpicture}
+\caption{Modelo de datos derivado de las consultas. Las flechas azules son la ruta
+de lectura —cada consulta del camino crítico toca \textbf{una sola partición}— y
+las verdes la de escritura. \texttt{presencia\_por\_comuna} duplica la información
+de \texttt{presencia} indexada al revés: en Cassandra la respuesta a una consulta
+nueva es una tabla nueva, no un índice \mI{2.2}.}
+\label{fig:modelo}
+\end{figure}
+
+
+\begin{center}\scriptsize
+\begin{tabular}{@{}p{2.95cm}p{2.65cm}p{1.8cm}p{1.45cm}p{1.45cm}p{2.9cm}@{}}
+\toprule
+\textbf{Tabla} & \textbf{Partition key} & \textbf{Clustering} & \textbf{CL escr.} & \textbf{CL lect.} & \textbf{Razón del nivel} \\
+\midrule
+\texttt{presencia} & \texttt{usuario\_id} & — & \texttt{ONE} & \texttt{ONE} & Dato efímero; 2 s de desfase no altera ninguna decisión \\
+\addlinespace
+\texttt{historial\_usuario} & \texttt{usuario\_id} & \texttt{enviado\_en} \textsc{desc} & \texttt{QUORUM} & \texttt{ONE} & Seguridad pública: no puede perderse \\
+\addlinespace
+\texttt{alertas} & \texttt{alerta\_id} & — & \texttt{QUORUM} & \texttt{QUORUM} & Catálogo; volumen bajo, corrección obligatoria \\
+\addlinespace
+\texttt{presencia\_por\_zona} & \texttt{(zona, estado)} & \texttt{usuario\_id} & \texttt{ONE} & \texttt{ONE} & Vista derivada de presencia \\
+\addlinespace
+\texttt{presencia\_por\_comuna} & \texttt{(comuna, estado)} & \texttt{usuario\_id} & \texttt{ONE} & \texttt{ONE} & Igual, con 16 buckets en vez de 3 \\
+\addlinespace
+\texttt{estado\_entrega} & \texttt{(alerta\_id, bucket)} & \texttt{usuario\_id} & \texttt{ONE} & \texttt{QUORUM} & Escritura masiva barata; el conteo final debe ser exacto \\
+\addlinespace
+\texttt{eventos\_procesados} & \texttt{evento\_id} & — & \texttt{QUORUM} (LWT) & \texttt{QUORUM} & Guardia de idempotencia: exige consenso \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\subsection{El nivel de consistencia se decide por operación}
+La \emph{replicación} y la \emph{disponibilidad} se configuran una vez en el
+\emph{keyspace}; la \emph{consistencia} es propiedad de \textbf{cada consulta}
+\mI{1.2}. Decir «Cassandra es eventualmente consistente» es impreciso: ofrece
+consistencia ajustable cuyo valor por defecto produce comportamiento eventual. La
+condición formal es $R+W>RF$:
+
+\begin{center}\small
+\begin{tabular}{@{}llll@{}}
+\toprule
+\textbf{Escritura} & \textbf{Lectura} & $R+W$ & \textbf{Garantía} \\
+\midrule
+\texttt{ONE} (1) & \texttt{ONE} (1) & $2 \not> 3$ & Eventual — \texttt{presencia} \\
+\texttt{QUORUM} (2) & \texttt{ONE} (1) & $3 \not> 3$ & Eventual en lectura, durable en escritura \\
+\texttt{QUORUM} (2) & \texttt{QUORUM} (2) & $4 > 3$ & \textbf{Inmediata} — \texttt{alertas} \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\noindent La fila central es intencional: \texttt{historial\_usuario} escribe con
+\texttt{QUORUM} y lee con \texttt{ONE} porque el caso exige \emph{durabilidad} (la
+alerta no puede perderse si cae un nodo), no \emph{lectura inmediata} (que el
+usuario la vea 300~ms después es irrelevante). Confundir ambas es el error
+conceptual que este cuadro previene.
+
+\subsection{Justificación de las claves}
+\begin{itemize}[leftmargin=*,itemsep=2pt]
+\item \texttt{presencia} — \texttt{usuario\_id} es de alta cardinalidad
+($\sim$100.000 valores), así que el \emph{hash} reparte uniformemente. Una lectura,
+un salto, una partición de una fila.
+
+\item \texttt{historial\_usuario} — el agrupamiento \textsc{desc} ordena
+físicamente de más reciente a más antiguo: «las últimas 20 alertas» es una lectura
+secuencial, no un \emph{scan}. \emph{Crecimiento acotado:} 20 alertas/día son 7.300
+al año, y a 22,5 B/fila (medido en la sección de fan-out) la partición pesa 164~KB tras un año, tres
+órdenes de magnitud bajo el límite práctico de 100~MB. No necesita \emph{bucketing}.
+
+\item \texttt{presencia\_por\_zona} — clave \textbf{compuesta}, no solo
+\texttt{zona}: tres zonas darían $\sim$33.000 filas en tres tokens del anillo.
+Añadir \texttt{estado} sube a seis particiones; sigue siendo poco, de ahí la
+variante siguiente.
+
+\item \texttt{presencia\_por\_comuna} — las 16 comunas son la unidad con que la
+Alcaldía ya segmenta: $16\times2=32$ particiones de $\sim$3.100 filas. La consulta
+por zona se resuelve con varias consultas en paralelo desde el \emph{driver}, una
+por comuna. Se traslada trabajo del coordinador al cliente, que es el intercambio
+correcto en Cassandra. Ambas llevan \texttt{TTL}~=~900~s: al cambiar de estado el
+usuario \textbf{cambia de partición} y la fila antigua no se sobrescribe, hay que
+dejarla expirar.
+
+\item \texttt{estado\_entrega} — el \emph{bucket} es
+\texttt{hash(usuario\_id) mod 32}. Sin él una alerta genera una única partición y
+concentra toda la escritura en un punto del anillo, como mide la sección de
+\emph{hotspots}.
+
+\item \texttt{eventos\_procesados} — clave \texttt{alerta\_id:usuario\_id}, de
+máxima cardinalidad. Es el guardia de idempotencia frente a los reenvíos de Kafka.
+\end{itemize}
+
+% ============================================================
+\section{Las cinco consultas, medidas}
+% ============================================================
+Con 50.000 filas cargadas; 60 repeticiones tras calentamiento (\texttt{make cql}).
+
+\begin{center}\small
+\begin{tabular}{@{}p{0.7cm}p{7.6cm}rr@{}}
+\toprule
+& \textbf{Consulta CQL} & \textbf{p50 (ms)} & \textbf{p95 (ms)} \\
+\midrule
+Q1 & \texttt{SELECT * FROM presencia WHERE usuario\_id=?} & 1,89 & 2,97 \\
+Q2 & \texttt{... FROM historial\_usuario WHERE usuario\_id=? LIMIT 20} & 2,64 & 3,34 \\
+Q3 & \texttt{... WHERE usuario\_id=? AND enviado\_en > ?} & 2,21 & 3,29 \\
+Q4 & \texttt{... FROM presencia\_por\_zona WHERE zona=? AND estado=?} & 2,29 & 3,61 \\
+Q5 & \texttt{... FROM estado\_entrega WHERE alerta\_id=? AND bucket=?} & 1,56 & 3,92 \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\noindent Las cinco bajan de 4~ms en p95 porque todas tocan \textbf{una sola
+partición}: ninguna usa \texttt{ALLOW FILTERING}, ordena en memoria ni cruza
+tablas. Ese es el criterio de que el modelo está bien derivado — si una consulta
+del camino crítico necesitara \texttt{ALLOW FILTERING}, faltaría una tabla.
+
+\smallskip
+\noindent\textbf{Costo del nivel de consistencia} (Q1, 100 repeticiones):
+\texttt{ONE} 1,13~ms · \texttt{LOCAL\_QUORUM} 1,38~ms ($+21{,}7$~\%) ·
+\texttt{QUORUM} 1,54~ms ($+36{,}6$~\%). En red local el sobrecosto es de 0,41~ms;
+lo relevante es que \texttt{LOCAL\_QUORUM} cuesta la mitad que \texttt{QUORUM}
+porque no espera a Miami. Con 60--80~ms reales entre ciudades esa diferencia pasa a
+dominar el tiempo de respuesta, y por eso \texttt{LOCAL\_QUORUM} es el nivel
+estándar en producción multi-DC.
+
+\smallskip
+\noindent Para contraste, \texttt{WHERE zona=? ALLOW FILTERING} tarda 3,75~ms con
+500 particiones. El número engaña: crece linealmente con el clúster porque consulta
+todos los nodos y descarta filas. Con 100 millones de filas satura al coordinador.
+
+% ============================================================
+\section{Análisis cuantitativo del \emph{fan-out-on-write}}
+% ============================================================
+\subsection{Volumen y almacenamiento}
+Una alerta genera 100.000 inserciones. Estimación analítica frente a medición:
+
+\begin{center}\small
+\begin{tabular}{@{}lrlr@{}}
+\toprule
+\textbf{Componente} & \textbf{B} & \textbf{Componente} & \textbf{B} \\
+\midrule
+\texttt{usuario\_id} (12 car.) & 12 & \emph{Subtotal de datos} & 277 \\
+\texttt{enviado\_en} \emph{timestamp} & 8 & Marcas de tiempo (7 celdas) & 28 \\
+\texttt{alerta\_id} \emph{uuid} & 16 & Longitudes y banderas & 14 \\
+\texttt{titulo} / \texttt{cuerpo} & 225 & Cabecera de fila & 12 \\
+\texttt{severidad}, \texttt{zona} & 16 & \textbf{Total sin comprimir} & \textbf{331} \\
+\cmidrule(l){3-4}
+& & \textbf{Total medido en disco} & \textbf{22,5} \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\noindent\textbf{Difieren en un factor de 14,7, y no es error de la estimación: es
+la compresión.} \texttt{nodetool} reporta \texttt{SSTable Compression Ratio} de
+\textbf{0,1098} —LZ4 comprime a una novena parte—; el resto lo aporta la
+codificación de SSTable, que no repite la clave de partición en cada fila. Las
+alertas comprimen especialmente bien porque replican el mismo título y cuerpo en
+100.000 filas. \textbf{Estimar sin considerar la compresión sobredimensiona el
+almacenamiento en un orden de magnitud.} Proyectamos con el valor medido y
+conservamos el analítico como cota superior para datos incompresibles.
+
+\begin{center}\small
+\begin{tabular}{@{}lrrrr@{}}
+\toprule
+\textbf{Horizonte} & \textbf{Escrituras} & \textbf{Filas} & \textbf{1 réplica} & \textbf{RF~=~3} \\
+\midrule
+1 alerta & 100.000 & 100.000 & 2,15 MB & 6,44 MB \\
+1 día (20 alertas) & 2,0 M & 2,0 M & 0,04 GB & 0,13 GB \\
+1 mes & 60 M & 60 M & 1,26 GB & 3,77 GB \\
+1 año & 730 M & 730 M & 15,31 GB & \textbf{45,93 GB} \\
+1 año, pico de 100/día & 3.650 M & 3.650 M & 76,55 GB & \textbf{229,64 GB} \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\noindent 46~GB anuales entre tres nodos son 15~GB por nodo: \textbf{el fan-out no
+es un problema de almacenamiento, sino de tasa de escritura y distribución.}
+
+\smallskip
+\noindent\textbf{Throughput y latencia} (\texttt{make demo-fanout}, fan-out real a
+10.000 suscriptores repartidos en tres zonas, escrituras con \texttt{QUORUM}):
+
+\begin{center}\small
+\begin{tabular}{@{}lr@{\hspace{1.1cm}}lr@{}}
+\toprule
+\textbf{Caudal del sistema} & & \textbf{Latencia por escritura} & \\
+\midrule
+Entregas totales & 9.999 & media & 90,81 ms \\
+Tiempo (3 zonas en paralelo) & 1,33 s & p50 & 93,35 ms \\
+Throughput global & \textbf{7.509/s} & p95 & 142,53 ms \\
+Frente a secuencial & 2,5$\times$ & p99 & \textbf{156,37 ms} \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\noindent Son dos medidas distintas y conviene no confundirlas: el
+\emph{throughput} mide el caudal del sistema, la \emph{latencia} lo que espera una
+escritura concreta. Con 400 peticiones en vuelo el caudal sube y la latencia
+individual empeora — cada escritura espera confirmación de 2 de 3 réplicas. A
+7.509 entregas/s el fan-out completo a 100.000 tarda $\approx13{,}3$~s. Es un
+clúster de tres contenedores con 512~MB de \emph{heap}: sirve para el orden de
+magnitud, no como capacidad de producción. La conclusión operativa es que el
+fan-out debe ser \textbf{asíncrono} — la Alcaldía recibe confirmación cuando la
+alerta entra en Kafka \mI{4.2}, no cuando terminan las 100.000 escrituras.
+
+\smallskip
+\noindent\textbf{Diez alertas simultáneas.} 1.000.000 de escrituras, $\sim$21,5~MB
+con RF~=~3. Kafka absorbe el pico: las alertas entran en el \emph{log} de inmediato
+y los \emph{workers} consumen al ritmo que Cassandra tolere. El \emph{backlog} se
+traduce en retraso de entrega, no en pérdida ni rechazo — esa es la función del
+\emph{log} como amortiguador \mI{4.2}.
+
+\subsection{Riesgo de \emph{hotspots}: medición}
+Mismas 50.000 filas en dos tablas idénticas salvo la clave de partición
+(\texttt{make hotspot}):
+
+\begin{center}\small
+\begin{tabular}{@{}lrrr@{}}
+\toprule
+\textbf{Clave de partición} & \textbf{Particiones} & \textbf{Tamaño medio} & \textbf{Proyectado a 100.000} \\
+\midrule
+\texttt{(alerta\_id)} & \textcolor{rojo}{\textbf{1}} & 1.909,8 KB & \textcolor{rojo}{3,73 MB en una partición} \\
+\texttt{(alerta\_id, bucket)} & \textcolor{verde}{\textbf{32}} & 71,7 KB & \textcolor{verde}{143 KB por partición} \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\noindent\textbf{El problema no es el tamaño.} 3,73~MB está muy por debajo del
+límite de 100~MB, así que por tamaño la clave ingenua parecería aceptable. El
+problema es que las 100.000 escrituras van a un único \emph{token} del anillo y
+siempre al mismo conjunto de tres réplicas. Con RF~=~3 sobre tres nodos el efecto
+se disimula porque todos son réplica de todo; en un clúster de 12 nodos, tres
+estarían saturados y nueve ociosos. Además las particiones grandes penalizan
+compactación y reparación, que operan por partición.
+
+\smallskip
+\noindent\textbf{Los otros dos \emph{hotspots}.} (i)~Presencia por zona: tres
+particiones para 100.000 usuarios a $\sim$10.000 escrituras/s — de ahí
+\texttt{presencia\_por\_comuna}, con 32. (ii)~\textbf{Alerta multi-zona}: escribe
+en las tres zonas a la vez, así que el fan-out no se reparte, se \emph{triplica}
+sobre las mismas particiones; con la clave por comuna se diluye entre 16
+\emph{buckets} y el orden de escritura se aleatoriza para que los \emph{workers} no
+ataquen las comunas en el mismo orden.
+
+\subsection{Modificación, cancelación y usuarios nuevos}
+El dato está duplicado 100.000 veces, así que corregirlo cuesta otras 100.000
+escrituras. \textbf{Corregir el texto} son 100.000 \emph{upsert}: la clave primaria
+no cambia, luego no duplica, y se acepta porque equivale a un fan-out nuevo.
+\textbf{Cancelar se evita}: un \texttt{DELETE} no libera espacio, escribe un
+\emph{tombstone} que persiste \texttt{gc\_grace\_seconds} (10 días) y que toda
+lectura debe recorrer y descartar; cien mil de ellos degradan las particiones
+afectadas. Se marca \texttt{cancelada=true} en \texttt{alertas} (una escritura) y
+el cliente filtra al leer: se cambia una escritura masiva por una lectura barata
+servida por una partición de una fila.
+
+\smallskip
+\noindent\textbf{Usuario que se registra después.} No recibe las alertas
+anteriores: su fila nunca se escribió. Es consecuencia directa del modelo y además
+el comportamiento deseado, pero conviene decirlo porque revela el intercambio
+frente al \emph{fan-out-on-read}: se privilegia la lectura barata a costa de que el
+historial sea una fotografía del envío, no una vista reconstruible. Si hubiera que
+entregar el histórico, la vía es releer Kafka desde el \emph{offset}
+correspondiente \mI{4.2}, sin capa \emph{batch} adicional.
+
+% ============================================================
+\section{Idempotencia y eventos duplicados de Kafka}
+% ============================================================
+Kafka entrega \emph{al menos una vez}: un \emph{worker} que muere antes de
+confirmar el \emph{offset} reprocesa el mensaje al reiniciar — reenviar una alerta
+a 100.000 personas.
+
+\textbf{La defensa principal no cuesta nada.} Cassandra no tiene \texttt{UNIQUE}: un
+\texttt{INSERT} sobre una clave existente es un \emph{upsert} silencioso. Eso, que
+parece una carencia, es la garantía que se necesita, con una condición:
+
+\begin{center}
+\fcolorbox{verde}{gris}{\begin{minipage}{0.93\textwidth}\small
+\texttt{enviado\_en} debe venir del \textbf{evento}, fijado por el productor, nunca
+de \texttt{now()} en el \emph{worker}.
+\end{minipage}}
+\end{center}
+
+\noindent Si el timestamp viaja en el mensaje, reprocesarlo reescribe la misma clave
+\texttt{((usuario\_id), enviado\_en)} y el \emph{last-write-wins} deja el resultado
+idéntico. Si lo genera el \emph{worker}, cada reintento produce una clave distinta
+y una fila nueva. Basta un milisegundo de diferencia para provocarlo. Verificado con
+\texttt{make demo-idempotencia}, reenviando el mismo evento tres veces:
+\textbf{1 fila} con el timestamp del evento, \textbf{3} con el del \emph{worker}.
+
+\smallskip
+\noindent\textbf{Lo que el \emph{last-write-wins} no cubre} son los efectos
+colaterales: el \emph{push} ya salió y no se retira. Antes de dispararlo, el
+\emph{worker} reclama el evento con \texttt{INSERT ... IF NOT EXISTS} sobre
+\texttt{eventos\_procesados}. Usa Paxos y es 10--20 veces más lento, así que se
+aplica \textbf{solo} al guardia del \emph{push}: la fila del historial ya es
+idempotente por diseño y no necesita consenso.
+
+\smallskip
+\noindent\textbf{Reprocesamiento deliberado.} Releer el tópico desde el
+\emph{offset} 0 —la recuperación propia de Kappa \mI{4.2}— reescribe el historial
+completo sin duplicar una sola fila. El reprocesamiento es seguro por construcción,
+y esa es la justificación de fondo para haber elegido Kappa sobre Lambda: no hace
+falta una capa \emph{batch} que reconstruya vistas, porque la reescritura converge
+al mismo estado.
+
+% ============================================================
+\section{Nodo desconectado durante un periodo prolongado}
+% ============================================================
+\begin{center}\small
+\begin{tabular}{@{}p{2.7cm}p{2.2cm}p{4.3cm}p{4.9cm}@{}}
+\toprule
+\textbf{Mecanismo} & \textbf{Alcance} & \textbf{Cuándo actúa} & \textbf{Limitación} \\
+\midrule
+\emph{Hinted handoff} & Automático & El coordinador guarda las escrituras del nodo ausente & Solo dentro de \texttt{max\_hint\_window\_in\_ms} = \textbf{3 h} \\
+\addlinespace
+\emph{Read repair} & Oportunista & Al leer con \texttt{QUORUM} corrige réplicas divergentes & Solo repara lo que alguien lee \\
+\addlinespace
+\texttt{nodetool repair} & Completo & Compara árboles de Merkle y sincroniza todo el rango & Manual o programado; costoso en E/S \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\noindent\textbf{Dos umbrales, no uno.} Si el nodo vuelve antes de \textbf{3~h}, los
+\emph{hints} lo ponen al día solos; después, el coordinador ya dejó de guardarlos y
+el hueco es permanente hasta que se repare. El segundo umbral es más peligroso: si
+permanece fuera más de \texttt{gc\_grace\_seconds} (10 días), los \emph{tombstones}
+de lo borrado durante su ausencia ya fueron purgados en las réplicas vivas, y al
+reincorporarse propaga como válidos datos que fueron borrados —\emph{los borrados
+resucitan}. Por eso se repara con periodicidad \textbf{menor} que
+\texttt{gc\_grace\_seconds}, y un nodo apagado más de 10 días debe reemplazarse
+(\texttt{-Dcassandra.replace\_address}), no reincorporarse.
+
+\smallskip
+\noindent\textbf{Verificación} (\texttt{make demo-reparacion}): se desactiva
+\emph{hinted handoff} para que el hueco sea observable, se detiene un nodo, se
+escriben 2.000 particiones sin él y se mide antes y después de reparar.
+
+\begin{center}\small
+\begin{tabular}{@{}lrrr@{}}
+\toprule
+\textbf{Particiones en disco} & \texttt{cass1} & \texttt{cass2} \emph{(caído)} & \texttt{cass3} \\
+\midrule
+Línea base & 0 & 0 & 0 \\
+Tras escribir con \texttt{cass2} caído & 1.999 & \textcolor{rojo}{\textbf{0}} & 1.999 \\
+Tras \texttt{nodetool repair} & 1.999 & \textcolor{verde}{\textbf{1.999}} & 1.999 \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\noindent\textbf{Hallazgo: el hueco es invisible para el cliente.} La primera
+versión de la medición intentaba detectarlo con \texttt{SELECT ... CONSISTENCY ONE}
+dirigido al nodo reincorporado, y siempre devolvía el valor correcto. Con RF~=~3
+sobre tres nodos, \textbf{los tres son réplica de todo} (\texttt{nodetool
+getendpoints}), así que la lectura la sirve cualquier réplica viva. Esto no
+invalida la medición, la corrige: \textbf{la consistencia eventual no significa que
+el cliente lea datos incorrectos, sino que las réplicas divergen internamente
+mientras el servicio responde bien}. Por eso el hueco solo se ve con métricas de
+almacenamiento por nodo, y por eso hay que reparar aunque nada parezca fallar: la
+divergencia se manifiesta más tarde, cuando caiga otro nodo y las réplicas
+restantes ya no basten. \emph{(\texttt{Local write count} no sirve: se reinicia con
+el proceso y \texttt{repair} no lo incrementa, porque escribe SSTables sin pasar por
+el camino normal de escritura.)}
+
+\smallskip
+\noindent\textbf{Las escrituras aceptadas durante la ausencia no se pierden:} con
+RF~=~3 quedan dos réplicas vivas, suficientes para \texttt{QUORUM}. Lo que queda
+pendiente no es el dato sino su \emph{convergencia} en la réplica ausente. Eso es
+con precisión la consistencia eventual: no que el dato pueda perderse, sino que las
+réplicas convergen en un plazo no acotado salvo que se fuerce con \texttt{QUORUM} o
+una reparación.
+
+% ============================================================
+\section{La consulta que Cassandra no debe responder}
+% ============================================================
+El modelo sirve las cinco consultas del camino crítico, pero hay una sexta que
+\textbf{deliberadamente no le corresponde}: «¿cuántos usuarios únicos hay en línea
+por zona?». Es una agregación sobre una columna que no es clave de partición, y el
+contraste está medido (\texttt{make demo-analitica}).
+
+\begin{enumerate}[leftmargin=*,itemsep=1pt]
+\item \texttt{SELECT zona, count(*) ... GROUP BY zona} es \textbf{rechazada}:
+Cassandra solo agrupa por columnas de la clave primaria. Las filas de una zona
+están repartidas por todo el anillo.
+\item Forzada con \texttt{ALLOW FILTERING} responde, pero el \texttt{GROUP BY} lo
+termina haciendo el cliente en memoria.
+\end{enumerate}
+
+\begin{center}\small
+\begin{tabular}{@{}lrrr@{}}
+\toprule
+\textbf{Motor} & \textbf{Filas} & \textbf{Latencia} & \textbf{Costo por fila} \\
+\midrule
+Cassandra (\texttt{ALLOW FILTERING}) & 10.000 & 77,9 ms & 7,79 µs \\
+ClickHouse (columnar) & 2.000.000 & 77,9 ms & \textbf{0,04 µs} \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\noindent\textbf{La lectura honesta del dato:} las latencias coinciden, pero no
+sobre el mismo volumen — ClickHouse agregó 200 veces más filas en el mismo tiempo.
+Comparar las latencias directas \emph{subestima} la diferencia; normalizado por
+fila procesada son 200$\times$ menos costo. La razón es estructural: en Cassandra
+el costo depende del número de nodos y de filas almacenadas, no del tamaño del
+resultado —con 100 millones de filas el coordinador debe recorrerlas todas para
+devolver tres números—; en ClickHouse depende de las columnas consultadas, y solo
+lee dos de seis, comprimidas con \emph{dictionary encoding} porque \texttt{zona}
+tiene tres valores distintos.
+
+No es que un motor sea mejor: resuelven preguntas distintas, y por eso la
+arquitectura del Módulo 1 tiene los dos \mI{2.2}. Esta consulta es también la
+justificación empírica de \texttt{presencia\_por\_comuna}: cuando la pregunta
+analítica debe responderse \emph{en el camino operacional}, la respuesta no es
+\texttt{ALLOW FILTERING} sino una tabla modelada para ella.
+
+\needspace{6\baselineskip}
+% ============================================================
+\section{Conclusiones}
+% ============================================================
+\begin{enumerate}[leftmargin=*,itemsep=2pt]
+\item \textbf{Las consultas produjeron el modelo, no al revés.} Escribirlas antes de
+diseñar reveló dos que ninguna tabla podía servir sin \texttt{ALLOW FILTERING}. La
+duplicación de datos es el precio explícito de que las cinco resuelvan bajo 4~ms en
+p95 tocando una sola partición.
+
+\item \textbf{La clave de partición se elige por distribución, no por entidad.}
+Particionar \texttt{estado\_entrega} por \texttt{alerta\_id} es lo natural desde el
+modelo de entidades y es la decisión equivocada. Medido: 1.909~KB en una partición
+frente a 71,7~KB en treinta y dos.
+
+\item \textbf{La consistencia es propiedad de cada operación, no del clúster.} RF y
+disponibilidad se configuran una vez; el nivel se decide por consulta, bajo
+$R+W>RF$. Por eso \texttt{presencia} usa \texttt{ONE} y \texttt{alertas}
+\texttt{QUORUM} en el mismo sistema.
+
+\item \textbf{El fan-out no es un problema de espacio sino de distribución.} 46~GB
+anuales con RF~=~3 son 15~GB por nodo. La estimación analítica sobredimensionó 14,7
+veces por ignorar la compresión: dimensionar sin medir induce a error de un orden de
+magnitud.
+
+\item \textbf{La idempotencia se diseña, no se añade.} Basta con que la clave
+primaria derive del evento para que reprocesar Kafka sea gratuito; la transacción
+ligera se reserva a los efectos que el \emph{last-write-wins} no deshace.
+
+\item \textbf{Hay preguntas que el modelo no debe responder.} La agregación por
+zona cuesta 7,79~µs/fila en Cassandra y 0,04 en ClickHouse. Reconocer el límite del
+motor operacional es parte del diseño, no una carencia.
+
+\item \textbf{La recuperación tiene dos umbrales.} Tres horas de \emph{hints} y diez
+días de \texttt{gc\_grace\_seconds}: superado el primero hay que reparar; superado
+el segundo, reincorporar el nodo corrompe el estado.
+\end{enumerate}
+
+\vfill
+\begin{center}\footnotesize\color{gray}
+Reproducible con \texttt{make schema}, \texttt{make demo-idempotencia},
+\texttt{make demo-reparacion}, \texttt{make hotspot} y \texttt{make demo-consistencia}.\\
+Esquema: \texttt{infra/cql/schema.cql} · Scripts: \texttt{demo/scripts/}
+\end{center}
+
+\end{document}
