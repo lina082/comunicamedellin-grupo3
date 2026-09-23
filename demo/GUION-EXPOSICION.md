@@ -33,22 +33,27 @@ make status      # confirmar 3 nodos UN antes de exponer
 
 ---
 
-## Orden sugerido (15 min)
+## Orden de la exposición (15 min)
 
-| Min | Bloque | Comando |
-|---|---|---|
-| 0–2 | De dónde venimos + query-first | slides 2–3 |
-| 2–5 | Las 5 consultas → 7 tablas + consistencia | slides 4–6 |
-| 5–7 | Fan-out real, throughput y latencia | `make demo-fanout` |
-| 7–9 | Hotspot: con y sin bucketing | `make hotspot` |
-| 9–11 | Idempotencia frente a Kafka | `make demo-idempotencia` |
-| 11–13 | Nodo caído y reparación | `make demo-reparacion` |
-| 13–15 | OLTP vs OLAP: la misma consulta en ambos motores | `make demo-analitica` |
+Las diapositivas siguen **el orden de las preguntas guía del enunciado**, no un orden
+temático. Cada bloque abre con una portadilla que muestra la pregunta literal, y cada
+diapositiva lleva la guía bajo el título.
 
-`demo-reparacion` tarda ~3 min (reinicia un nodo de verdad). Conviene lanzarlo
-en una terminal aparte al empezar el bloque anterior.
+| Min | Pregunta guía | Quién | Slides |
+|---|---|---|---|
+| 0–1 | *(ruta y contexto)* | Julián | 2–3 |
+| 1–4 | **1 ·** Tablas: Partition Key + Clustering Key + columnas | Julián | 4–6 |
+| 4–7 | **3 ·** Fan-out-on-Write: 1 alerta → 100.000 registros | Simón | 7–9 |
+| 7–10 | **4 ·** Demasiados usuarios en la misma partición | Elizabeth | 10–12 |
+| 10–13 | **5 ·** Replicación, hinted handoff, reparación | Nilton | 13–15 |
+| 13–15 | **2 ·** Las cinco consultas reales | **demo en vivo** | 16–20 |
 
----
+**La pregunta 2 no se expone en diapositivas: se responde ejecutando las consultas**
+contra el clúster, desde `localhost:4173/taller.html`.
+
+Durante la demo conviene correr, en este orden: P1 (las cinco consultas), y después
+los que refuercen lo ya expuesto — P2 fan-out, P5 idempotencia, P6 analítica.
+`demo-reparacion` (P4) tarda ~3 min: lánzalo en otra terminal al empezar el bloque de Nilton.
 
 ## Preguntas probables y dónde está la respuesta
 

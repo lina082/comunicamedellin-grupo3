@@ -49,7 +49,29 @@
 \institute{Tópicos Avanzados de Bases de Datos · Módulo 2 · ITM}
 \date{2026}
 
+
+% Caja con la pregunta guia del enunciado, al pie de cada bloque.
+% Va literal: es lo que el docente va a estar siguiendo.
+\newcommand{\guia}[2]{%
+  \vspace{-4pt}
+  \begingroup\scriptsize\raggedright
+  \textcolor{cmVerde}{\textbf{Guía #1 ·}}\;\textcolor{cmGris}{#2}\par
+  \endgroup
+  \vspace{4pt}}
+
+% Portadilla de bloque: numero grande, pregunta y responsable.
+\newcommand{\bloque}[4]{%
+  \begin{frame}[plain]
+  \centering\vfill
+  {\scriptsize\textcolor{cmGris}{PREGUNTA GUÍA #1 DE 5}}\\[10pt]
+  {\Large\textcolor{cmAzul}{\textbf{#2}}}\\[14pt]
+  \begin{minipage}{0.82\textwidth}\centering\small\textcolor{cmGris}{#3}\end{minipage}\\[16pt]
+  \rule{0.28\textwidth}{0.4pt}\\[10pt]
+  {\footnotesize\textbf{#4}}
+  \vfill\end{frame}}
+
 \begin{document}
+
 
 % ═════════════════════════════════════════════ PORTADA
 \begin{frame}[plain]
@@ -57,256 +79,167 @@
 \centering
 {\logomarca[3.2]}\\[14pt]
 {\Huge\textcolor{cmAzul}{\textbf{Comunica}}\textcolor{cmVerde}{\textbf{Medellín}}}\\[8pt]
-{\large\textcolor{cmGris}{Del «qué motor» al «qué modelo».}}\\[20pt]
+{\large\textcolor{cmGris}{Modelado de datos en Cassandra}}\\[20pt]
 \rule{0.35\textwidth}{0.4pt}\\[12pt]
 {\footnotesize\textcolor{cmGris}{Tópicos Avanzados de Bases de Datos · Módulo 2 · ITM}}\\[6pt]
 {\footnotesize\textbf{Grupo 3} \quad
- \textcolor{cmGris}{Julián · Elizabeth · Simón · Nilton · Lina}}
+ \textcolor{cmGris}{Julián · Simón · Elizabeth · Nilton · Lina}}
 \vfill
 \end{frame}
 
-% ═════════════════════════════════════════════ 1. DE DÓNDE VENIMOS
-\begin{frame}{Dónde quedamos y qué falta}
+% ═════════════════════════════════════════════ RUTA
+\begin{frame}{Las cinco preguntas guía}
+\footnotesize
+\vspace{2pt}
+La exposición sigue el orden del enunciado: una pregunta por bloque.
+
+\vspace{9pt}
+\centering
+\begin{tabular}{@{}p{0.7cm}p{8.6cm}p{2.6cm}@{}}
+\toprule
+& \textbf{Pregunta guía} & \textbf{Responsable} \\
+\midrule
+1 & Tablas del modelo: Partition Key + Clustering Key + columnas, justificadas & Julián \\
+\addlinespace
+3 & Fan-out-on-Write: 1 alerta $\rightarrow$ 100.000 registros & Simón \\
+\addlinespace
+4 & Qué ocurre si demasiados usuarios caen en la misma partición & Elizabeth \\
+\addlinespace
+5 & Replicación, hinted handoff, reparación y recuperación tras una falla & Nilton \\
+\addlinespace
+2 & Cinco consultas reales y cómo el modelo las hace eficientes & \textcolor{cmGris}{demo en vivo} \\
+\bottomrule
+\end{tabular}
+
+\vspace{10pt}
+\begin{minipage}{0.9\textwidth}\scriptsize
+\textcolor{cmGris}{La pregunta 2 no se explica en diapositivas: se \textbf{responde
+ejecutando las cinco consultas en vivo} contra el clúster, al final de la exposición.}
+\end{minipage}
+\end{frame}
+
+% ═════════════════════════════════════════════ CONTEXTO
+\begin{frame}{De dónde venimos}
 \quien{Julián}
 \vspace{2pt}
 \centering
 \begin{tikzpicture}[font=\scriptsize,
   hecho/.style={draw=cmVerde!50,fill=cmVerde!8,rounded corners=3pt,
-                minimum height=13mm,text width=38mm,align=center,inner sep=4pt},
+                minimum height=13mm,text width=40mm,align=center,inner sep=4pt},
   falta/.style={draw=cmAmbar!60,fill=cmAmbar!8,rounded corners=3pt,
-                minimum height=13mm,text width=38mm,align=center,inner sep=4pt},
+                minimum height=13mm,text width=40mm,align=center,inner sep=4pt},
   fl/.style={-{Stealth[length=2mm]},cmAzul!55,thick}]
 \node[hecho] (m1) at (0,0)
   {\textbf{Módulo 1} — \emph{qué motor}\\[2pt]
-   \tiny Cassandra AP · Kafka · ClickHouse\\
-   \tiny 5 cargas de trabajo identificadas};
-\node[falta] (m2) at (5.6,0)
+   \tiny Cassandra AP · Kafka · ClickHouse};
+\node[falta] (m2) at (5.8,0)
   {\textbf{Módulo 2} — \emph{qué modelo}\\[2pt]
    \tiny tablas, claves, consistencia\\
    \tiny y qué pasa cuando algo falla};
 \draw[fl] (m1) -- (m2);
 \end{tikzpicture}
 
-\vspace{10pt}
-\footnotesize
-\begin{minipage}{0.88\textwidth}
-Elegir Cassandra no resuelve nada por sí solo. Falta lo difícil:
-\textbf{cómo se guardan realmente los datos} para que el sistema responda rápido,
-no se sature al enviar una alerta a 100.000 personas, y se recupere cuando un
-nodo se cae.
+\vspace{12pt}
+\begin{minipage}{0.88\textwidth}\footnotesize
+Elegir Cassandra no resuelve nada por sí solo. Falta lo difícil: \textbf{cómo se guardan
+realmente los datos} para que el sistema responda rápido, no se sature al enviar una alerta a
+100.000 personas, y se recupere cuando un nodo se cae.
 
-\vspace{7pt}
-\begin{center}
-\begin{tabular}{@{}p{5.0cm}p{5.6cm}@{}}
-\toprule
-\textbf{Lo que trae el Módulo 2} & \textbf{Cómo lo demostramos} \\
-\midrule
-7 tablas con clave justificada & consultas reales, medidas \\
-Fan-out de 100.000 registros & 10.000 entregas en vivo \\
-Duplicados de Kafka & reenviamos el mismo evento \\
-Nodo caído mucho tiempo & lo tumbamos y lo reparamos \\
-\bottomrule
-\end{tabular}
-\end{center}
+\vspace{6pt}
+\textcolor{cmGris}{Todas las cifras marcadas en verde están \textbf{medidas} en un clúster de
+tres nodos, no estimadas.}
 \end{minipage}
 \end{frame}
 
-% ═════════════════════════════════════════════ 2. QUERY-FIRST
-\begin{frame}{El modelo sale de las consultas}
-\quien{Julián}
-\footnotesize
-\vspace{2pt}
-\begin{columns}[T]
-\begin{column}{0.47\textwidth}
-\begin{center}\textbf{\textcolor{cmGris}{Relacional}}\end{center}
-\vspace{-2pt}
-\begin{tikzpicture}[font=\tiny,
-  c/.style={draw=cmGris!45,fill=cmGris!6,rounded corners=2pt,
-            minimum width=30mm,minimum height=6.5mm,align=center},
-  f/.style={-{Stealth[length=1.5mm]},cmGris!60}]
-\node[c] (a) at (0,0)    {modelo las \textbf{entidades}};
-\node[c] (b) at (0,-1.0) {normalizo (3NF)};
-\node[c] (c) at (0,-2.0) {consulto \textbf{lo que quiera}};
-\draw[f] (a)--(b); \draw[f] (b)--(c);
-\end{tikzpicture}
-\end{column}
-\begin{column}{0.47\textwidth}
-\begin{center}\textbf{\textcolor{cmVerde}{Cassandra}}\end{center}
-\vspace{-2pt}
-\begin{tikzpicture}[font=\tiny,
-  c/.style={draw=cmVerde!50,fill=cmVerde!8,rounded corners=2pt,
-            minimum width=30mm,minimum height=6.5mm,align=center},
-  f/.style={-{Stealth[length=1.5mm]},cmVerde!65}]
-\node[c] (a) at (0,0)    {listo las \textbf{consultas}};
-\node[c] (b) at (0,-1.0) {una tabla por consulta};
-\node[c] (c) at (0,-2.0) {\textbf{duplico} el dato si hace falta};
-\draw[f] (a)--(b); \draw[f] (b)--(c);
-\end{tikzpicture}
-\end{column}
-\end{columns}
 
-\vspace{9pt}
-\begin{minipage}{0.93\textwidth}\footnotesize
-\textbf{Por qué al revés:} los datos se reparten por el \emph{hash} de la clave de
-partición \mI{3.3}. Solo se puede buscar rápido \textbf{por esa clave} —así que
-primero hay que saber qué se va a preguntar.
+% ═════════════════════════════════════════════════════════════
+% PREGUNTA 1 — JULIÁN
+% ═════════════════════════════════════════════════════════════
+\bloque{1}{Las tablas del modelo}{%
+  Diseñar las tablas del modelo de datos propuesto, identificar Partition Key +
+  Clustering Key + columnas, y justificar por qué eligieron cada una
+  (presencia, historial de alertas por usuario, alertas, estado de entrega).}{Julián}
+
+\begin{frame}{Las siete tablas y sus claves}
+\quien{Julián}
+\guia{1}{Identificar Partition Key + Clustering Key + columnas de cada tabla.}
+\vspace{-1pt}
+\centering
+\scriptsize
+\begin{tabular}{@{}p{2.85cm}p{2.75cm}p{1.75cm}p{1.35cm}p{1.35cm}p{2.5cm}@{}}
+\toprule
+\textbf{Tabla} & \textbf{Partition Key} & \textbf{Clustering} & \textbf{CL escr.} & \textbf{CL lect.} & \textbf{Por qué} \\
+\midrule
+\texttt{presencia} & \texttt{usuario\_id} & — & \texttt{ONE} & \texttt{ONE} & dato efímero; 2 s de desfase no cambia nada \\
+\addlinespace
+\texttt{historial\_usuario} & \texttt{usuario\_id} & \texttt{enviado\_en}$\downarrow$ & \texttt{QUORUM} & \texttt{ONE} & seguridad pública: no puede perderse \\
+\addlinespace
+\texttt{alertas} & \texttt{alerta\_id} & — & \texttt{QUORUM} & \texttt{QUORUM} & catálogo; aquí se cancela con 1 escritura \\
+\addlinespace
+\texttt{presencia\_por\_comuna} & \texttt{(comuna, estado)} & \texttt{usuario\_id} & \texttt{ONE} & \texttt{ONE} & misma info, indexada al revés \\
+\addlinespace
+\texttt{estado\_entrega} & \texttt{(alerta\_id, bucket)} & \texttt{usuario\_id} & \texttt{ONE} & \texttt{QUORUM} & el bucket evita el hotspot \\
+\addlinespace
+\texttt{eventos\_procesados} & \texttt{evento\_id} & — & \texttt{LWT} & \texttt{QUORUM} & guardia de idempotencia \\
+\bottomrule
+\end{tabular}
 
 \vspace{5pt}
-\textcolor{cmAmbar}{\textbf{Al escribir nuestras 5 consultas, dos no tenían
-tabla que las respondiera.}} La solución en Cassandra no es un índice: es
-\textbf{otra tabla}. Por eso pasamos de 3 tablas a 7.
+\begin{minipage}{0.93\textwidth}\tiny
+\textbf{RF~=~3} como \texttt{\{medellin:2, miami:1\}}: es el mínimo que tolera perder un nodo.
+Con RF~=~2 el quórum serían las dos réplicas y una caída bloquearía las escrituras.
 \end{minipage}
 \end{frame}
 
-% ═════════════════════════════════════════════ 3. LAS 5 CONSULTAS
-\begin{frame}{Las cinco consultas reales}
+\begin{frame}{Por qué esas claves y no otras}
 \quien{Julián}
-\vspace{2pt}
-\scriptsize
-\begin{center}
-\begin{tabular}{@{}p{0.6cm}p{5.0cm}p{2.0cm}p{4.2cm}@{}}
-\toprule
-& \textbf{Qué necesita el sistema} & \textbf{Frecuencia} & \textbf{Tabla que la sirve} \\
-\midrule
-Q1 & Presencia actual de un usuario & $\sim$10.000/s & \texttt{presencia} \\
-Q2 & Historial de alertas de un usuario & $\sim$500/s & \texttt{historial\_usuario} \\
-Q3 & Alertas en un rango de fechas & $\sim$100/s & \texttt{historial\_usuario} \\
-Q4 & \textcolor{cmAmbar}{Usuarios en línea de una zona} & $\sim$20/día & \textcolor{cmAmbar}{\texttt{presencia\_por\_comuna}} \\
-Q5 & \textcolor{cmAmbar}{Quién tiene pendiente una alerta} & $\sim$50/día & \textcolor{cmAmbar}{\texttt{estado\_entrega}} \\
-\bottomrule
-\end{tabular}
-\end{center}
-
-\vspace{8pt}
+\guia{1}{…y justificar por qué eligieron cada una.}
 \footnotesize
-\begin{columns}[T]
-\begin{column}{0.48\textwidth}
-\textbf{\textcolor{cmAmbar}{Las dos que faltaban}}\\[3pt]
-\scriptsize
-\textbf{Q4} no se puede responder desde \texttt{presencia}: está particionada por
-\texttt{usuario\_id} y la zona no participa en el \emph{hash}.\\[3pt]
-\textbf{Q5} sencillamente no se guardaba en ningún lado.
-\end{column}
-\begin{column}{0.48\textwidth}
-\textbf{\textcolor{cmVerde}{Resultado medido}}\\[3pt]
-\scriptsize
-Las cinco resuelven en \medido{menos de 4 ms} (p95) porque cada una toca
-\textbf{una sola partición}.\\[3pt]
-Ninguna usa \texttt{ALLOW FILTERING}, ninguna ordena en memoria, ninguna cruza
-tablas.
-\end{column}
-\end{columns}
-\end{frame}
+\vspace{2pt}
+\begin{itemize}\setlength\itemsep{4pt}
+\item \texttt{presencia} — \textbf{\texttt{usuario\_id}} es de alta cardinalidad
+($\sim$100.000 valores), así que el \emph{hash} reparte parejo por todo el anillo. Una lectura,
+un salto, una partición de una fila.
 
-% ═════════════════════════════════════════════ 4. EL MODELO
-\begin{frame}{El modelo: una tabla por pregunta}
-\quien{Elizabeth}
-\vspace{1pt}
-\centering
-\begin{tikzpicture}[font=\tiny,scale=1.12,every node/.style={transform shape},
-  t/.style={draw=cmAzul!45,fill=white,rounded corners=2pt,
-            text width=40mm,align=left,inner sep=3pt},
-  q/.style={draw=cmVerde!55,fill=cmVerde!8,rounded corners=5pt,
-            text width=15mm,align=center,inner sep=2.5pt},
-  k/.style={draw=cmVerde!55,fill=cmVerde!10,rounded corners=2pt,
-            text width=34mm,align=center,inner sep=3pt},
-  l/.style={-{Stealth[length=1.3mm]},cmVerde!60},
-  e/.style={-{Stealth[length=1.5mm]},cmAzul!60,thick}]
+\item \texttt{historial\_usuario} — el agrupamiento \textbf{\texttt{enviado\_en} descendente}
+ordena físicamente en disco de más reciente a más antiguo: «las últimas 20 alertas» es una
+lectura secuencial, no un \emph{scan}. A 20 alertas/día la partición pesa \medido{164 KB} tras
+un año: no necesita \emph{bucketing}.
 
-\node[k] (kaf) at (-1.0,1.15) {\textbf{Kafka} — 1 alerta\\\textcolor{cmGris}{partición por zona}};
+\item \texttt{presencia\_por\_comuna} — clave \textbf{compuesta}, no solo la comuna. Las 16
+comunas $\times$ 2 estados dan 32 particiones. Con solo la zona serían 3, y ahí está el problema
+que explica Elizabeth en la pregunta 4.
 
-\node[q] (q1) at (-3.85,0.15)  {\textbf{Q1} presencia};
-\node[q] (q2) at (-3.85,-0.85) {\textbf{Q2--Q3} historial};
-\node[q] (q3) at (-3.85,-1.85) {\textbf{Q4} por zona};
-\node[q] (q4) at (-3.85,-2.85) {\textbf{Q5} entrega};
-
-\node[t] (t1) at (-0.1,0.15)  {\texttt{presencia}\\\textcolor{cmAzul}{PK} \texttt{(usuario\_id)} · \textcolor{cmAmbar}{\texttt{ONE}}};
-\node[t] (t2) at (-0.1,-0.85) {\texttt{historial\_usuario}\\\textcolor{cmAzul}{PK} \texttt{((usuario\_id), enviado\_en}$\downarrow$\texttt{)}};
-\node[t] (t3) at (-0.1,-1.85) {\texttt{presencia\_por\_comuna}\\\textcolor{cmAzul}{PK} \texttt{((comuna, estado), usuario)}};
-\node[t] (t4) at (-0.1,-2.85) {\texttt{estado\_entrega}\\\textcolor{cmAzul}{PK} \texttt{((alerta\_id, bucket), usuario)}};
-
-\node[t] (t5) at (4.15,1.15)  {\texttt{alertas}\\\textcolor{cmAzul}{PK} \texttt{(alerta\_id)} · catálogo};
-\node[t] (t6) at (4.15,-1.35) {\texttt{eventos\_procesados}\\\textcolor{cmAzul}{PK} \texttt{(evento\_id)} · guardia \texttt{LWT}};
-
-\foreach \i in {1,2,3,4} { \draw[l] (q\i.east) -- (t\i.west); }
-\draw[e] (kaf.east) -- (t5.west) node[midway,above,font=\tiny,text=cmGris] {1 escr.};
-\draw[e] (kaf.south) -- ++(0,-0.35) -| (t1.north);
-\draw[e] (kaf.west) -- ++(-1.75,0) |- (t2.west);
-\node[font=\tiny,text=cmGris,align=center,fill=white,inner sep=1pt]
-  at (-2.85,0.62) {fan-out\\100.000};
-\draw[e,dashed] (t2.east) -- (t6.west);
-\end{tikzpicture}
+\item \texttt{estado\_entrega} — el \textbf{bucket} es \texttt{hash(usuario\_id) mod 32}, y es
+obligatorio: sin él una alerta cae entera en una sola partición.
+\end{itemize}
 
 \vspace{4pt}
-\scriptsize
-\textcolor{cmGris}{Verde = ruta de lectura · Azul = ruta de escritura.}
-\textbf{\texttt{presencia\_por\_comuna} es la misma información que
-\texttt{presencia}, indexada al revés} \mI{2.2}.
+\begin{minipage}{0.93\textwidth}\scriptsize
+\textcolor{cmGris}{Las dos tablas de presencia llevan \texttt{TTL} de 900 s: al cambiar de
+estado el usuario \textbf{cambia de partición}, y la fila antigua no se sobrescribe —hay que
+dejarla expirar.}
+\end{minipage}
 \end{frame}
 
-% ═════════════════════════════════════════════ 5. CONSISTENCIA
-\begin{frame}{La consistencia se decide por consulta}
-\quien{Elizabeth}
-\footnotesize
-\vspace{2pt}
-Lo que se configura \textbf{una sola vez} es la replicación:
-\texttt{RF=3} como \texttt{\{medellin:2, miami:1\}}.
-Lo que se elige \textbf{en cada operación} es el nivel de consistencia \mI{1.2}.
 
-\vspace{7pt}
-\begin{columns}[T]
-\begin{column}{0.44\textwidth}
-\centering\scriptsize
-\begin{tabular}{@{}llc@{}}
-\toprule
-\textbf{Escritura} & \textbf{Lectura} & \textbf{Garantía} \\
-\midrule
-\texttt{ONE} & \texttt{ONE} & eventual \\
-\texttt{QUORUM} & \texttt{ONE} & durable \\
-\texttt{QUORUM} & \texttt{QUORUM} & \textcolor{cmVerde}{\textbf{inmediata}} \\
-\bottomrule
-\end{tabular}\\[6pt]
-\textcolor{cmAzul}{\textbf{$R + W > RF$}}\\
-\tiny\textcolor{cmGris}{con RF=3, el quórum son 2 réplicas}
-\end{column}
-\begin{column}{0.53\textwidth}
-\scriptsize
-\textbf{En nuestro sistema, a propósito:}\\[4pt]
-\begin{tabular}{@{}p{2.3cm}p{3.4cm}@{}}
-\toprule
-\texttt{presencia} & \texttt{ONE} — que llegue 2 s tarde no cambia ninguna decisión \\
-\addlinespace
-\texttt{historial} & \texttt{QUORUM} escr. — es seguridad pública, no puede perderse \\
-\bottomrule
-\end{tabular}\\[6pt]
-\textcolor{cmAmbar}{\textbf{Ojo:}} el historial escribe con \texttt{QUORUM} pero
-lee con \texttt{ONE}. Necesitamos \emph{durabilidad}, no \emph{lectura
-inmediata}: que el usuario la vea 300 ms después es irrelevante.
-\end{column}
-\end{columns}
+% ═════════════════════════════════════════════════════════════
+% PREGUNTA 3 — SIMÓN
+% ═════════════════════════════════════════════════════════════
+\bloque{3}{Fan-out-on-Write}{%
+  Con 1 alerta $\rightarrow$ 100.000 registros: ¿cuántas escrituras genera?, ¿qué ocurre si
+  llegan 10 alertas simultáneamente?, ¿qué ocurre si una alerta cambia o se cancela?, ¿qué pasa
+  si un usuario se registra después de publicada la alerta?, ¿cómo evitar duplicados?,
+  ¿cuánto almacenamiento representa después de un día, un mes y un año?}{Simón}
 
-\vspace{7pt}
-\centering\scriptsize
-\begin{tabular}{@{}lccc@{}}
-\toprule
-\textbf{Medido sobre la misma consulta} & \texttt{ONE} & \texttt{LOCAL\_QUORUM} & \texttt{QUORUM} \\
-\midrule
-Latencia p50 & \medido{1,13 ms} & 1,38 ms & 1,54 ms \\
-Sobrecosto & — & $+21{,}7$~\% & $+36{,}6$~\% \\
-\bottomrule
-\end{tabular}\\[3pt]
-\tiny\textcolor{cmGris}{En red local la diferencia es de 0,41 ms. Con Miami real
-(60--80 ms) \texttt{LOCAL\_QUORUM} deja de ser un detalle.}
-\end{frame}
-
-% ═════════════════════════════════════════════ 6. FAN-OUT
-\begin{frame}{Fan-out: 1 alerta, 100.000 escrituras}
+\begin{frame}{Cuántas escrituras y cuánto ocupan}
 \quien{Simón}
+\guia{3}{¿Cuántas escrituras genera?, ¿10 alertas simultáneas?, ¿almacenamiento a 1 día, 1 mes y 1 año?}
 \footnotesize
 \vspace{2pt}
 \begin{columns}[T]
 \begin{column}{0.46\textwidth}
-\textbf{Lo que cuesta en disco}\\[4pt]
+\textbf{En disco}\\[4pt]
 \scriptsize
 \begin{tabular}{@{}lrr@{}}
 \toprule
@@ -319,13 +252,13 @@ Sobrecosto & — & $+21{,}7$~\% & $+36{,}6$~\% \\
 \bottomrule
 \end{tabular}\\[5pt]
 \textcolor{cmVerde}{\scriptsize\textbf{15 GB por nodo: irrelevante.}}\\
-\tiny\textcolor{cmGris}{El fan-out no es un problema de espacio,
-sino de \textbf{tasa de escritura y distribución}.}
+\tiny\textcolor{cmGris}{Medido: 22,5 B/fila en disco. La estimación analítica daba 331 B —la
+diferencia es la compresión LZ4, ratio 0,1098.}
 \end{column}
 \begin{column}{0.51\textwidth}
-\textbf{Lo que cuesta en tiempo} \tiny\textcolor{cmGris}{(medido con 10.000)}\\[4pt]
+\textbf{En tiempo} \tiny\textcolor{cmGris}{(medido con 10.000)}\\[4pt]
 \scriptsize
-\begin{tabular}{@{}lr@{\hspace{6mm}}lr@{}}
+\begin{tabular}{@{}lr@{\hspace{5mm}}lr@{}}
 \toprule
 \multicolumn{2}{@{}l}{\textbf{Caudal}} & \multicolumn{2}{l}{\textbf{Latencia}} \\
 \midrule
@@ -335,34 +268,75 @@ Global & \medido{7.509/s} & p95 & 142,5 ms \\
 vs serie & 2,5$\times$ & p99 & \medido{156,4 ms} \\
 \bottomrule
 \end{tabular}\\[5pt]
-\tiny\textcolor{cmGris}{\textbf{No son lo mismo:} el caudal mide el sistema, la
-latencia mide lo que espera \emph{una} escritura. Con 400 en vuelo el caudal sube
-y la latencia individual empeora.}
+\tiny\textcolor{cmGris}{\textbf{No son lo mismo:} el caudal mide el sistema, la latencia mide lo
+que espera \emph{una} escritura concreta.}
 \end{column}
 \end{columns}
 
 \vspace{7pt}
 \begin{minipage}{0.95\textwidth}\scriptsize
-\textcolor{cmAmbar}{\textbf{Consecuencia de diseño:}} a 7.509/s el fan-out completo
-tarda $\sim$13 s. Por eso \textbf{es asíncrono}: la Alcaldía recibe confirmación
-cuando la alerta entra en Kafka \mI{4.2}, no cuando terminan las 100.000
-escrituras. Si llegan 10 alertas a la vez, Kafka amortigua: se retrasa la entrega,
-no se pierde nada.
+\textcolor{cmAmbar}{\textbf{10 alertas simultáneas:}} 1.000.000 de escrituras, $\sim$21,5 MB con
+RF=3. \textbf{Kafka amortigua} el pico: las alertas entran en el \emph{log} de inmediato y los
+\emph{workers} consumen al ritmo que Cassandra tolere. Se retrasa la entrega, no se pierde nada.
 \end{minipage}
 \end{frame}
 
-% ═════════════════════════════════════════════ 7. HOTSPOT
-\begin{frame}{El error que parece correcto}
+\begin{frame}{Cambios, cancelaciones y usuarios nuevos}
 \quien{Simón}
+\guia{3}{¿Qué ocurre si una alerta cambia o se cancela?, ¿y si un usuario se registra después?}
 \footnotesize
 \vspace{2pt}
+El dato está duplicado 100.000 veces, así que \textbf{corregirlo cuesta otras 100.000 escrituras}.
+
+\vspace{8pt}
+\centering
+\begin{tabular}{@{}p{2.9cm}p{4.3cm}p{4.9cm}@{}}
+\toprule
+\textbf{Operación} & \textbf{Costo} & \textbf{Qué hacemos} \\
+\midrule
+Corregir el texto & 100.000 \emph{upsert}; la clave no cambia, luego no duplica & se acepta: equivale a un fan-out nuevo \\
+\addlinespace
+Cancelar la alerta & 100.000 \emph{tombstones} & \textcolor{cmVerde}{\textbf{se evita}}: \texttt{cancelada=true} en \texttt{alertas} (1 escritura) y el cliente filtra al leer \\
+\bottomrule
+\end{tabular}
+
+\vspace{9pt}
+\begin{minipage}{0.95\textwidth}\scriptsize
+\textcolor{cmAmbar}{\textbf{Por qué no se borra:}} un \texttt{DELETE} no libera espacio —escribe
+un \emph{tombstone} que persiste \texttt{gc\_grace\_seconds} (10 días) y que \emph{toda} lectura
+posterior debe recorrer y descartar. Cien mil de ellos degradan las particiones afectadas.
+
+\vspace{6pt}
+\textcolor{cmAmbar}{\textbf{Usuario que se registra después:}} \textbf{no recibe} las alertas
+anteriores —su fila nunca se escribió. Es consecuencia directa del \emph{fan-out-on-write} y es
+el comportamiento deseado. Si hiciera falta, se relee Kafka desde el \emph{offset}.
+
+\vspace{6pt}
+\textcolor{cmGris}{\textbf{Duplicados} $\rightarrow$ los explica Nilton en la pregunta 5.}
+\end{minipage}
+\end{frame}
+
+
+% ═════════════════════════════════════════════════════════════
+% PREGUNTA 4 — ELIZABETH
+% ═════════════════════════════════════════════════════════════
+\bloque{4}{Demasiados usuarios en la misma partición}{%
+  Investiguen qué ocurre si demasiados usuarios caen en la misma partición: distribución de
+  claves, tamaño de partición, cantidad de escrituras, concentración de usuarios, posibilidad
+  de particiones demasiado grandes.}{Elizabeth}
+
+\begin{frame}{El error que parece correcto}
+\quien{Elizabeth}
+\guia{4}{Distribución de claves, tamaño de partición, cantidad de escrituras, posibilidad de
+particiones demasiado grandes.}
+\footnotesize
+\vspace{1pt}
 \centering
 \begin{tikzpicture}[font=\tiny,
   mal/.style={draw=cmRojo!55,fill=cmRojo!7,rounded corners=2pt,
               minimum width=6mm,minimum height=6mm},
   bien/.style={draw=cmVerde!55,fill=cmVerde!10,rounded corners=1.5pt,
                minimum width=3.4mm,minimum height=3.4mm}]
-% izquierda: 1 particion gigante
 \node[font=\scriptsize,text=cmRojo] at (-3.2,1.25) {\textbf{PK (alerta\_id)}};
 \node[mal,minimum width=17mm,minimum height=17mm] at (-3.2,0) {};
 \node[font=\scriptsize,text=cmRojo] at (-3.2,0) {\textbf{1}};
@@ -371,7 +345,6 @@ no se pierde nada.
 
 \node[font=\Large,text=cmGris] at (-0.6,0) {vs};
 
-% derecha: 32 particiones
 \node[font=\scriptsize,text=cmVerde!65!black] at (2.6,1.25) {\textbf{PK (alerta\_id, bucket)}};
 \foreach \i in {0,...,31}{
   \node[bien] at ({1.55+mod(\i,8)*0.42},{0.62-floor(\i/8)*0.42}) {};
@@ -380,70 +353,67 @@ no se pierde nada.
 \node[text=cmVerde!65!black] at (2.6,-1.72) {repartidas por todo el anillo};
 \end{tikzpicture}
 
-\vspace{8pt}
+\vspace{7pt}
 \begin{minipage}{0.93\textwidth}\scriptsize
-\textcolor{cmAmbar}{\textbf{Lo contraintuitivo:}} 3,73 MB \emph{caben de sobra} en
-el límite de 100 MB por partición. \textbf{El problema no es el tamaño.} Es que las
-100.000 escrituras van a \emph{un} \emph{token} del anillo, y por tanto siempre a
-las mismas 3 réplicas.
+\textcolor{cmAmbar}{\textbf{Lo contraintuitivo:}} 3,73 MB \emph{caben de sobra} en el límite
+práctico de 100 MB por partición. \textbf{El problema no es el tamaño}: es que las 100.000
+escrituras van a \emph{un} \emph{token} del anillo, y por tanto siempre a las mismas 3 réplicas.
 
 \vspace{4pt}
-Con 3 nodos no se nota, porque todos son réplica de todo. \textbf{Con 12 nodos:
-3 saturados y 9 ociosos.} Además, reparar y compactar una partición gigante es una
-operación atómica costosa; 32 pequeñas se paralelizan.
-
-\vspace{4pt}
-\textcolor{cmVerde!65!black}{\textbf{La clave de partición no se elige por la
-entidad, sino por cómo distribuye la carga.}}
+Con 3 nodos no se nota, porque todos son réplica de todo. \textbf{Con 12 nodos: 3 saturados y
+9 ociosos.} Además, compactar y reparar una partición gigante es una operación atómica costosa;
+32 pequeñas se paralelizan.
 \end{minipage}
 \end{frame}
 
-% ═════════════════════════════════════════════ 8. IDEMPOTENCIA
-\begin{frame}{¿Llega la alerta dos veces?}
-\quien{Nilton}
+\begin{frame}{Los otros dos focos de concentración}
+\quien{Elizabeth}
+\guia{4}{Concentración de usuarios, cantidad de escrituras.}
 \footnotesize
 \vspace{2pt}
-Kafka entrega \textbf{al menos una vez}: si un \emph{worker} muere antes de
-confirmar el \emph{offset}, al reiniciar reprocesa el mensaje. En un fan-out eso
-es reenviar la alerta a 100.000 personas.
+\begin{itemize}\setlength\itemsep{6pt}
+\item \textbf{Presencia por zona.} Tres zonas producen \textbf{3 particiones} para 100.000
+usuarios con $\sim$10.000 escrituras/s. Es el motivo de \texttt{presencia\_por\_comuna}: las
+16 comunas $\times$ 2 estados dan \textbf{32 particiones} de $\sim$3.100 filas
+($\sim$370 KB cada una).
 
-\vspace{7pt}
+\item \textbf{Alerta que afecta varias zonas a la vez.} El fan-out no se reparte:
+se \textbf{triplica} sobre las mismas particiones. Con la clave por comuna se diluye entre 16
+\emph{buckets}, y el orden de escritura se aleatoriza para que los \emph{workers} no ataquen
+las comunas en el mismo orden.
+\end{itemize}
+
+\vspace{8pt}
 \centering
-\begin{tabular}{@{}p{4.6cm}p{4.6cm}@{}}
+\begin{tabular}{@{}lrrr@{}}
 \toprule
-\textcolor{cmVerde!65!black}{\textbf{Timestamp del EVENTO}} &
-\textcolor{cmRojo}{\textbf{Timestamp del WORKER}} \\
+\textbf{Clave de partición} & \textbf{Particiones} & \textbf{Filas c/u} & \textbf{Tamaño} \\
 \midrule
-\scriptsize El productor lo fija una vez y viaja dentro del mensaje &
-\scriptsize Cada reintento llama a \texttt{now()} \\
-\addlinespace
-\scriptsize Misma clave primaria $\Rightarrow$ \emph{last-write-wins} &
-\scriptsize Clave distinta $\Rightarrow$ fila nueva \\
-\addlinespace
-\hfill\medido{1 fila} tras 3 reenvíos\hfill\null &
-\hfill\textcolor{cmRojo}{\textbf{3 filas}} tras 3 reenvíos\hfill\null \\
+solo \texttt{(zona)} & \textcolor{cmRojo}{\textbf{3}} & $\sim$33.000 & concentra el anillo \\
+\texttt{(zona, estado)} & 6 & $\sim$16.600 & mejora poco \\
+\texttt{(comuna, estado)} & \textcolor{cmVerde}{\textbf{32}} & $\sim$3.100 & \medido{$\sim$370 KB} \\
 \bottomrule
 \end{tabular}
 
 \vspace{8pt}
 \begin{minipage}{0.93\textwidth}\scriptsize
-\textcolor{cmVerde!65!black}{\textbf{La defensa no cuesta nada.}} Cassandra no
-tiene \texttt{UNIQUE}: un \texttt{INSERT} sobre una clave existente es un
-\emph{upsert} silencioso. Eso, que parece una carencia, \textbf{es} la garantía —
-basta con que la clave primaria derive del evento y no del momento de procesarlo.
-Basta 1 ms de diferencia para romperlo.
-
-\vspace{4pt}
-\textcolor{cmAmbar}{\textbf{Lo que sí hay que proteger:}} el \emph{push} al celular
-ya salió y no se retira. Para eso el \emph{worker} reclama el evento con
-\texttt{IF NOT EXISTS} (Paxos, 10--20$\times$ más lento) \textbf{solo antes del
-push} — nunca en las 100.000 escrituras.
+\textcolor{cmVerde!65!black}{\textbf{La regla:} la clave de partición no se elige por la
+entidad, sino por cómo distribuye la carga.}
 \end{minipage}
 \end{frame}
 
-% ═════════════════════════════════════════════ 9. NODO CAÍDO
-\begin{frame}{Un nodo se cae y tarda en volver}
+
+% ═════════════════════════════════════════════════════════════
+% PREGUNTA 5 — NILTON
+% ═════════════════════════════════════════════════════════════
+\bloque{5}{Replicación y recuperación}{%
+  Investigar replicación, hinted handoff, reparación de réplicas, consistencia eventual,
+  recuperación después de una falla, y qué ocurre con datos escritos mientras un nodo
+  estaba fuera.}{Nilton}
+
+\begin{frame}{Qué pasa con lo escrito mientras el nodo estaba fuera}
 \quien{Nilton}
+\guia{5}{Hinted handoff, reparación de réplicas, y qué ocurre con datos escritos mientras un nodo estaba fuera.}
 \footnotesize
 \vspace{2pt}
 \begin{columns}[T]
@@ -461,8 +431,8 @@ push} — nunca en las 100.000 escrituras.
 \end{tabular}\\[6pt]
 \textcolor{cmAmbar}{\textbf{Dos umbrales:}}\\
 \tiny \textbf{3 h} — pasa la ventana de \emph{hints}: hay que reparar.\\
-\tiny \textbf{10 días} (\texttt{gc\_grace}) — los borrados \textbf{resucitan}:
-hay que reemplazar el nodo, no reintegrarlo.
+\tiny \textbf{10 días} (\texttt{gc\_grace}) — los borrados \textbf{resucitan}: hay que
+reemplazar el nodo, no reintegrarlo.
 \end{column}
 \begin{column}{0.52\textwidth}
 \textbf{Medido en vivo} \tiny\textcolor{cmGris}{(2.000 particiones)}\\[4pt]
@@ -472,32 +442,121 @@ hay que reemplazar el nodo, no reintegrarlo.
 \textbf{Particiones} & \texttt{cass1} & \texttt{cass2} & \texttt{cass3} \\
 \midrule
 línea base & 0 & 0 & 0 \\
-tras escribir sin \texttt{cass2} & 1.999 & \textcolor{cmRojo}{\textbf{0}} & 1.999 \\
+sin \texttt{cass2} & 1.999 & \textcolor{cmRojo}{\textbf{0}} & 1.999 \\
 tras \texttt{repair} & 1.999 & \medido{1.999} & 1.999 \\
 \bottomrule
 \end{tabular}\\[6pt]
-\tiny\textcolor{cmGris}{El clúster \textbf{siguió aceptando escrituras} con un
-nodo caído: eso es la A de AP \mI{1.2}. Con CP las habría rechazado.}
+\tiny\textcolor{cmGris}{Las escrituras \textbf{no se pierden}: con RF=3 quedan 2 réplicas vivas,
+suficientes para \texttt{QUORUM}. Lo que queda pendiente no es el dato, sino su
+\textbf{convergencia}.}
 \end{column}
 \end{columns}
 
 \vspace{7pt}
 \begin{minipage}{0.95\textwidth}\scriptsize
-\textcolor{cmAmbar}{\textbf{Lo que descubrimos midiendo:}} el hueco
-\textbf{no se ve con un \texttt{SELECT}}. Con RF=3 sobre 3 nodos los tres son
-réplica de todo, así que una lectura con \texttt{ONE} dirigida a \texttt{cass2} la
-sirve cualquier réplica viva y devuelve el dato correcto.
+\textcolor{cmAmbar}{\textbf{Lo que descubrimos midiendo:}} el hueco \textbf{no se ve con un
+\texttt{SELECT}}. Con RF=3 sobre 3 nodos los tres son réplica de todo, así que una lectura con
+\texttt{ONE} dirigida a \texttt{cass2} la sirve cualquier réplica viva y devuelve el dato
+correcto.
 
 \vspace{3pt}
-\textcolor{cmVerde!65!black}{\textbf{Consistencia eventual no significa que el
-cliente lea mal: significa que las réplicas divergen por dentro mientras el
-servicio responde bien.}} Por eso hay que reparar aunque nada parezca fallar.
+\textcolor{cmVerde!65!black}{\textbf{Consistencia eventual no significa que el cliente lea mal:
+significa que las réplicas divergen por dentro mientras el servicio responde bien.}} Por eso hay
+que reparar aunque nada parezca fallar.
 \end{minipage}
 \end{frame}
 
-% ═════════════════════════════════════════════ 10. OLTP vs OLAP
-\begin{frame}{La consulta que no le toca a Cassandra}
-\quien{Lina}
+\begin{frame}{Duplicados: Kafka reenvía el mismo evento}
+\quien{Nilton}
+\guia{3}{¿Cómo evitar duplicados?}
+\footnotesize
+\vspace{2pt}
+Kafka entrega \textbf{al menos una vez}: si un \emph{worker} muere antes de confirmar el
+\emph{offset}, al reiniciar reprocesa. En un fan-out eso es reenviar la alerta a 100.000 personas.
+
+\vspace{8pt}
+\centering
+\begin{tabular}{@{}p{4.6cm}p{4.6cm}@{}}
+\toprule
+\textcolor{cmVerde!65!black}{\textbf{Timestamp del EVENTO}} &
+\textcolor{cmRojo}{\textbf{Timestamp del WORKER}} \\
+\midrule
+\scriptsize lo fija el productor y viaja dentro del mensaje &
+\scriptsize cada reintento llama a \texttt{now()} \\
+\addlinespace
+\scriptsize misma clave primaria $\Rightarrow$ \emph{last-write-wins} &
+\scriptsize clave distinta $\Rightarrow$ fila nueva \\
+\addlinespace
+\hfill\medido{1 fila} tras 3 reenvíos\hfill\null &
+\hfill\textcolor{cmRojo}{\textbf{3 filas}} tras 3 reenvíos\hfill\null \\
+\bottomrule
+\end{tabular}
+
+\vspace{8pt}
+\begin{minipage}{0.95\textwidth}\scriptsize
+\textcolor{cmVerde!65!black}{\textbf{La defensa no cuesta nada.}} Cassandra no tiene
+\texttt{UNIQUE}: un \texttt{INSERT} sobre una clave existente es un \emph{upsert} silencioso.
+Eso, que parece una carencia, \textbf{es} la garantía. Basta 1 ms de diferencia para romperlo.
+
+\vspace{4pt}
+\textcolor{cmAmbar}{\textbf{Lo que sí hay que proteger:}} el \emph{push} al celular ya salió y
+no se retira. El \emph{worker} lo reclama con \texttt{IF NOT EXISTS} (Paxos, 10--20$\times$ más
+lento) \textbf{solo antes del push} — nunca en las 100.000 escrituras.
+\end{minipage}
+\end{frame}
+
+
+% ═════════════════════════════════════════════════════════════
+% PREGUNTA 2 — LINA (al final, con la demo)
+% ═════════════════════════════════════════════════════════════
+\bloque{2}{Las cinco consultas reales}{%
+  Definan al menos 5 consultas reales: presencia actual de un usuario, historial de alertas de
+  un usuario, alertas recientes, qué usuarios recibieron una alerta, y qué usuarios tienen
+  pendiente una alerta. Después: ¿cómo queda el modelo para que cada consulta sea eficiente?}{%
+  Se responde ejecutándolas en vivo}
+
+\begin{frame}{El modelo salió de estas cinco preguntas}
+\vspace{2pt}
+\scriptsize
+\centering
+\begin{tabular}{@{}p{0.6cm}p{4.6cm}p{4.0cm}rr@{}}
+\toprule
+& \textbf{Consulta real} & \textbf{Tabla que la sirve} & \textbf{p50} & \textbf{p95} \\
+\midrule
+Q1 & Presencia actual de un usuario & \texttt{presencia} & 1,89 & 2,97 \\
+Q2 & Historial de alertas de un usuario & \texttt{historial\_usuario} & 2,64 & 3,34 \\
+Q3 & Alertas recientes (rango de fechas) & \texttt{historial\_usuario} & 2,21 & 3,29 \\
+Q4 & \textcolor{cmAmbar}{Qué usuarios recibieron una alerta} & \textcolor{cmAmbar}{\texttt{presencia\_por\_comuna}} & 2,29 & 3,61 \\
+Q5 & \textcolor{cmAmbar}{Quién tiene pendiente una alerta} & \textcolor{cmAmbar}{\texttt{estado\_entrega}} & 1,56 & 3,92 \\
+\bottomrule
+\end{tabular}
+
+\vspace{9pt}
+\begin{columns}[T]
+\begin{column}{0.47\textwidth}
+\textbf{\textcolor{cmAmbar}{Las dos que faltaban}}\\[3pt]
+\scriptsize
+\textbf{Q4} no se puede responder desde \texttt{presencia}: está particionada por
+\texttt{usuario\_id} y la zona no participa en el \emph{hash}.\\[3pt]
+\textbf{Q5} sencillamente no se guardaba en ningún lado.
+\end{column}
+\begin{column}{0.47\textwidth}
+\textbf{\textcolor{cmVerde}{Por qué son eficientes}}\\[3pt]
+\scriptsize
+Las cinco bajan de \medido{4 ms} en p95 porque cada una toca \textbf{una sola partición}.\\[3pt]
+Ninguna usa \texttt{ALLOW FILTERING}, ninguna ordena en memoria, ninguna cruza tablas.
+\end{column}
+\end{columns}
+
+\vspace{6pt}
+\begin{minipage}{0.93\textwidth}\scriptsize
+\textcolor{cmVerde!65!black}{\textbf{La regla:} en Cassandra la respuesta a una consulta nueva
+es una tabla nueva, no un índice. Por eso el modelo pasó de 3 tablas a 7.}
+\end{minipage}
+\guia{2}{Definan al menos 5 consultas reales… ¿cómo queda el modelo para que cada una sea eficiente?}
+\end{frame}
+
+\begin{frame}{Y una que el modelo NO debe responder}
 \footnotesize
 \vspace{2pt}
 \centering
@@ -512,20 +571,16 @@ servicio responde bien.}} Por eso hay que reparar aunque nada parezca fallar.
 \texttt{SELECT zona, count(*)}\\
 \texttt{FROM presencia GROUP BY zona;}\\[4pt]
 \textcolor{cmRojo}{\textbf{$\rightarrow$ RECHAZADA}}\\
-\tiny\textcolor{cmGris}{solo agrupa por columnas de la clave primaria;
-las filas de una zona están por todo el anillo}\\[4pt]
-Forzada con \texttt{ALLOW FILTERING} responde, pero el \texttt{GROUP BY} lo
-termina haciendo \textbf{el cliente en memoria}.
+\tiny\textcolor{cmGris}{solo agrupa por columnas de la clave primaria; las filas de una zona
+están por todo el anillo}
 \end{column}
 \begin{column}{0.47\textwidth}
 \scriptsize\textbf{\textcolor{cmVerde!65!black}{En ClickHouse}}\\[3pt]
 \tiny
 \texttt{SELECT zona, uniqExact(usuario\_id)}\\
-\texttt{FROM presencia\_eventos}\\
-\texttt{GROUP BY zona;}\\[4pt]
+\texttt{FROM presencia\_eventos GROUP BY zona;}\\[4pt]
 \textcolor{cmVerde!65!black}{\textbf{$\rightarrow$ es su caso de uso}}\\
-\tiny\textcolor{cmGris}{columnar: lee 2 de 6 columnas, comprimidas con
-\emph{dictionary encoding} porque zona tiene 3 valores}
+\tiny\textcolor{cmGris}{columnar: lee 2 de 6 columnas}
 \end{column}
 \end{columns}
 
@@ -542,39 +597,65 @@ ClickHouse (columnar) & 2.000.000 & 77,9 ms & \medido{0,04 µs} \\
 
 \vspace{5pt}
 \begin{minipage}{0.93\textwidth}\scriptsize
-\textcolor{cmAmbar}{\textbf{Cuidado al leer el dato:}} la latencia es la misma,
-pero \textbf{no sobre el mismo volumen} — ClickHouse agregó 200 veces más filas en
-ese tiempo. Comparar latencias directas \emph{subestima} la diferencia.
-
-\vspace{3pt}
-No es que un motor sea mejor: \textbf{resuelven preguntas distintas}, y por eso la
-arquitectura tiene los dos \mI{2.2}.
+\textcolor{cmAmbar}{\textbf{Cuidado al leer el dato:}} la latencia es la misma, pero \textbf{no
+sobre el mismo volumen} — ClickHouse agregó 200 veces más filas. Comparar latencias directas
+\emph{subestima} la diferencia. \textbf{Resuelven preguntas distintas}, y por eso la arquitectura
+tiene los dos.
 \end{minipage}
 \end{frame}
 
-% ═════════════════════════════════════════════ 11. CONCLUSIONES
+\begin{frame}{Demostración en vivo}
+\footnotesize
+\vspace{3pt}
+Cada punto del taller tiene un botón que ejecuta la operación \textbf{real} contra el clúster
+y muestra el pipeline por dentro: el comando, lo que responde y por qué.
+
+\vspace{9pt}
+\centering
+\begin{tabular}{@{}p{0.7cm}p{5.5cm}p{5.6cm}@{}}
+\toprule
+& \textbf{Qué se ejecuta} & \textbf{Qué se ve} \\
+\midrule
+P1 & Las cinco consultas & token, réplicas y latencia de cada una \\
+\addlinespace
+P2 & Fan-out real a 10.000 & throughput y p50/p95/p99 \\
+\addlinespace
+P3 & \texttt{docker stop} mientras se escribe & el clúster sigue aceptando escrituras \\
+\addlinespace
+P4 & \texttt{nodetool repair} & conteo antes y después por nodo \\
+\addlinespace
+P5 & El mismo evento 3 veces & 1 fila frente a 3 filas \\
+\addlinespace
+P6 & La agregación en los dos motores & el rechazo real del \texttt{GROUP BY} \\
+\bottomrule
+\end{tabular}
+
+\vspace{10pt}
+\begin{minipage}{0.9\textwidth}\scriptsize
+\textcolor{cmGris}{\texttt{make api} + \texttt{make taller} $\rightarrow$
+\texttt{localhost:4173/taller.html}}
+\end{minipage}
+\end{frame}
+
 \begin{frame}{Lo que nos llevamos}
-\quien{Lina}
 \footnotesize
 \vspace{3pt}
 \begin{enumerate}[<+->]\itemsep5pt
-\item \textbf{Las consultas produjeron el modelo, no al revés.} Escribirlas antes
-de diseñar reveló dos que ninguna tabla podía servir. Duplicar datos es el precio
-explícito de que las cinco respondan en \medido{menos de 4 ms}.
+\item \textbf{Las consultas produjeron el modelo, no al revés.} Escribirlas antes de diseñar
+reveló dos que ninguna tabla podía servir. Duplicar datos es el precio de que las cinco
+respondan en \medido{menos de 4 ms}.
 
 \item \textbf{La clave de partición se elige por distribución, no por entidad.}
-Particionar por \texttt{alerta\_id} es lo natural desde el modelo de entidades —y
-es la decisión equivocada: \medido{1.909 KB en 1 partición} frente a
-\medido{71,7 KB en 32}.
+\medido{1.909 KB} en una partición frente a \medido{71,7 KB} en treinta y dos.
 
-\item \textbf{La consistencia es propiedad de cada operación.} La replicación se
-configura una vez; el nivel se decide por consulta, bajo $R+W>RF$.
+\item \textbf{La consistencia es propiedad de cada operación.} La replicación se configura una
+vez; el nivel se decide por consulta, bajo $R+W>RF$.
 
-\item \textbf{La idempotencia se diseña, no se añade.} Que la clave primaria
-derive del evento hace que reprocesar Kafka sea gratis.
+\item \textbf{La idempotencia se diseña, no se añade.} Que la clave primaria derive del evento
+hace que reprocesar Kafka sea gratis.
 
-\item \textbf{Hay preguntas que el modelo no debe responder.} Reconocer el límite
-del motor operacional es parte del diseño, no una carencia.
+\item \textbf{Hay preguntas que el modelo no debe responder.} Reconocer el límite del motor
+operacional es parte del diseño, no una carencia.
 \end{enumerate}
 \end{frame}
 
