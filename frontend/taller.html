@@ -284,6 +284,37 @@ header {
   .bloque-titulo, .bloque-sep.destacado .bloque-titulo { font-size: 17px; }
 }
 
+/* ── Tarjeta plegable: la pagina abre compacta ─────────────────────
+   Con los 6 diagramas y sus parametros visibles a la vez la pagina se
+   vuelve un muro. Cada tarjeta guarda su cuerpo y lo despliega al
+   abrirla o al ejecutarla. */
+.punto-body {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows .32s cubic-bezier(.4,0,.2,1);
+}
+.punto-card.abierta .punto-body { grid-template-rows: 1fr; }
+.punto-body > .punto-body-inner { overflow: hidden; min-height: 0; }
+@media (prefers-reduced-motion: reduce) {
+  .punto-body { transition: none; }
+}
+.btn-toggle {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  border-radius: var(--radius-sm);
+  padding: 7px 13px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: border-color .15s, color .15s;
+}
+.btn-toggle:hover { border-color: var(--medellin-green); color: var(--medellin-green); }
+.btn-toggle:focus-visible { outline: 2px solid var(--medellin-green); outline-offset: 2px; }
+.btn-toggle .chev { display: inline-block; transition: transform .25s; }
+.punto-card.abierta .btn-toggle .chev { transform: rotate(90deg); }
+
 .punto-card {
   background: var(--bg-card);
   border: 1px solid var(--border);
@@ -1298,11 +1329,17 @@ function tarjeta(p) {
         <span class="punto-quote">${p.cita}</span>
       </div>
       <div class="card-actions">
+        <button class="btn-toggle" data-toggle="${p.id}"
+                aria-expanded="false" aria-controls="body-${p.id}">
+          <span class="chev">▸</span> Ver flujo
+        </button>
         <button class="btn-run-punto" id="btn-${p.id}" data-punto="${p.id}">
           <span>⚡</span> Ejecutar Paso a Paso · ${p.dur}
         </button>
       </div>
     </div>
+
+    <div class="punto-body" id="body-${p.id}"><div class="punto-body-inner">
 
     <!-- DEDICATED VISUAL FLOW BOX -->
     <div class="punto-flow-container">
@@ -1322,6 +1359,8 @@ function tarjeta(p) {
     <div class="punto-console" id="con-${p.id}">
       <div class="pipeline-steps" id="pasos-${p.id}"></div>
     </div>
+
+    </div></div>
   `;
   return el;
 }
@@ -1468,13 +1507,35 @@ function ejecutar(punto) {
   };
 }
 
+// Plegado de tarjetas: la pagina abre compacta y cada una se despliega
+// a peticion. Ejecutar tambien la abre, para no correr algo a ciegas.
+function abrir(id, estado) {
+  const card = document.getElementById(`card-${id}`);
+  const btn = document.querySelector(`[data-toggle="${id}"]`);
+  if (!card) return;
+  const abierta = estado !== undefined ? estado : !card.classList.contains("abierta");
+  card.classList.toggle("abierta", abierta);
+  if (btn) {
+    btn.setAttribute("aria-expanded", String(abierta));
+    btn.innerHTML = `<span class="chev">▸</span> ${abierta ? "Ocultar flujo" : "Ver flujo"}`;
+  }
+}
+
+document.querySelectorAll(".btn-toggle").forEach(b => {
+  b.addEventListener("click", () => abrir(b.dataset.toggle));
+});
+
 document.querySelectorAll(".btn-run-punto").forEach(b => {
-  b.addEventListener("click", () => ejecutar(b.dataset.punto));
+  b.addEventListener("click", () => { abrir(b.dataset.punto, true); ejecutar(b.dataset.punto); });
 });
 
 // Run all sequentially
 async function ejecutarTodos() {
+  // en secuencia conviene ver el flujo de cada punto al llegarle el turno
   for (const p of PUNTOS) {
+    abrir(p.id, true);
+    document.getElementById(`card-${p.id}`)
+      ?.scrollIntoView({ behavior: "smooth", block: "start" });
     ejecutar(p.id);
     await new Promise(resolve => {
       const interval = setInterval(() => {
