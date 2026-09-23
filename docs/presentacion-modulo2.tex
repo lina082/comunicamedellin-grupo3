@@ -455,61 +455,6 @@ lento) \textbf{solo antes del push} — nunca en las 100.000 escrituras.
 % PREGUNTA 2 — LINA (al final, con la demo)
 % ═════════════════════════════════════════════════════════════
 
-\begin{frame}{Demostración en vivo}
-\footnotesize
-\vspace{3pt}
-Cada punto del taller tiene un botón que ejecuta la operación \textbf{real} contra el clúster
-y muestra el pipeline por dentro: el comando, lo que responde y por qué.
-
-\vspace{9pt}
-\centering
-\begin{tabular}{@{}p{0.7cm}p{5.5cm}p{5.6cm}@{}}
-\toprule
-& \textbf{Qué se ejecuta} & \textbf{Qué se ve} \\
-\midrule
-P1 & Las cinco consultas & token, réplicas y latencia de cada una \\
-\addlinespace
-P2 & Fan-out real a 10.000 & throughput y p50/p95/p99 \\
-\addlinespace
-P3 & \texttt{docker stop} mientras se escribe & el clúster sigue aceptando escrituras \\
-\addlinespace
-P4 & \texttt{nodetool repair} & conteo antes y después por nodo \\
-\addlinespace
-P5 & El mismo evento 3 veces & 1 fila frente a 3 filas \\
-\addlinespace
-P6 & La agregación en los dos motores & el rechazo real del \texttt{GROUP BY} \\
-\bottomrule
-\end{tabular}
-
-\vspace{10pt}
-\begin{minipage}{0.9\textwidth}\scriptsize
-\textcolor{cmGris}{\texttt{make api} + \texttt{make taller} $\rightarrow$
-\texttt{localhost:4173/taller.html}}
-\end{minipage}
-\end{frame}
-
-\begin{frame}{Lo que nos llevamos}
-\footnotesize
-\vspace{3pt}
-\begin{enumerate}\setlength\itemsep{5pt}
-\item \textbf{Las consultas produjeron el modelo, no al revés.} Escribirlas antes de diseñar
-reveló dos que ninguna tabla podía servir. Duplicar datos es el precio de que las cinco
-respondan en \medido{menos de 4 ms}.
-
-\item \textbf{La clave de partición se elige por distribución, no por entidad.}
-\medido{1.909 KB} en una partición frente a \medido{71,7 KB} en treinta y dos.
-
-\item \textbf{La consistencia es propiedad de cada operación.} La replicación se configura una
-vez; el nivel se decide por consulta, bajo $R+W>RF$.
-
-\item \textbf{La idempotencia se diseña, no se añade.} Que la clave primaria derive del evento
-hace que reprocesar Kafka sea gratis.
-
-\item \textbf{Hay preguntas que el modelo no debe responder.} Reconocer el límite del motor
-operacional es parte del diseño, no una carencia.
-\end{enumerate}
-\end{frame}
-
 % ═════════════════════════════════════════════ CIERRE
 \begin{frame}[plain]\centering\vfill
 {\logomarca[2.2]}\\[12pt]

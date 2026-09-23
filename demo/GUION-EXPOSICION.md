@@ -35,8 +35,8 @@ make status      # confirmar 3 nodos UN antes de exponer
 
 ## Orden de la exposición (15 min)
 
-**13 diapositivas · 2 por persona.** Las slides siguen el orden de las preguntas guía del
-enunciado, y cada una lleva la guía impresa bajo el título.
+**11 diapositivas · 2 por persona.** Siguen el orden de las preguntas guía del enunciado,
+y cada una lleva la guía impresa bajo el título.
 
 | Min | Pregunta guía | Quién | Slides |
 |---|---|---|---|
@@ -45,16 +45,16 @@ enunciado, y cada una lleva la guía impresa bajo el título.
 | 4–7 | **3 ·** Fan-out-on-Write: 1 alerta → 100.000 registros | Simón | 6–7 |
 | 7–9 | **4 ·** Demasiados usuarios en la misma partición | Elizabeth | 8–9 |
 | 9–11 | **5 ·** Replicación, hinted handoff, reparación | Nilton | 10–11 |
-| 11–14 | **2 ·** Las cinco consultas reales | **demo en vivo** | 12 |
-| 14–15 | Conclusiones y cierre | quien cierre | 13 |
+| 11–15 | **2 ·** Las cinco consultas reales | **demo en vivo** | — |
 
-**La pregunta 2 no se expone en diapositivas: se responde ejecutando las consultas**
-contra el clúster, desde `localhost:4173/taller.html`.
+La última diapositiva es «¿Preguntas?». **La demo no tiene diapositiva**: al terminar
+Nilton se pasa directo a `localhost:4173/taller.html` y se ejecutan los pipelines.
+Las conclusiones se dicen hablando, sin proyectar.
 
-> **Ritmo:** unos 90 segundos por diapositiva. Si un bloque se alarga, el que sigue lo
-> nota — conviene ensayar con cronómetro al menos una vez.
+> **Ritmo:** unos 90 segundos por diapositiva, y ~4 minutos para la demo.
+> Conviene ensayar con cronómetro al menos una vez.
 
-Durante la demo, el orden útil es: **P1** (las cinco consultas, que responde la pregunta 2)
+En la demo, el orden útil es: **P1** (las cinco consultas, que responde la pregunta 2)
 y después lo que dé tiempo — P2 fan-out, P5 idempotencia, P6 analítica.
 `demo-reparacion` (P4) tarda ~3 min: lánzalo en otra terminal al empezar el bloque de Nilton.
 
