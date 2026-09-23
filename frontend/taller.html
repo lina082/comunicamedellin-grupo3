@@ -3,130 +3,891 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Taller Módulo 2 · ComunicaMedellín</title>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<title>ComunicaMedellín · Plataforma de Alertas y Demostración Distribuida</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
-:root{
-  --azul:#143A78; --azul2:#2C5AA8; --verde:#1C966E; --ambar:#C8781E; --rojo:#AA2D2D;
-  --tinta:#161C26; --tinta2:#4A5462; --tenue:#78828F;
-  --papel:#F4F6F9; --sup:#fff; --linea:#DDE3EB; --linea2:#EAEEF3;
-  --verdef:#E8F5F0; --ambarf:#FBF0E2; --rojof:#F9EAEA; --azulf:#E9EFF9;
-  --term:#12161D; --term-tx:#D6DEE8;
-  --sans:"IBM Plex Sans",system-ui,sans-serif; --mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+:root {
+  --bg: #07090e;
+  --bg-surface: #0e131f;
+  --bg-card: #131927;
+  --bg-card-hover: #182133;
+  --bg-glass: rgba(19, 25, 39, 0.75);
+  
+  --border: #202b3f;
+  --border-glow: #38bdf8;
+  --border-medellin: #10b981;
+  
+  --medellin-green: #10b981;
+  --medellin-green-glow: rgba(16, 185, 129, 0.35);
+  --medellin-cyan: #06b6d4;
+  --medellin-blue: #3b82f6;
+  --medellin-purple: #8b5cf6;
+  --medellin-amber: #f59e0b;
+  --medellin-rose: #f43f5e;
+  
+  --text-main: #f8fafc;
+  --text-muted: #94a3b8;
+  --text-dim: #64748b;
+  
+  --font-brand: 'Space Grotesk', system-ui, sans-serif;
+  --font-sans: 'Plus Jakarta Sans', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+  
+  --radius-sm: 8px;
+  --radius-md: 14px;
+  --radius-lg: 20px;
+  --shadow-card: 0 12px 35px -10px rgba(0,0,0,0.6);
+  --shadow-glow: 0 0 25px -5px var(--medellin-green-glow);
 }
-@media (prefers-color-scheme:dark){:root{
-  --azul:#7FA6E8; --azul2:#A9C4F0; --verde:#4FC79A; --ambar:#E8A75C; --rojo:#E58080;
-  --tinta:#EDF1F6; --tinta2:#B4BECC; --tenue:#8B95A3;
-  --papel:#0E1218; --sup:#161C24; --linea:#2A323E; --linea2:#212832;
-  --verdef:#14332A; --ambarf:#332619; --rojof:#331F1F; --azulf:#1A2438;
-  --term:#0A0D12; --term-tx:#C8D2DE;
-}}
-*{box-sizing:border-box}
-body{margin:0;background:var(--papel);color:var(--tinta);font-family:var(--sans);
-  font-size:14px;line-height:1.55;-webkit-font-smoothing:antialiased}
-.wrap{max-width:1180px;margin:0 auto;padding:26px 18px 60px}
 
-header{display:flex;justify-content:space-between;align-items:flex-start;gap:20px;flex-wrap:wrap}
-.eyebrow{font-size:10.5px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--verde);margin:0 0 6px}
-h1{font-size:25px;margin:0 0 5px;letter-spacing:-.02em;font-weight:700}
-.sub{color:var(--tinta2);margin:0;font-size:13.5px;max-width:62ch}
+[data-theme="light"] {
+  --bg: #f4f7fb;
+  --bg-surface: #ffffff;
+  --bg-card: #ffffff;
+  --bg-card-hover: #f8fafc;
+  --bg-glass: rgba(255, 255, 255, 0.85);
+  --border: #dbe2ee;
+  --text-main: #0f172a;
+  --text-muted: #475569;
+  --text-dim: #64748b;
+* { box-sizing: border-box; margin: 0; padding: 0; }
 
-#salud{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
-.pill{font-family:var(--mono);font-size:10.5px;font-weight:500;padding:4px 9px;
-  border-radius:20px;border:1px solid var(--linea);background:var(--sup);white-space:nowrap}
-.pill.on{background:var(--verdef);border-color:transparent;color:var(--verde)}
-.pill.off{background:var(--rojof);border-color:transparent;color:var(--rojo)}
+/* Thin sleek scrollbars */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: #060910; }
+::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #334155; }
 
-.aviso{margin-top:16px;padding:11px 15px;border-left:3px solid var(--ambar);
-  background:var(--ambarf);border-radius:0 6px 6px 0;font-size:13px}
-.aviso code{font-family:var(--mono);font-size:12px}
+body {
+  background: var(--bg);
+  background-image: 
+    radial-gradient(circle at 15% 10%, rgba(16, 185, 129, 0.05) 0%, transparent 40%),
+    radial-gradient(circle at 85% 20%, rgba(59, 130, 246, 0.05) 0%, transparent 40%);
+  color: var(--text-main);
+  font-family: var(--font-sans);
+  font-size: 12.5px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  min-height: 100vh;
+}
 
-.puntos{display:grid;gap:12px;margin-top:22px}
-.punto{background:var(--sup);border:1px solid var(--linea);border-radius:9px;overflow:hidden}
-.pcab{display:grid;grid-template-columns:auto 1fr auto;gap:14px;align-items:center;padding:15px 17px}
-@media(max-width:640px){.pcab{grid-template-columns:auto 1fr;row-gap:11px}
-  .pcab .run{grid-column:1/-1}}
-.pnum{font-family:var(--mono);font-size:11px;font-weight:600;color:#fff;background:var(--azul);
-  border-radius:4px;padding:3px 7px}
-@media(prefers-color-scheme:dark){.pnum{color:#0E1218}}
-.pinfo h2{font-size:15.5px;margin:0 0 3px;font-weight:600;letter-spacing:-.01em}
-.pinfo p{margin:0;font-size:12.5px;color:var(--tinta2)}
-.pinfo .cita{display:block;margin-top:4px;font-size:11.5px;color:var(--tenue);font-style:italic}
-.run{font-family:var(--sans);font-size:12.5px;font-weight:600;border:0;border-radius:6px;
-  padding:9px 17px;background:var(--azul);color:#fff;cursor:pointer;white-space:nowrap;
-  transition:opacity .15s}
-@media(prefers-color-scheme:dark){.run{color:#0E1218}}
-.run:hover:not(:disabled){opacity:.87}
-.run:disabled{opacity:.42;cursor:not-allowed}
-.run:focus-visible{outline:2px solid var(--verde);outline-offset:2px}
-.run.corriendo{background:var(--ambar)}
+.container {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 20px 16px 60px;
+}
 
-.consola{border-top:1px solid var(--linea);display:none}
-.consola.abierta{display:block}
-.pasos{padding:6px 0;max-height:480px;overflow-y:auto}
-.paso{display:grid;grid-template-columns:auto 1fr;gap:11px;padding:10px 17px;
-  border-bottom:1px solid var(--linea2);animation:entra .22s ease-out}
-.paso:last-child{border-bottom:0}
-@keyframes entra{from{opacity:0;transform:translateY(-3px)}to{opacity:1;transform:none}}
-@media(prefers-reduced-motion:reduce){.paso{animation:none}}
-.bullet{width:18px;height:18px;border-radius:50%;display:grid;place-items:center;
-  font-family:var(--mono);font-size:9.5px;font-weight:600;margin-top:2px;
-  background:var(--azulf);color:var(--azul)}
-.paso.ok .bullet{background:var(--verdef);color:var(--verde)}
-.paso.aviso .bullet{background:var(--ambarf);color:var(--ambar)}
-.paso.error .bullet{background:var(--rojof);color:var(--rojo)}
-.ptit{font-weight:600;font-size:13.5px;margin:0 0 2px}
-.paso.error .ptit{color:var(--rojo)}
-.pdet{margin:0;font-size:12.5px;color:var(--tinta2)}
-.pcmd,.psal{font-family:var(--mono);font-size:11.5px;margin-top:7px;padding:8px 11px;
-  border-radius:5px;white-space:pre-wrap;word-break:break-word;overflow-x:auto}
-.pcmd{background:var(--azulf);color:var(--azul2);border-left:2px solid var(--azul)}
-.psal{background:var(--term);color:var(--term-tx)}
-.metricas{display:flex;gap:7px;flex-wrap:wrap;margin-top:8px}
-.met{font-family:var(--mono);font-size:10.5px;padding:3px 8px;border-radius:4px;
-  background:var(--verdef);color:var(--verde);font-weight:500}
-.anillo{display:flex;gap:7px;flex-wrap:wrap;margin-top:8px}
-.nodo{font-family:var(--mono);font-size:10.5px;padding:4px 9px;border-radius:5px;
-  border:1px solid var(--linea)}
-.nodo.UN{background:var(--verdef);color:var(--verde);border-color:transparent}
-.nodo.DN{background:var(--rojof);color:var(--rojo);border-color:transparent}
+/* ─────────────────────────────────────────────
+   HEADER & MEDELLÍN BRANDING
+   ───────────────────────────────────────────── */
+header {
+  margin-bottom: 18px;
+}
+.header-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--border);
+}
 
-.resumen{padding:14px 17px;background:var(--azulf);border-top:1px solid var(--linea);
-  font-size:13px}
-.resumen b{color:var(--azul)}
-.err{padding:14px 17px;background:var(--rojof);color:var(--rojo);font-size:13px;
-  border-top:1px solid var(--linea)}
-.spin{display:inline-block;width:9px;height:9px;border:1.5px solid currentColor;
-  border-top-color:transparent;border-radius:50%;animation:gira .7s linear infinite;
-  margin-right:6px;vertical-align:-1px}
-@keyframes gira{to{transform:rotate(360deg)}}
-footer{margin-top:30px;padding-top:16px;border-top:1px solid var(--linea);
-  font-size:12px;color:var(--tenue)}
-footer code{font-family:var(--mono);font-size:11.5px}
+.brand-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.brand-logo-badge {
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #10b981 0%, #06b6d4 50%, #3b82f6 100%);
+  display: grid;
+  place-items: center;
+  font-size: 17px;
+  box-shadow: 0 0 12px var(--medellin-green-glow);
+}
+.brand-title-group h1 {
+  font-family: var(--font-brand);
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+  background: linear-gradient(135deg, #ffffff 30%, #38bdf8 70%, #10b981 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.brand-tagline {
+  font-size: 10px;
+  font-family: var(--font-mono);
+  color: var(--medellin-green);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  font-weight: 700;
+}
+
+.header-desc {
+  color: var(--text-muted);
+  font-size: 12px;
+  max-width: 80ch;
+  margin-top: 4px;
+}
+
+.header-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.btn-action {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  color: var(--text-main);
+  padding: 6px 12px;
+  border-radius: var(--radius-sm);
+  font-family: var(--font-sans);
+  font-size: 11.5px;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.15s ease;
+}
+.btn-action:hover {
+  background: var(--bg-card-hover);
+  border-color: var(--medellin-cyan);
+}
+.btn-action.primary {
+  background: linear-gradient(135deg, #059669 0%, #10b981 100%);
+  color: #ffffff;
+  border-color: transparent;
+  box-shadow: 0 2px 10px var(--medellin-green-glow);
+}
+
+/* Cluster Status HUD */
+.cluster-hud-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  margin-top: 10px;
+}
+.hud-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  padding: 4px 10px;
+  border-radius: 4px;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  font-weight: 600;
+}
+.hud-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+}
+.hud-pill.online {
+  border-color: rgba(16, 185, 129, 0.3);
+  background: rgba(16, 185, 129, 0.05);
+  color: #34d399;
+}
+.hud-pill.online .hud-dot {
+  background: var(--medellin-green);
+  box-shadow: 0 0 6px var(--medellin-green);
+}
+.hud-pill.offline {
+  border-color: rgba(244, 63, 94, 0.3);
+  background: rgba(244, 63, 94, 0.08);
+  color: var(--medellin-rose);
+}
+.hud-pill.offline .hud-dot {
+  background: var(--medellin-rose);
+  box-shadow: 0 0 6px var(--medellin-rose);
+}
+
+.alert-banner {
+  margin-top: 10px;
+  padding: 8px 14px;
+  border-radius: var(--radius-sm);
+  background: rgba(245, 158, 11, 0.08);
+  border-left: 3px solid var(--medellin-amber);
+  color: var(--text-main);
+  font-size: 12px;
+}
+
+/* ─────────────────────────────────────────────
+   PUNTOS LIST & COMPACT FLOW CARDS
+   ───────────────────────────────────────────── */
+.puntos-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-top: 16px;
+}
+
+/* ── Separador de bloque: agrupa las demos por pregunta guia ───────── */
+.bloque-sep {
+  margin: 42px 0 18px;
+  padding: 18px 22px;
+  border-left: 3px solid var(--border);
+  background: linear-gradient(90deg, var(--bg-surface) 0%, transparent 85%);
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+}
+.bloque-sep:first-child { margin-top: 8px; }
+
+/* El bloque de las cinco consultas se destaca: es el que no se expone
+   en diapositivas y el primero que se demuestra. */
+.bloque-sep.destacado {
+  border-left-color: var(--medellin-green);
+  background: linear-gradient(90deg,
+    rgba(16,185,129,0.10) 0%, rgba(16,185,129,0.02) 60%, transparent 90%);
+  padding: 22px;
+}
+.bloque-guia {
+  font-family: var(--font-mono);
+  font-size: 10.5px; font-weight: 600;
+  letter-spacing: .14em; text-transform: uppercase;
+  color: var(--text-dim); margin-bottom: 6px;
+}
+.bloque-sep.destacado .bloque-guia { color: var(--medellin-green); }
+.bloque-titulo {
+  font-family: var(--font-brand);
+  font-size: 19px; font-weight: 700; margin: 0 0 6px;
+  color: var(--text-main); letter-spacing: -.02em;
+}
+.bloque-sep.destacado .bloque-titulo { font-size: 22px; }
+.bloque-enunciado {
+  font-size: 13px; color: var(--text-muted);
+  margin: 0 0 8px; max-width: 78ch; line-height: 1.55;
+}
+.bloque-quien {
+  display: inline-block;
+  font-family: var(--font-mono); font-size: 10.5px;
+  color: var(--text-dim); padding: 3px 9px;
+  border: 1px solid var(--border); border-radius: 20px;
+}
+.bloque-sep.destacado .bloque-quien {
+  color: var(--medellin-green);
+  border-color: var(--medellin-green);
+}
+@media (max-width: 640px) {
+  .bloque-sep { padding: 15px 16px; margin-top: 30px; }
+  .bloque-titulo, .bloque-sep.destacado .bloque-titulo { font-size: 17px; }
+}
+
+.punto-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+  transition: border-color 0.2s ease;
+}
+.punto-card:hover {
+  border-color: rgba(56, 189, 248, 0.35);
+}
+
+.punto-header {
+  padding: 12px 18px;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 14px;
+  align-items: center;
+  background: linear-gradient(180deg, rgba(255,255,255,0.015) 0%, transparent 100%);
+  border-bottom: 1px solid var(--border);
+}
+@media (max-width: 768px) {
+  .punto-header {
+    grid-template-columns: auto 1fr;
+    row-gap: 10px;
+  }
+  .punto-header .card-actions {
+    grid-column: 1 / -1;
+  }
+}
+
+.punto-badge-num {
+  font-family: var(--font-brand);
+  font-size: 11.5px;
+  font-weight: 800;
+  background: linear-gradient(135deg, #10b981 0%, #06b6d4 100%);
+  color: #ffffff;
+  padding: 4px 8px;
+  border-radius: 4px;
+}
+
+.punto-title-box h2 {
+  font-family: var(--font-brand);
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  margin-bottom: 2px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.rubric-tag {
+  font-size: 10px;
+  font-family: var(--font-mono);
+  padding: 1px 6px;
+  border-radius: 3px;
+  background: rgba(16, 185, 129, 0.12);
+  color: #34d399;
+  border: 1px solid rgba(16, 185, 129, 0.25);
+  font-weight: 600;
+}
+.punto-desc {
+  font-size: 12px;
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+.punto-quote {
+  display: block;
+  margin-top: 3px;
+  font-size: 11px;
+  color: var(--text-dim);
+  font-style: italic;
+  border-left: 2px solid var(--border);
+  padding-left: 8px;
+}
+
+.btn-run-punto {
+  background: linear-gradient(135deg, #2563eb 0%, #38bdf8 100%);
+  color: #ffffff;
+  border: 0;
+  padding: 7px 15px;
+  border-radius: var(--radius-sm);
+  font-family: var(--font-brand);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+  transition: all 0.15s ease;
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.3);
+}
+.btn-run-punto:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(56, 189, 248, 0.4);
+}
+.btn-run-punto:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  transform: none;
+}
+.btn-run-punto.running {
+  background: var(--medellin-amber);
+}
+
+.spinner {
+  width: 10px;
+  height: 10px;
+  border: 2px solid #ffffff;
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ─────────────────────────────────────────────
+   COMPACT VISUAL FLOW BOX (FOR EACH PUNTO)
+   ───────────────────────────────────────────── */
+.punto-flow-container {
+  padding: 8px 16px;
+  background: #080c14;
+  border-bottom: 1px solid var(--border);
+}
+.flow-title-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+  font-family: var(--font-brand);
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--medellin-cyan);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.flow-diagram-svg {
+  width: 100%;
+  height: auto;
+  max-height: 85px;
+  overflow: visible;
+}
+
+/* SVG Flow Nodes */
+.flow-box {
+  transition: all 0.2s ease;
+}
+.flow-box rect {
+  fill: #111827;
+  stroke: #243044;
+  stroke-width: 1.2;
+}
+.flow-box.active rect {
+  fill: #16253c !important;
+  stroke: #38bdf8 !important;
+  filter: drop-shadow(0 0 6px rgba(56, 189, 248, 0.6));
+}
+.flow-box.active-green rect {
+  fill: #0e221b !important;
+  stroke: #10b981 !important;
+  filter: drop-shadow(0 0 6px rgba(16, 185, 129, 0.6));
+}
+.flow-box.active-rose rect {
+  fill: #261217 !important;
+  stroke: #f43f5e !important;
+  filter: drop-shadow(0 0 6px rgba(244, 63, 94, 0.6));
+}
+
+.flow-box text.title {
+  fill: #ffffff;
+  font-family: var(--font-brand);
+  font-size: 10.5px;
+  font-weight: 700;
+}
+.flow-box text.subtitle {
+  fill: #94a3b8;
+  font-family: var(--font-mono);
+  font-size: 8.5px;
+}
+
+/* SVG Flow Paths */
+.flow-path {
+  fill: none;
+  stroke: #243044;
+  stroke-width: 1.5;
+  stroke-dasharray: 4, 4;
+}
+.flow-path.active {
+  stroke: #38bdf8;
+  stroke-width: 2;
+  animation: dash-pulse 0.5s linear infinite;
+}
+@keyframes dash-pulse {
+  to { stroke-dashoffset: -16; }
+}
+
+/* Parameters bar inside card */
+.punto-params {
+  padding: 8px 18px;
+  background: rgba(0,0,0,0.15);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+  font-size: 11.5px;
+  color: var(--text-muted);
+}
+.param-input, .param-select {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  color: var(--text-main);
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+}
+.param-input:focus, .param-select:focus {
+  outline: none;
+  border-color: var(--border-glow);
+}
+
+/* Console & Execution Steps */
+.punto-console {
+  background: #05070d;
+  display: none;
+}
+.punto-console.open {
+  display: block;
+}
+
+.pipeline-steps {
+  padding: 10px 16px;
+  max-height: 380px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.step-card {
+  display: grid;
+  grid-template-columns: 22px 1fr;
+  gap: 10px;
+  padding: 8px 12px;
+  background: rgba(255, 255, 255, 0.015);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  animation: step-in 0.18s ease-out;
+}
+@keyframes step-in {
+  from { opacity: 0; transform: translateY(-2px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.step-bullet {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--bg-surface);
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  font-weight: 700;
+  display: grid;
+  place-items: center;
+  margin-top: 1px;
+  border: 1px solid var(--border);
+}
+.step-card.ok .step-bullet {
+  background: rgba(16, 185, 129, 0.15);
+  color: var(--medellin-green);
+  border-color: rgba(16, 185, 129, 0.4);
+}
+.step-card.aviso .step-bullet {
+  background: rgba(245, 158, 11, 0.15);
+  color: var(--medellin-amber);
+  border-color: rgba(245, 158, 11, 0.4);
+}
+.step-card.error .step-bullet {
+  background: rgba(244, 63, 94, 0.15);
+  color: var(--medellin-rose);
+  border-color: rgba(244, 63, 94, 0.4);
+}
+
+.step-content {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+.step-title {
+  font-size: 12.5px;
+  font-weight: 700;
+  font-family: var(--font-brand);
+  color: var(--text-main);
+}
+.step-detail {
+  font-size: 11.5px;
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+.step-cmd {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  background: rgba(56, 189, 248, 0.06);
+  border-left: 2px solid var(--medellin-cyan);
+  color: #7dd3fc;
+  padding: 5px 8px;
+  border-radius: 3px;
+  white-space: pre-wrap;
+  word-break: break-all;
+  line-height: 1.35;
+}
+.step-output {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  background: #020306;
+  border: 1px solid var(--border);
+  color: #e2e8f0;
+  padding: 6px 10px;
+  border-radius: 4px;
+  white-space: pre-wrap;
+  word-break: break-all;
+  max-height: 140px;
+  overflow-y: auto;
+  line-height: 1.35;
+}
+
+/* Badges and metric pills */
+.step-metrics {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  align-items: center;
+  margin-top: 2px;
+}
+.metric-pill {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  padding: 2px 7px;
+  border-radius: 4px;
+  background: rgba(16, 185, 129, 0.12);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  color: #34d399;
+  font-weight: 600;
+}
+.metric-pill.cyan {
+  background: rgba(6, 182, 212, 0.12);
+  border-color: rgba(6, 182, 212, 0.3);
+  color: #38bdf8;
+}
+.metric-pill.purple {
+  background: rgba(139, 92, 246, 0.12);
+  border-color: rgba(139, 92, 246, 0.3);
+  color: #c084fc;
+}
+.metric-pill.amber {
+  background: rgba(245, 158, 11, 0.12);
+  border-color: rgba(245, 158, 11, 0.3);
+  color: #fbbf24;
+}
+
+/* Summary Box at End */
+.console-summary {
+  padding: 10px 16px;
+  background: rgba(56, 189, 248, 0.06);
+  border-top: 1px solid var(--border);
+  font-size: 12px;
+  color: var(--text-main);
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+.console-summary b {
+  color: #38bdf8;
+}
+
+/* ─────────────────────────────────────────────
+   MODAL DIALOGS
+   ───────────────────────────────────────────── */
+.modal-overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.8);
+  backdrop-filter: blur(5px);
+  z-index: 1000;
+  display: none;
+  place-items: center;
+  padding: 20px;
+}
+.modal-overlay.open { display: grid; }
+.modal-box {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  max-width: 920px;
+  width: 100%;
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 25px 60px rgba(0,0,0,0.7);
+}
+.modal-header {
+  padding: 20px 26px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.modal-header h3 {
+  font-family: var(--font-brand);
+  font-size: 19px;
+  font-weight: 700;
+}
+.modal-close {
+  background: transparent;
+  border: 0;
+  color: var(--text-muted);
+  font-size: 24px;
+  cursor: pointer;
+}
+.modal-body {
+  padding: 26px;
+  overflow-y: auto;
+}
+
+/* Schema Grid */
+.schema-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+@media (max-width: 768px) { .schema-grid { grid-template-columns: 1fr; } }
+.schema-card {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 16px;
+}
+.schema-card h4 {
+  font-family: var(--font-mono);
+  font-size: 13.5px;
+  color: var(--medellin-cyan);
+  margin-bottom: 8px;
+  display: flex;
+  justify-content: space-between;
+}
+.schema-card pre {
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  color: #cbd5e1;
+  background: #04060a;
+  padding: 10px;
+  border-radius: 6px;
+  overflow-x: auto;
+  margin-bottom: 8px;
+}
+
+footer {
+  margin-top: 60px;
+  padding-top: 24px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+  color: var(--text-dim);
+  font-size: 13px;
+}
+footer code {
+  font-family: var(--font-mono);
+  color: var(--medellin-cyan);
+}
 </style>
 </head>
 <body>
-<div class="wrap">
 
-<header>
-  <div>
-    <p class="eyebrow">ComunicaMedellín · Grupo 3</p>
-    <h1>Taller Módulo 2 — qué pasa por dentro</h1>
-    <p class="sub">Cada botón ejecuta la operación <strong>real</strong> contra el clúster
-    y muestra el pipeline interno paso a paso: el comando, lo que responde y por qué.</p>
+<div class="container">
+
+  <!-- HEADER -->
+  <header>
+    <div class="header-top">
+      <div>
+        <div class="brand-wrapper">
+          <div class="brand-logo-badge">🏛️</div>
+          <div class="brand-title-group">
+            <span class="brand-tagline">Alcaldía de Medellín · Plataforma Oficial de Emergencias</span>
+            <h1>ComunicaMedellín · Demostración en Vivo</h1>
+          </div>
+        </div>
+        <p class="header-desc">
+          Visualizador interactivo de pipelines y arquitectura distribuida. Cada punto cuenta con su propio
+          <strong>flujo de ejecución animado</strong> para exponer cómo viajan los datos por dentro entre
+          <strong>Kafka, Workers, Cassandra (RF=3) y ClickHouse OLAP</strong>.
+        </p>
+      </div>
+
+      <div class="header-actions">
+        <button class="btn-action primary" onclick="ejecutarTodos()">
+          <span>▶</span> Demo Completa en Secuencia
+        </button>
+        <button class="btn-action" onclick="abrirModal('modal-schema')">
+          <span>📋</span> Modelo CQL
+        </button>
+        <button class="btn-action" onclick="limpiarTodasConsolas()">
+          <span>🧹</span> Limpiar
+        </button>
+        <button class="btn-action" onclick="toggleTheme()" title="Cambiar tema">
+          <span id="theme-icon">🌙</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Cluster Status HUD -->
+    <div class="cluster-hud-bar" id="cluster-hud">
+      <span class="hud-pill"><span class="hud-dot"></span> Conectando con API :8765...</span>
+    </div>
+
+    <div class="alert-banner" id="banner-aviso" style="display:none;"></div>
+  </header>
+
+  <!-- PUNTOS LIST WITH INTEGRATED DIAGRAMS -->
+  <main class="puntos-list" id="puntos-container">
+    <!-- Dynamically loaded with tailored flow SVGs for each punto -->
+  </main>
+
+  <!-- FOOTER -->
+  <footer>
+    <div>
+      API FastAPI en <code>http://localhost:8765</code> · Frontend en <code>:4173</code> · Clúster 3 nodos Cassandra + ClickHouse + Kafka KRaft.
+    </div>
+    <div>
+      Tópicos Avanzados de Bases de Datos · ITM 2026
+    </div>
+  </footer>
+
+</div>
+
+<!-- ─────────────────────────────────────────────
+     MODAL: TABLAS CQL
+     ───────────────────────────────────────────── -->
+<div class="modal-overlay" id="modal-schema">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h3>Modelo de Datos Cassandra (Query-First Modeling)</h3>
+      <button class="modal-close" onclick="cerrarModal('modal-schema')">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div class="schema-grid">
+        <div class="schema-card">
+          <h4>presencia <span class="rubric-tag">Q1</span></h4>
+          <pre>CREATE TABLE presencia (
+  usuario_id text,
+  nombre text,
+  comuna text,
+  estado text,
+  last_seen timestamp,
+  PRIMARY KEY ((usuario_id))
+);</pre>
+          <p style="font-size:12px;color:var(--text-muted);">Partition Key directa sobre <code>usuario_id</code>. Acceso y actualización en $O(1)$ (&lt; 2 ms).</p>
+        </div>
+
+        <div class="schema-card">
+          <h4>historial_usuario <span class="rubric-tag">Q2, Q3</span></h4>
+          <pre>CREATE TABLE historial_usuario (
+  usuario_id text,
+  enviado_en timestamp,
+  alerta_id uuid,
+  titulo text,
+  severidad text,
+  zona text,
+  PRIMARY KEY ((usuario_id), enviado_en)
+) WITH CLUSTERING ORDER BY (enviado_en DESC);</pre>
+          <p style="font-size:12px;color:var(--text-muted);">Clustering Order en disco por <code>enviado_en DESC</code>: lecturas secuenciales contiguas.</p>
+        </div>
+
+        <div class="schema-card">
+          <h4>presencia_por_zona <span class="rubric-tag">Q4</span></h4>
+          <pre>CREATE TABLE presencia_por_zona (
+  zona text,
+  estado text,
+  usuario_id text,
+  nombre text,
+  PRIMARY KEY ((zona), estado, usuario_id)
+);</pre>
+          <p style="font-size:12px;color:var(--text-muted);">Tabla desnormalizada donde <code>zona</code> es la Partition Key, eliminando scans globales.</p>
+        </div>
+
+        <div class="schema-card">
+          <h4>estado_entrega <span class="rubric-tag">Q5</span></h4>
+          <pre>CREATE TABLE estado_entrega (
+  alerta_id uuid,
+  bucket int,
+  usuario_id text,
+  estado text,
+  PRIMARY KEY ((alerta_id, bucket), usuario_id)
+);</pre>
+          <p style="font-size:12px;color:var(--text-muted);">Clave compuesta <code>((alerta_id, bucket))</code> con 32 buckets para evitar hotspots de 100k filas.</p>
+        </div>
+      </div>
+    </div>
   </div>
-  <div id="salud"><span class="pill">conectando…</span></div>
-</header>
-
-<div class="aviso" id="aviso" hidden></div>
-
-<div class="puntos" id="puntos"></div>
-
-<footer>
-  API en <code>http://localhost:8765</code> · clúster de 3 nodos Cassandra + ClickHouse.
-  Si un punto falla, revisa que el clúster esté arriba con <code>make status</code>.
-</footer>
-
 </div>
 
 <script>
@@ -134,172 +895,668 @@ const API = location.hostname === "localhost" || location.hostname === "127.0.0.
   ? `http://${location.hostname}:8765` : "http://localhost:8765";
 const WS = API.replace(/^http/, "ws");
 
-const PUNTOS = [
-  {id:"p1", n:"01", titulo:"Las cinco consultas reales",
-   desc:"Ejecuta Q1–Q5 midiendo cada una, y muestra el token y las réplicas donde vive el dato.",
-   cita:"«Definan al menos 5 consultas reales… ¿cómo queda el modelo para que cada consulta sea eficiente?»",
-   dur:"~5 s"},
-  {id:"p2", n:"02", titulo:"Fan-out real a 10.000",
-   desc:"Publica una alerta y escribe 10.000 filas con QUORUM, midiendo throughput y latencia p50/p95/p99.",
-   cita:"«Fan-out real a 10.000 (no 100), con throughput/latencia medidos.»",
-   dur:"~20 s"},
-  {id:"p3", n:"03", titulo:"Caída real de un nodo",
-   desc:"Detiene un contenedor de verdad mientras se escribe, y comprueba que el clúster sigue aceptando escrituras.",
-   cita:"«Caída real de un nodo (no solo degradación de red) mientras se escribe.»",
-   dur:"~30 s"},
-  {id:"p4", n:"04", titulo:"Reparación con conteo antes/después",
-   desc:"Mide las particiones de cada nodo, ejecuta nodetool repair y vuelve a contar.",
-   cita:"«Recuperación/reparación de réplicas demostrada en vivo, con evidencia (conteo antes/después).»",
-   dur:"~3 min"},
-  {id:"p5", n:"05", titulo:"Idempotencia",
-   desc:"Reenvía el mismo evento 3 veces: con el timestamp del evento y con el del worker.",
-   cita:"«Prueba de idempotencia: reenviar el mismo evento y probar que no duplica.»",
-   dur:"~5 s"},
-  {id:"p6", n:"06", titulo:"Analítica: motor correcto vs forzado",
-   desc:"La misma agregación en ClickHouse y forzada en Cassandra, normalizando por fila procesada.",
-   cita:"«Consulta analítica real ejecutada primero en la base “correcta” y luego forzada en la operacional.»",
-   dur:"~10 s"},
+// DEFINE THE 6 PUNTOS WITH THEIR DEDICATED SVG DIAGRAMS
+
+// Agrupacion por pregunta guia del enunciado. El bloque de la pregunta 2
+// (las cinco consultas) va aparte, arriba: es el que se demuestra primero
+// y el que responde el punto que no se expone en diapositivas.
+const BLOQUES = [
+  { guia: "2", titulo: "Las cinco consultas reales",
+    enunciado: "Definan al menos 5 consultas reales… ¿cómo queda el modelo para que cada consulta sea eficiente?",
+    quien: "se responde ejecutándola", destacado: true, puntos: ["p1"] },
+  { guia: "3", titulo: "Fan-out-on-Write",
+    enunciado: "1 alerta → 100.000 registros: ¿cuántas escrituras genera?, ¿10 alertas simultáneas?, ¿cómo evitar duplicados?",
+    quien: "Simón · Nilton", destacado: false, puntos: ["p2", "p5"] },
+  { guia: "5", titulo: "Replicación y recuperación",
+    enunciado: "Replicación, hinted handoff, reparación de réplicas, y qué ocurre con datos escritos mientras un nodo estaba fuera.",
+    quien: "Nilton", destacado: false, puntos: ["p3", "p4"] },
+  { guia: "—", titulo: "El límite del motor operacional",
+    enunciado: "Complemento de la pregunta 2: hay consultas que Cassandra no debe responder. Se ejecuta la misma agregación en ClickHouse y forzada en Cassandra.",
+    quien: "cierre de la demo", destacado: false, puntos: ["p6"] },
 ];
 
-const cont = document.getElementById("puntos");
-PUNTOS.forEach(p => {
+const PUNTOS = [
+  {
+    id: "p1",
+    n: "01",
+    rubricTag: "Query-First Modeling & Murmur3 Token",
+    titulo: "Las Cinco Consultas Reales y el Modelo Derivado",
+    desc: "Calcula el Hash Murmur3 y el Token del usuario, localiza las 3 réplicas físicas con nodetool getendpoints, ejecuta Q1–Q5 en O(1) y contrasta con el antipatrón ALLOW FILTERING.",
+    cita: "«Definan al menos 5 consultas reales… ¿cómo queda el modelo para que cada consulta sea eficiente? No son números simulados: los ejecutamos contra los 10.000 usuarios sembrados.»",
+    dur: "~4 s",
+    paramsHtml: `
+      <label>Usuario a consultar:</label>
+      <input type="text" class="param-input" id="param-p1-user" value="CC65027980" style="width:160px;">
+    `,
+    diagramSvg: `
+      <svg class="flow-diagram-svg" viewBox="0 0 920 120">
+        <!-- Links -->
+        <path id="p1-l1" class="flow-path" d="M110,60 L180,60" />
+        <path id="p1-l2" class="flow-path" d="M300,60 L370,60" />
+        <path id="p1-l3" class="flow-path" d="M490,60 L560,35" />
+        <path id="p1-l4" class="flow-path" d="M490,60 L560,60" />
+        <path id="p1-l5" class="flow-path" d="M490,60 L560,85" />
+        <path id="p1-l6" class="flow-path" d="M680,60 L750,60" />
+
+        <!-- Nodes -->
+        <g id="p1-n-user" class="flow-box">
+          <rect x="10" y="35" width="100" height="50" rx="8" />
+          <text x="60" y="58" text-anchor="middle" class="title">Usuario ID</text>
+          <text x="60" y="73" text-anchor="middle" class="subtitle">Clave de Entrada</text>
+        </g>
+        <g id="p1-n-hash" class="flow-box">
+          <rect x="180" y="35" width="120" height="50" rx="8" />
+          <text x="240" y="56" text-anchor="middle" class="title">Murmur3 Hash</text>
+          <text x="240" y="73" text-anchor="middle" class="subtitle" id="p1-txt-token">token(id) -> Long</text>
+        </g>
+        <g id="p1-n-coord" class="flow-box">
+          <rect x="370" y="35" width="120" height="50" rx="8" />
+          <text x="430" y="56" text-anchor="middle" class="title">Coordinador</text>
+          <text x="430" y="73" text-anchor="middle" class="subtitle">Enrutamiento O(1)</text>
+        </g>
+        <g id="p1-n-rep1" class="flow-box">
+          <rect x="560" y="15" width="120" height="30" rx="6" />
+          <text x="620" y="34" text-anchor="middle" class="title" style="font-size:10.5px;">cass1 (Medellín)</text>
+        </g>
+        <g id="p1-n-rep2" class="flow-box">
+          <rect x="560" y="47" width="120" height="30" rx="6" />
+          <text x="620" y="66" text-anchor="middle" class="title" style="font-size:10.5px;">cass2 (Medellín)</text>
+        </g>
+        <g id="p1-n-rep3" class="flow-box">
+          <rect x="560" y="79" width="120" height="30" rx="6" />
+          <text x="620" y="98" text-anchor="middle" class="title" style="font-size:10.5px;">cass3 (Miami)</text>
+        </g>
+        <g id="p1-n-res" class="flow-box">
+          <rect x="750" y="35" width="150" height="50" rx="8" />
+          <text x="825" y="56" text-anchor="middle" class="title">SSTable Sequential</text>
+          <text x="825" y="73" text-anchor="middle" class="subtitle" style="fill:#34d399;">Respuesta &lt; 2 ms</text>
+        </g>
+      </svg>
+    `
+  },
+  {
+    id: "p2",
+    n: "02",
+    rubricTag: "Fan-Out Masivo & CONSISTENCY QUORUM",
+    titulo: "Fan-Out Real a 10.000 Suscriptores",
+    desc: "Registra la alerta en el catálogo, particiona en Kafka por 3 zonas, realiza escrituras asíncronas masivas en historial_usuario con CONSISTENCY QUORUM y mide Throughput y latencias p50/p95/p99.",
+    cita: "«Fan-out real a 10.000 (no 100), con throughput/latencia medidos. Análisis cuantitativo de fan-out-on-write.»",
+    dur: "~18 s",
+    paramsHtml: `
+      <label>Volumen a emitir:</label>
+      <select class="param-select" id="param-p2-total">
+        <option value="10000" selected>10.000 usuarios (Requisito Oficial)</option>
+        <option value="5000">5.000 usuarios</option>
+        <option value="1000">1.000 usuarios (Rápido)</option>
+      </select>
+    `,
+    diagramSvg: `
+      <svg class="flow-diagram-svg" viewBox="0 0 920 120">
+        <!-- Links -->
+        <path id="p2-l1" class="flow-path" d="M100,60 L160,28" />
+        <path id="p2-l2" class="flow-path" d="M100,60 L160,60" />
+        <path id="p2-l3" class="flow-path" d="M100,60 L160,92" />
+        <path id="p2-l4" class="flow-path" d="M280,28 L340,28" />
+        <path id="p2-l5" class="flow-path" d="M280,60 L340,60" />
+        <path id="p2-l6" class="flow-path" d="M280,92 L340,92" />
+        <path id="p2-l7" class="flow-path" d="M450,28 L510,60" />
+        <path id="p2-l8" class="flow-path" d="M450,60 L510,60" />
+        <path id="p2-l9" class="flow-path" d="M450,92 L510,60" />
+        <path id="p2-l10" class="flow-path" d="M640,60 L700,60" />
+        <path id="p2-l11" class="flow-path" d="M830,60 L870,60" />
+
+        <!-- Nodes -->
+        <g id="p2-n-api" class="flow-box">
+          <rect x="10" y="35" width="90" height="50" rx="8" />
+          <text x="55" y="58" text-anchor="middle" class="title">Alcaldía</text>
+          <text x="55" y="73" text-anchor="middle" class="subtitle">1 Alerta</text>
+        </g>
+        <g id="p2-n-k0" class="flow-box">
+          <rect x="160" y="14" width="120" height="28" rx="6" />
+          <text x="220" y="32" text-anchor="middle" class="title" style="font-size:10.5px;">Kafka p0 · norte</text>
+        </g>
+        <g id="p2-n-k1" class="flow-box">
+          <rect x="160" y="46" width="120" height="28" rx="6" />
+          <text x="220" y="64" text-anchor="middle" class="title" style="font-size:10.5px;">Kafka p1 · centro</text>
+        </g>
+        <g id="p2-n-k2" class="flow-box">
+          <rect x="160" y="78" width="120" height="28" rx="6" />
+          <text x="220" y="96" text-anchor="middle" class="title" style="font-size:10.5px;">Kafka p2 · sur</text>
+        </g>
+
+        <g id="p2-n-w0" class="flow-box">
+          <rect x="340" y="14" width="110" height="28" rx="6" />
+          <text x="395" y="32" text-anchor="middle" class="title" style="font-size:10.5px;">worker 1</text>
+        </g>
+        <g id="p2-n-w1" class="flow-box">
+          <rect x="340" y="46" width="110" height="28" rx="6" />
+          <text x="395" y="64" text-anchor="middle" class="title" style="font-size:10.5px;">worker 2</text>
+        </g>
+        <g id="p2-n-w2" class="flow-box">
+          <rect x="340" y="78" width="110" height="28" rx="6" />
+          <text x="395" y="96" text-anchor="middle" class="title" style="font-size:10.5px;">worker 3</text>
+        </g>
+
+        <g id="p2-n-cass" class="flow-box">
+          <rect x="510" y="30" width="130" height="60" rx="8" />
+          <text x="575" y="54" text-anchor="middle" class="title">Cassandra RF=3</text>
+          <text x="575" y="70" text-anchor="middle" class="subtitle" style="fill:#38bdf8;font-weight:700;">QUORUM (2/3)</text>
+          <text x="575" y="82" text-anchor="middle" class="subtitle">historial_usuario</text>
+        </g>
+        <g id="p2-n-out" class="flow-box">
+          <rect x="700" y="35" width="130" height="50" rx="8" />
+          <text x="765" y="56" text-anchor="middle" class="title">10.000 Filas</text>
+          <text x="765" y="73" text-anchor="middle" class="subtitle" style="fill:#34d399;">Asíncrono &lt; 20s</text>
+        </g>
+        <g id="p2-n-push" class="flow-box">
+          <rect x="870" y="35" width="45" height="50" rx="8" />
+          <text x="892" y="65" text-anchor="middle" style="font-size:18px;">📱</text>
+        </g>
+      </svg>
+    `
+  },
+  {
+    id: "p3",
+    n: "03",
+    rubricTag: "Alta Disponibilidad AP bajo Fallas",
+    titulo: "Caída Real de un Nodo en Vivo",
+    desc: "Inicia escrituras continuas, detiene el contenedor docker stop cass2 en vivo, verifica la transición en el Gossip a estado DN y demuestra que el clúster AP sigue aceptando escrituras con RF=3 sin interrupción.",
+    cita: "«Caída real de un nodo (no solo degradación de red) mientras se escribe.»",
+    dur: "~25 s",
+    paramsHtml: `
+      <label>Nodo a apagar:</label>
+      <select class="param-select" id="param-p3-nodo">
+        <option value="cass2" selected>cass2 (Datacenter Medellín · rack1)</option>
+        <option value="cass3">cass3 (Datacenter Miami · rack1)</option>
+      </select>
+    `,
+    diagramSvg: `
+      <svg class="flow-diagram-svg" viewBox="0 0 920 120">
+        <!-- Links -->
+        <path id="p3-l1" class="flow-path" d="M120,60 L200,60" />
+        <path id="p3-l-c1" class="flow-path" d="M340,60 L420,28" />
+        <path id="p3-l-c2" class="flow-path" d="M340,60 L420,60" />
+        <path id="p3-l-c3" class="flow-path" d="M340,60 L420,92" />
+        <path id="p3-l-out1" class="flow-path" d="M570,28 L650,60" />
+        <path id="p3-l-out3" class="flow-path" d="M570,92 L650,60" />
+
+        <!-- Nodes -->
+        <g id="p3-n-write" class="flow-box">
+          <rect x="10" y="35" width="110" height="50" rx="8" />
+          <text x="65" y="58" text-anchor="middle" class="title">Flujo Continuo</text>
+          <text x="65" y="73" text-anchor="middle" class="subtitle">300 escrituras</text>
+        </g>
+        <g id="p3-n-coord" class="flow-box">
+          <rect x="200" y="35" width="140" height="50" rx="8" />
+          <text x="270" y="56" text-anchor="middle" class="title">Coordinador cass1</text>
+          <text x="270" y="73" text-anchor="middle" class="subtitle">Gossip Protocol</text>
+        </g>
+        <g id="p3-n-c1" class="flow-box">
+          <rect x="420" y="14" width="150" height="28" rx="6" />
+          <text x="495" y="32" text-anchor="middle" class="title" style="font-size:10.5px;">cass1 · UN (Normal)</text>
+        </g>
+        <g id="p3-n-c2" class="flow-box">
+          <rect x="420" y="46" width="150" height="28" rx="6" />
+          <text x="495" y="64" text-anchor="middle" class="title" id="p3-txt-c2" style="font-size:10.5px;fill:#f43f5e;">cass2 · DN (Caído ❌)</text>
+        </g>
+        <g id="p3-n-c3" class="flow-box">
+          <rect x="420" y="78" width="150" height="28" rx="6" />
+          <text x="495" y="96" text-anchor="middle" class="title" style="font-size:10.5px;">cass3 · UN (Normal)</text>
+        </g>
+        <g id="p3-n-status" class="flow-box">
+          <rect x="650" y="35" width="250" height="50" rx="8" />
+          <text x="775" y="56" text-anchor="middle" class="title" style="fill:#34d399;">100% Escrituras OK</text>
+          <text x="775" y="73" text-anchor="middle" class="subtitle">Teorema CAP: Disponibilidad AP</text>
+        </g>
+      </svg>
+    `
+  },
+  {
+    id: "p4",
+    n: "04",
+    rubricTag: "Convergencia & Árboles de Merkle",
+    titulo: "Reparación de Réplicas con Conteo Antes / Después",
+    desc: "Desactiva hinted handoff, escribe 2.000 particiones sin el nodo, reincorpora el contenedor, evidencia el hueco exacto con nodetool tablestats, corre nodetool repair -full y muestra la convergencia final.",
+    cita: "«Recuperación/reparación de réplicas demostrada en vivo, con evidencia (conteo antes/después).»",
+    dur: "~45 s",
+    paramsHtml: `
+      <label>Particiones a divergir:</label>
+      <select class="param-select" id="param-p4-filas">
+        <option value="2000" selected>2.000 particiones independientes</option>
+        <option value="1000">1.000 particiones</option>
+      </select>
+    `,
+    diagramSvg: `
+      <svg class="flow-diagram-svg" viewBox="0 0 920 120">
+        <!-- Links -->
+        <path id="p4-l1" class="flow-path" d="M130,60 L210,60" />
+        <path id="p4-l2" class="flow-path" d="M350,60 L430,60" />
+        <path id="p4-l3" class="flow-path" d="M570,60 L650,60" />
+        <path id="p4-l4" class="flow-path" d="M790,60 L840,60" />
+
+        <!-- Nodes -->
+        <g id="p4-n-gap" class="flow-box">
+          <rect x="10" y="35" width="120" height="50" rx="8" />
+          <text x="70" y="56" text-anchor="middle" class="title">1. Brecha</text>
+          <text x="70" y="73" text-anchor="middle" class="subtitle">No Hinted Handoff</text>
+        </g>
+        <g id="p4-n-cnt1" class="flow-box">
+          <rect x="210" y="35" width="140" height="50" rx="8" />
+          <text x="280" y="56" text-anchor="middle" class="title">2. Conteo Antes</text>
+          <text x="280" y="73" text-anchor="middle" class="subtitle" style="fill:#f43f5e;">cass2: 0 part. (Hueco)</text>
+        </g>
+        <g id="p4-n-merkle" class="flow-box">
+          <rect x="430" y="35" width="140" height="50" rx="8" />
+          <text x="500" y="56" text-anchor="middle" class="title">3. Merkle Trees</text>
+          <text x="500" y="73" text-anchor="middle" class="subtitle">Diff de Hashes</text>
+        </g>
+        <g id="p4-n-repair" class="flow-box">
+          <rect x="650" y="35" width="140" height="50" rx="8" />
+          <text x="720" y="56" text-anchor="middle" class="title">4. nodetool repair</text>
+          <text x="720" y="73" text-anchor="middle" class="subtitle">Sync de Rangos</text>
+        </g>
+        <g id="p4-n-cnt2" class="flow-box">
+          <rect x="840" y="35" width="70" height="50" rx="8" />
+          <text x="875" y="56" text-anchor="middle" class="title">5. 100%</text>
+          <text x="875" y="73" text-anchor="middle" class="subtitle" style="fill:#34d399;">Iguales</text>
+        </g>
+      </svg>
+    `
+  },
+  {
+    id: "p5",
+    n: "05",
+    rubricTag: "At-Least-Once & Paxos LWT",
+    titulo: "Prueba de Idempotencia y Mitigación de Duplicados",
+    desc: "Reenvía el mismo evento 3 veces demostrando los 3 casos: Caso A (Timestamp de evento -> LWW mantiene 1 fila), Caso B (now() en worker -> genera duplicados), y Caso C (Guardia LWT IF NOT EXISTS para push a celulares).",
+    cita: "«Prueba de idempotencia: reenviar el mismo evento y probar que no duplica.»",
+    dur: "~4 s",
+    paramsHtml: `
+      <label>Reintentos a simular:</label>
+      <select class="param-select" id="param-p5-reenvios">
+        <option value="3" selected>3 reintentos consecutivos</option>
+        <option value="5">5 reintentos consecutivos</option>
+      </select>
+    `,
+    diagramSvg: `
+      <svg class="flow-diagram-svg" viewBox="0 0 920 120">
+        <!-- Links -->
+        <path id="p5-l-a" class="flow-path" d="M120,60 L200,28" />
+        <path id="p5-l-b" class="flow-path" d="M120,60 L200,60" />
+        <path id="p5-l-c" class="flow-path" d="M120,60 L200,92" />
+        <path id="p5-l-a-out" class="flow-path" d="M500,28 L580,28" />
+        <path id="p5-l-b-out" class="flow-path" d="M500,60 L580,60" />
+        <path id="p5-l-c-out" class="flow-path" d="M500,92 L580,92" />
+
+        <!-- Origin Node -->
+        <g id="p5-n-origin" class="flow-box">
+          <rect x="10" y="35" width="110" height="50" rx="8" />
+          <text x="65" y="58" text-anchor="middle" class="title">Reintento Kafka</text>
+          <text x="65" y="73" text-anchor="middle" class="subtitle">Mismo Evento</text>
+        </g>
+
+        <!-- Branch A -->
+        <g id="p5-n-a" class="flow-box">
+          <rect x="200" y="14" width="300" height="28" rx="6" />
+          <text x="350" y="32" text-anchor="middle" class="title" style="font-size:10.5px;">CASO A · Timestamp del Evento en PK</text>
+        </g>
+        <g id="p5-n-a-res" class="flow-box">
+          <rect x="580" y="14" width="320" height="28" rx="6" />
+          <text x="740" y="32" text-anchor="middle" class="title" style="font-size:10.5px;fill:#34d399;">✓ 1 Fila Única (Last-Write-Wins)</text>
+        </g>
+
+        <!-- Branch B -->
+        <g id="p5-n-b" class="flow-box">
+          <rect x="200" y="46" width="300" height="28" rx="6" />
+          <text x="350" y="64" text-anchor="middle" class="title" style="font-size:10.5px;">CASO B · now() generado en Worker (Bug)</text>
+        </g>
+        <g id="p5-n-b-res" class="flow-box">
+          <rect x="580" y="46" width="320" height="28" rx="6" />
+          <text x="740" y="64" text-anchor="middle" class="title" style="font-size:10.5px;fill:#f43f5e;">❌ 3 Filas Duplicadas en Historial</text>
+        </g>
+
+        <!-- Branch C -->
+        <g id="p5-n-c" class="flow-box">
+          <rect x="200" y="78" width="300" height="28" rx="6" />
+          <text x="350" y="96" text-anchor="middle" class="title" style="font-size:10.5px;">CASO C · Guardia Push con Paxos (IF NOT EXISTS)</text>
+        </g>
+        <g id="p5-n-c-res" class="flow-box">
+          <rect x="580" y="78" width="320" height="28" rx="6" />
+          <text x="740" y="96" text-anchor="middle" class="title" style="font-size:10.5px;fill:#38bdf8;">📱 1 Solo Disparo Push a Celulares</text>
+        </g>
+      </svg>
+    `
+  },
+  {
+    id: "p6",
+    n: "06",
+    rubricTag: "OLAP Columnar vs Wide-Column",
+    titulo: "Consulta Analítica: Motor Correcto vs Forzado",
+    desc: "Ejecuta GROUP BY en Cassandra capturando el error nativo, mide el scan con ALLOW FILTERING, ejecuta la misma consulta en ClickHouse con compresión columnar y calcula el costo normalizado en µs/fila.",
+    cita: "«Consulta analítica real ejecutada primero en la base “correcta” y luego forzada en la operacional, mostrando en vivo por qué falla o es costosa.»",
+    dur: "~8 s",
+    paramsHtml: `
+      <span style="color:var(--text-dim);font-size:12.5px;">Pregunta Analítica: <em>¿Total de usuarios únicos conectados por zona?</em></span>
+    `,
+    diagramSvg: `
+      <svg class="flow-diagram-svg" viewBox="0 0 920 120">
+        <!-- Links -->
+        <path id="p6-l-cass" class="flow-path" d="M120,60 L200,35" />
+        <path id="p6-l-ch" class="flow-path" d="M120,60 L200,85" />
+        <path id="p6-l-cass-out" class="flow-path" d="M520,35 L600,35" />
+        <path id="p6-l-ch-out" class="flow-path" d="M520,85 L600,85" />
+
+        <!-- Origin -->
+        <g id="p6-n-query" class="flow-box">
+          <rect x="10" y="35" width="110" height="50" rx="8" />
+          <text x="65" y="56" text-anchor="middle" class="title">GROUP BY</text>
+          <text x="65" y="73" text-anchor="middle" class="subtitle">por zona</text>
+        </g>
+
+        <!-- Cassandra Path -->
+        <g id="p6-n-cass" class="flow-box">
+          <rect x="200" y="15" width="320" height="40" rx="6" />
+          <text x="360" y="35" text-anchor="middle" class="title" style="font-size:11px;">Cassandra: Rechazo + ALLOW FILTERING</text>
+          <text x="360" y="48" text-anchor="middle" class="subtitle">Scan fila por fila en todo el anillo</text>
+        </g>
+        <g id="p6-n-cass-res" class="flow-box">
+          <rect x="600" y="15" width="300" height="40" rx="6" />
+          <text x="750" y="35" text-anchor="middle" class="title" style="font-size:11px;fill:#f43f5e;">Lento & Costoso (~1.2 µs/fila)</text>
+          <text x="750" y="48" text-anchor="middle" class="subtitle">No diseñado para analítica</text>
+        </g>
+
+        <!-- ClickHouse Path -->
+        <g id="p6-n-ch" class="flow-box">
+          <rect x="200" y="65" width="320" height="40" rx="6" />
+          <text x="360" y="85" text-anchor="middle" class="title" style="font-size:11px;fill:#38bdf8;">ClickHouse OLAP: uniqExact(usuario_id)</text>
+          <text x="360" y="98" text-anchor="middle" class="subtitle">Lectura solo de columna zona + SIMD</text>
+        </g>
+        <g id="p6-n-ch-res" class="flow-box">
+          <rect x="600" y="65" width="300" height="40" rx="6" />
+          <text x="750" y="85" text-anchor="middle" class="title" style="font-size:11px;fill:#34d399;">300× Más Rápido (~0.004 µs/fila)</text>
+          <text x="750" y="98" text-anchor="middle" class="subtitle">Arquitectura Híbrida Correcta</text>
+        </g>
+      </svg>
+    `
+  }
+];
+
+// RENDER PUNTOS CARDS
+const cont = document.getElementById("puntos-container");
+function tarjeta(p) {
   const el = document.createElement("section");
-  el.className = "punto";
+  el.className = "punto-card";
+  el.id = `card-${p.id}`;
   el.innerHTML = `
-    <div class="pcab">
-      <span class="pnum">${p.n}</span>
-      <div class="pinfo">
-        <h2>${p.titulo}</h2>
-        <p>${p.desc}</p>
-        <span class="cita">${p.cita}</span>
+    <div class="punto-header">
+      <span class="punto-badge-num">${p.n}</span>
+      <div class="punto-title-box">
+        <h2>${p.titulo} <span class="rubric-tag">${p.rubricTag}</span></h2>
+        <p class="punto-desc">${p.desc}</p>
+        <span class="punto-quote">${p.cita}</span>
       </div>
-      <button class="run" id="btn-${p.id}" data-punto="${p.id}">Ejecutar · ${p.dur}</button>
+      <div class="card-actions">
+        <button class="btn-run-punto" id="btn-${p.id}" data-punto="${p.id}">
+          <span>⚡</span> Ejecutar Paso a Paso · ${p.dur}
+        </button>
+      </div>
     </div>
-    <div class="consola" id="con-${p.id}"><div class="pasos" id="pasos-${p.id}"></div></div>`;
-  cont.appendChild(el);
+
+    <!-- DEDICATED VISUAL FLOW BOX -->
+    <div class="punto-flow-container">
+      <div class="flow-title-bar">
+        <span>Flujo de Datos en Tiempo Real</span>
+        <span id="flow-status-${p.id}" style="font-family:var(--font-mono);font-size:11px;color:var(--text-dim);">Listo para ejecutar</span>
+      </div>
+      ${p.diagramSvg}
+    </div>
+
+    <!-- CONTROLS & PARAMS -->
+    <div class="punto-params">
+      ${p.paramsHtml}
+    </div>
+
+    <!-- CONSOLE / STEPS OUTPUT -->
+    <div class="punto-console" id="con-${p.id}">
+      <div class="pipeline-steps" id="pasos-${p.id}"></div>
+    </div>
+  `;
+  return el;
+}
+
+// Se pinta bloque por bloque, no como lista plana: el separador deja ver
+// a que pregunta guia responde cada demo.
+BLOQUES.forEach(b => {
+  const sep = document.createElement("div");
+  sep.className = "bloque-sep" + (b.destacado ? " destacado" : "");
+  sep.innerHTML = `
+    <div class="bloque-guia">Pregunta guía ${b.guia}</div>
+    <h2 class="bloque-titulo">${b.titulo}</h2>
+    <p class="bloque-enunciado">${b.enunciado}</p>
+    <span class="bloque-quien">${b.quien}</span>`;
+  cont.appendChild(sep);
+  b.puntos.forEach(id => {
+    const p = PUNTOS.find(x => x.id === id);
+    if (p) cont.appendChild(tarjeta(p));
+  });
 });
 
-function esc(s){ return String(s ?? "").replace(/[&<>]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;"}[c])); }
+function esc(s) {
+  return String(s ?? "").replace(/[&<>]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]));
+}
 
-function pintarPaso(cajaId, d){
+// ─────────────────────────────────────────────
+// ANIMATE FLOW DIAGRAM PER PUNTO
+// ─────────────────────────────────────────────
+function activarFlujoDiagrama(punto) {
+  const card = document.getElementById(`card-${punto}`);
+  if (!card) return;
+  
+  card.querySelectorAll(".flow-box").forEach(b => b.classList.add("active"));
+  card.querySelectorAll(".flow-path").forEach(p => p.classList.add("active"));
+  
+  const status = document.getElementById(`flow-status-${punto}`);
+  if (status) {
+    status.textContent = "Pipeline en ejecución...";
+    status.style.color = "var(--medellin-cyan)";
+  }
+}
+
+function pintarPaso(cajaId, d) {
   const pasos = document.getElementById("pasos-" + cajaId);
   const el = document.createElement("div");
-  el.className = "paso " + (d.estado || "ok");
-  let html = `<span class="bullet">${d.n ?? "•"}</span><div>
-    <p class="ptit">${esc(d.titulo)}</p>`;
-  if (d.detalle) html += `<p class="pdet">${esc(d.detalle)}</p>`;
-  if (d.cmd)     html += `<div class="pcmd">${esc(d.cmd)}</div>`;
-  if (d.salida)  html += `<div class="psal">${esc(d.salida)}</div>`;
-
+  el.className = "step-card " + (d.estado || "ok");
+  
+  let html = `<div class="step-bullet">${d.n ?? "•"}</div>
+    <div class="step-content">
+      <span class="step-title">${esc(d.titulo)}</span>`;
+  
+  if (d.detalle) html += `<div class="step-detail">${esc(d.detalle)}</div>`;
+  if (d.cmd) html += `<div class="step-cmd">${esc(d.cmd)}</div>`;
+  if (d.salida) html += `<div class="step-output">${esc(d.salida)}</div>`;
+  
   const dd = d.datos || {};
-  if (Array.isArray(dd.anillo) && dd.anillo.length){
-    html += `<div class="anillo">` + dd.anillo.map(n =>
-      `<span class="nodo ${n.estado}">${n.estado} ${n.ip} · ${esc(n.carga)}</span>`).join("") + `</div>`;
-  }
-  if (dd.conteo){
-    html += `<div class="anillo">` + Object.entries(dd.conteo).map(([k,v]) =>
-      `<span class="nodo ${v === Math.max(...Object.values(dd.conteo)) ? "UN":"DN"}">${k}: ${v.toLocaleString("es-CO")}</span>`).join("") + `</div>`;
-  }
   const mets = [];
-  if (dd.tps)  mets.push(`${dd.tps.toLocaleString("es-CO")} escr./s`);
-  if (dd.p50)  mets.push(`p50 ${dd.p50} ms`);
-  if (dd.p95)  mets.push(`p95 ${dd.p95} ms`);
-  if (dd.p99)  mets.push(`p99 ${dd.p99} ms`);
-  if (dd.factor) mets.push(`${dd.factor}× menos costo/fila`);
-  if (mets.length) html += `<div class="metricas">` + mets.map(m => `<span class="met">${m}</span>`).join("") + `</div>`;
-
+  if (dd.tps) mets.push(`<span class="metric-pill cyan">🚀 ${dd.tps.toLocaleString("es-CO")} ops/seg</span>`);
+  if (dd.p50) mets.push(`<span class="metric-pill">p50: ${dd.p50} ms</span>`);
+  if (dd.p95) mets.push(`<span class="metric-pill amber">p95: ${dd.p95} ms</span>`);
+  if (dd.p99) mets.push(`<span class="metric-pill purple">p99: ${dd.p99} ms</span>`);
+  if (dd.factor) mets.push(`<span class="metric-pill cyan">⚡ ${dd.factor}× más rápido</span>`);
+  if (dd.token) {
+    mets.push(`<span class="metric-pill purple">Token: ${dd.token}</span>`);
+    const tokEl = document.getElementById("p1-txt-token");
+    if (tokEl) tokEl.textContent = `Token: ${dd.token.slice(0, 10)}...`;
+  }
+  
+  if (mets.length) {
+    html += `<div class="step-metrics">${mets.join("")}</div>`;
+  }
+  
   el.innerHTML = html + `</div>`;
   pasos.appendChild(el);
   pasos.scrollTop = pasos.scrollHeight;
 }
 
-function ejecutar(punto){
+function ejecutar(punto) {
   const btn = document.getElementById("btn-" + punto);
   const con = document.getElementById("con-" + punto);
   const pasos = document.getElementById("pasos-" + punto);
+  
+  // Clean old summary
+  const oldSum = con.querySelector(".console-summary");
+  if (oldSum) oldSum.remove();
+  
   pasos.innerHTML = "";
-  con.classList.add("abierta");
+  con.classList.add("open");
   btn.disabled = true;
-  btn.classList.add("corriendo");
-  const textoOrig = btn.textContent;
-  btn.innerHTML = `<span class="spin"></span>ejecutando…`;
-
-  document.querySelectorAll(".run").forEach(b => { if (b !== btn) b.disabled = true; });
+  btn.classList.add("running");
+  const textoOrig = btn.innerHTML;
+  btn.innerHTML = `<span class="spinner"></span> Ejecutando…`;
+  
+  activarFlujoDiagrama(punto);
+  
+  const params = {};
+  if (punto === "p1") params.usuario = document.getElementById("param-p1-user")?.value || "CC65027980";
+  else if (punto === "p2") params.total = parseInt(document.getElementById("param-p2-total")?.value || "10000", 10);
+  else if (punto === "p3") params.nodo = document.getElementById("param-p3-nodo")?.value || "cass2";
+  else if (punto === "p4") params.filas = parseInt(document.getElementById("param-p4-filas")?.value || "2000", 10);
+  else if (punto === "p5") params.reenvios = parseInt(document.getElementById("param-p5-reenvios")?.value || "3", 10);
 
   let sock;
-  try { sock = new WebSocket(`${WS}/taller/ws/${punto}`); }
-  catch(e){ finalizar(); pasos.innerHTML = `<div class="err">No se pudo abrir la conexión: ${esc(e.message)}</div>`; return; }
+  try {
+    sock = new WebSocket(`${WS}/taller/ws/${punto}`);
+  } catch(e) {
+    finalizar();
+    pasos.innerHTML = `<div class="step-card error"><div class="step-bullet">!</div><div class="step-content"><span class="step-title">Error de Conexión</span><div class="step-detail">${esc(e.message)}</div></div></div>`;
+    return;
+  }
 
-  function finalizar(){
+  function finalizar() {
     btn.disabled = false;
-    btn.classList.remove("corriendo");
-    btn.textContent = textoOrig;
-    document.querySelectorAll(".run").forEach(b => b.disabled = false);
+    btn.classList.remove("running");
+    btn.innerHTML = textoOrig;
+    const status = document.getElementById(`flow-status-${punto}`);
+    if (status) {
+      status.textContent = "Pipeline finalizado exitosamente ✓";
+      status.style.color = "var(--medellin-green)";
+    }
     cargarSalud();
   }
 
-  sock.onopen = () => sock.send(JSON.stringify({}));
+  sock.onopen = () => sock.send(JSON.stringify(params));
   sock.onmessage = ev => {
     const d = JSON.parse(ev.data);
     if (d.tipo === "paso") pintarPaso(punto, d);
-    else if (d.tipo === "fin"){
+    else if (d.tipo === "fin") {
       const r = document.createElement("div");
-      r.className = "resumen";
-      r.innerHTML = `<b>Resultado.</b> ${esc(d.resumen)}`;
-      pasos.parentElement.appendChild(r);
-      pasos.parentElement.scrollTop = pasos.parentElement.scrollHeight;
-    }
-    else if (d.tipo === "error"){
+      r.className = "console-summary";
+      r.innerHTML = `<div>💡 <b>Conclusión Técnica:</b> ${esc(d.resumen)}</div>`;
+      con.appendChild(r);
+    } else if (d.tipo === "error") {
       const e = document.createElement("div");
-      e.className = "err";
-      e.textContent = d.mensaje;
+      e.className = "step-card error";
+      e.innerHTML = `<div class="step-bullet">✕</div><div class="step-content"><span class="step-title">Error</span><div class="step-detail">${esc(d.mensaje)}</div></div>`;
       pasos.appendChild(e);
     }
   };
   sock.onclose = finalizar;
   sock.onerror = () => {
-    pasos.innerHTML = `<div class="err">No hay conexión con la API en ${API}.
-      Levántala con <code>make api</code> desde la raíz del repo.</div>`;
+    pasos.innerHTML = `<div class="step-card error"><div class="step-bullet">✕</div><div class="step-content"><span class="step-title">No hay conexión con la API :8765</span><div class="step-detail">Ejecuta make api en la raíz.</div></div></div>`;
     finalizar();
   };
 }
 
-document.querySelectorAll(".run").forEach(b =>
-  b.addEventListener("click", () => ejecutar(b.dataset.punto)));
+document.querySelectorAll(".btn-run-punto").forEach(b => {
+  b.addEventListener("click", () => ejecutar(b.dataset.punto));
+});
 
-async function cargarSalud(){
-  const cont = document.getElementById("salud");
-  const aviso = document.getElementById("aviso");
-  try{
+// Run all sequentially
+async function ejecutarTodos() {
+  for (const p of PUNTOS) {
+    ejecutar(p.id);
+    await new Promise(resolve => {
+      const interval = setInterval(() => {
+        const btn = document.getElementById(`btn-${p.id}`);
+        if (!btn || !btn.classList.contains("running")) {
+          clearInterval(interval);
+          resolve();
+        }
+      }, 500);
+    });
+    await new Promise(r => setTimeout(r, 1200));
+  }
+}
+
+function limpiarTodasConsolas() {
+  PUNTOS.forEach(p => {
+    const pasos = document.getElementById(`pasos-${p.id}`);
+    const con = document.getElementById(`con-${p.id}`);
+    if (pasos) pasos.innerHTML = "";
+    const oldSum = con.querySelector(".console-summary");
+    if (oldSum) oldSum.remove();
+    con.classList.remove("open");
+    
+    const card = document.getElementById(`card-${p.id}`);
+    if (card) {
+      card.querySelectorAll(".flow-box").forEach(b => b.classList.remove("active"));
+      card.querySelectorAll(".flow-path").forEach(path => path.classList.remove("active"));
+    }
+  });
+}
+
+// Health status polling
+async function cargarSalud() {
+  const cont = document.getElementById("cluster-hud");
+  const aviso = document.getElementById("banner-aviso");
+  try {
     const r = await fetch(`${API}/taller/estado`);
     const d = await r.json();
+    
     const pills = d.nodos.map(n =>
-      `<span class="pill ${n.vivo ? "on":"off"}">${n.nodo} ${n.vivo ? "UP":"DOWN"}</span>`);
-    pills.push(`<span class="pill ${d.clickhouse ? "on":"off"}">ClickHouse ${d.clickhouse ? "UP":"DOWN"}</span>`);
-    pills.push(`<span class="pill">${d.usuarios.toLocaleString("es-CO")} usuarios</span>`);
+      `<span class="hud-pill ${n.vivo ? "online" : "offline"}">
+        <span class="hud-dot"></span> ${n.nodo} ${n.vivo ? "UP" : "DOWN"}
+      </span>`);
+    
+    pills.push(`<span class="hud-pill ${d.clickhouse ? "online" : "offline"}">
+      <span class="hud-dot"></span> ClickHouse OLAP ${d.clickhouse ? "UP" : "DOWN"}
+    </span>`);
+    
+    pills.push(`<span class="hud-pill online">
+      <span class="hud-dot"></span> ${d.usuarios.toLocaleString("es-CO")} usuarios cargados
+    </span>`);
+    
     cont.innerHTML = pills.join("");
 
     const caidos = d.nodos.filter(n => !n.vivo).map(n => n.nodo);
-    if (caidos.length){
-      aviso.hidden = false;
-      aviso.innerHTML = `<strong>${caidos.join(", ")} está detenido.</strong>
-        Es normal justo después del punto 03 — el punto 04 lo devuelve y lo repara.
-        Para levantarlo a mano: <code>docker start ${caidos[0]}</code>`;
-    } else if (d.usuarios < 1000){
-      aviso.hidden = false;
-      aviso.innerHTML = `<strong>Hay pocos datos cargados (${d.usuarios}).</strong>
-        Ejecuta <code>make seed</code> para sembrar los 10.000 usuarios, y
-        <code>make ch-seed</code> para los eventos analíticos.`;
-    } else aviso.hidden = true;
-  }catch(e){
-    cont.innerHTML = `<span class="pill off">API sin responder</span>`;
-    aviso.hidden = false;
-    aviso.innerHTML = `<strong>No hay conexión con la API.</strong>
-      Desde la raíz del repo: <code>make api</code> (y esta página con <code>make taller</code>).`;
+    if (caidos.length) {
+      aviso.style.display = "block";
+      aviso.innerHTML = `<strong>⚠️ Alerta del Anillo:</strong> <code>${caidos.join(", ")}</code> está detenido (normal tras Punto 03; Punto 04 lo reincorpora y repara automáticamente).`;
+    } else {
+      aviso.style.display = "none";
+    }
+  } catch(e) {
+    cont.innerHTML = `<span class="hud-pill offline"><span class="hud-dot"></span> API :8765 Desconectada</span>`;
+    aviso.style.display = "block";
+    aviso.innerHTML = `<strong>API Offline:</strong> Ejecuta <code>make api</code> en una terminal para conectar en vivo.`;
   }
 }
 cargarSalud();
-setInterval(cargarSalud, 15000);
+setInterval(cargarSalud, 12000);
+
+// Modals
+function abrirModal(id) { document.getElementById(id).classList.add("open"); }
+function cerrarModal(id) { document.getElementById(id).classList.remove("open"); }
+window.onclick = function(e) {
+  if (e.target.classList.contains('modal-overlay')) e.target.classList.remove('open');
+};
+
+function toggleTheme() {
+  const current = document.documentElement.getAttribute("data-theme");
+  const next = current === "light" ? "dark" : "light";
+  document.documentElement.setAttribute("data-theme", next);
+  document.getElementById("theme-icon").textContent = next === "light" ? "☀️" : "🌙";
+}
 </script>
+
 </body>
 </html>
