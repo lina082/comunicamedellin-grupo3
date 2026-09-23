@@ -35,24 +35,27 @@ make status      # confirmar 3 nodos UN antes de exponer
 
 ## Orden de la exposición (15 min)
 
-Las diapositivas siguen **el orden de las preguntas guía del enunciado**, no un orden
-temático. Cada bloque abre con una portadilla que muestra la pregunta literal, y cada
-diapositiva lleva la guía bajo el título.
+**13 diapositivas · 2 por persona.** Las slides siguen el orden de las preguntas guía del
+enunciado, y cada una lleva la guía impresa bajo el título.
 
 | Min | Pregunta guía | Quién | Slides |
 |---|---|---|---|
-| 0–1 | *(ruta y contexto)* | Julián | 2–3 |
-| 1–4 | **1 ·** Tablas: Partition Key + Clustering Key + columnas | Julián | 4–6 |
-| 4–7 | **3 ·** Fan-out-on-Write: 1 alerta → 100.000 registros | Simón | 7–9 |
-| 7–10 | **4 ·** Demasiados usuarios en la misma partición | Elizabeth | 10–12 |
-| 10–13 | **5 ·** Replicación, hinted handoff, reparación | Nilton | 13–15 |
-| 13–15 | **2 ·** Las cinco consultas reales | **demo en vivo** | 16–20 |
+| 0–1 | *(portada y ruta)* | quien abra | 1–3 |
+| 1–4 | **1 ·** Tablas: Partition Key + Clustering Key + columnas | Julián | 4–5 |
+| 4–7 | **3 ·** Fan-out-on-Write: 1 alerta → 100.000 registros | Simón | 6–7 |
+| 7–9 | **4 ·** Demasiados usuarios en la misma partición | Elizabeth | 8–9 |
+| 9–11 | **5 ·** Replicación, hinted handoff, reparación | Nilton | 10–11 |
+| 11–14 | **2 ·** Las cinco consultas reales | **demo en vivo** | 12 |
+| 14–15 | Conclusiones y cierre | quien cierre | 13 |
 
 **La pregunta 2 no se expone en diapositivas: se responde ejecutando las consultas**
 contra el clúster, desde `localhost:4173/taller.html`.
 
-Durante la demo conviene correr, en este orden: P1 (las cinco consultas), y después
-los que refuercen lo ya expuesto — P2 fan-out, P5 idempotencia, P6 analítica.
+> **Ritmo:** unos 90 segundos por diapositiva. Si un bloque se alarga, el que sigue lo
+> nota — conviene ensayar con cronómetro al menos una vez.
+
+Durante la demo, el orden útil es: **P1** (las cinco consultas, que responde la pregunta 2)
+y después lo que dé tiempo — P2 fan-out, P5 idempotencia, P6 analítica.
 `demo-reparacion` (P4) tarda ~3 min: lánzalo en otra terminal al empezar el bloque de Nilton.
 
 ## Preguntas probables y dónde está la respuesta

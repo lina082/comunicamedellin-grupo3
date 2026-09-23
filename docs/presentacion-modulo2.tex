@@ -49,7 +49,6 @@
 \institute{Tópicos Avanzados de Bases de Datos · Módulo 2 · ITM}
 \date{2026}
 
-
 % Caja con la pregunta guia del enunciado, al pie de cada bloque.
 % Va literal: es lo que el docente va a estar siguiendo.
 \newcommand{\guia}[2]{%
@@ -71,7 +70,6 @@
   \vfill\end{frame}}
 
 \begin{document}
-
 
 % ═════════════════════════════════════════════ PORTADA
 \begin{frame}[plain]
@@ -119,46 +117,10 @@ ejecutando las cinco consultas en vivo} contra el clúster, al final de la expos
 \end{frame}
 
 % ═════════════════════════════════════════════ CONTEXTO
-\begin{frame}{De dónde venimos}
-\quien{Julián}
-\vspace{2pt}
-\centering
-\begin{tikzpicture}[font=\scriptsize,
-  hecho/.style={draw=cmVerde!50,fill=cmVerde!8,rounded corners=3pt,
-                minimum height=13mm,text width=40mm,align=center,inner sep=4pt},
-  falta/.style={draw=cmAmbar!60,fill=cmAmbar!8,rounded corners=3pt,
-                minimum height=13mm,text width=40mm,align=center,inner sep=4pt},
-  fl/.style={-{Stealth[length=2mm]},cmAzul!55,thick}]
-\node[hecho] (m1) at (0,0)
-  {\textbf{Módulo 1} — \emph{qué motor}\\[2pt]
-   \tiny Cassandra AP · Kafka · ClickHouse};
-\node[falta] (m2) at (5.8,0)
-  {\textbf{Módulo 2} — \emph{qué modelo}\\[2pt]
-   \tiny tablas, claves, consistencia\\
-   \tiny y qué pasa cuando algo falla};
-\draw[fl] (m1) -- (m2);
-\end{tikzpicture}
-
-\vspace{12pt}
-\begin{minipage}{0.88\textwidth}\footnotesize
-Elegir Cassandra no resuelve nada por sí solo. Falta lo difícil: \textbf{cómo se guardan
-realmente los datos} para que el sistema responda rápido, no se sature al enviar una alerta a
-100.000 personas, y se recupere cuando un nodo se cae.
-
-\vspace{6pt}
-\textcolor{cmGris}{Todas las cifras marcadas en verde están \textbf{medidas} en un clúster de
-tres nodos, no estimadas.}
-\end{minipage}
-\end{frame}
-
 
 % ═════════════════════════════════════════════════════════════
 % PREGUNTA 1 — JULIÁN
 % ═════════════════════════════════════════════════════════════
-\bloque{1}{Las tablas del modelo}{%
-  Diseñar las tablas del modelo de datos propuesto, identificar Partition Key +
-  Clustering Key + columnas, y justificar por qué eligieron cada una
-  (presencia, historial de alertas por usuario, alertas, estado de entrega).}{Julián}
 
 \begin{frame}{Las siete tablas y sus claves}
 \quien{Julián}
@@ -222,15 +184,9 @@ dejarla expirar.}
 \end{minipage}
 \end{frame}
 
-
 % ═════════════════════════════════════════════════════════════
 % PREGUNTA 3 — SIMÓN
 % ═════════════════════════════════════════════════════════════
-\bloque{3}{Fan-out-on-Write}{%
-  Con 1 alerta $\rightarrow$ 100.000 registros: ¿cuántas escrituras genera?, ¿qué ocurre si
-  llegan 10 alertas simultáneamente?, ¿qué ocurre si una alerta cambia o se cancela?, ¿qué pasa
-  si un usuario se registra después de publicada la alerta?, ¿cómo evitar duplicados?,
-  ¿cuánto almacenamiento representa después de un día, un mes y un año?}{Simón}
 
 \begin{frame}{Cuántas escrituras y cuánto ocupan}
 \quien{Simón}
@@ -316,14 +272,9 @@ el comportamiento deseado. Si hiciera falta, se relee Kafka desde el \emph{offse
 \end{minipage}
 \end{frame}
 
-
 % ═════════════════════════════════════════════════════════════
 % PREGUNTA 4 — ELIZABETH
 % ═════════════════════════════════════════════════════════════
-\bloque{4}{Demasiados usuarios en la misma partición}{%
-  Investiguen qué ocurre si demasiados usuarios caen en la misma partición: distribución de
-  claves, tamaño de partición, cantidad de escrituras, concentración de usuarios, posibilidad
-  de particiones demasiado grandes.}{Elizabeth}
 
 \begin{frame}{El error que parece correcto}
 \quien{Elizabeth}
@@ -402,14 +353,9 @@ entidad, sino por cómo distribuye la carga.}
 \end{minipage}
 \end{frame}
 
-
 % ═════════════════════════════════════════════════════════════
 % PREGUNTA 5 — NILTON
 % ═════════════════════════════════════════════════════════════
-\bloque{5}{Replicación y recuperación}{%
-  Investigar replicación, hinted handoff, reparación de réplicas, consistencia eventual,
-  recuperación después de una falla, y qué ocurre con datos escritos mientras un nodo
-  estaba fuera.}{Nilton}
 
 \begin{frame}{Qué pasa con lo escrito mientras el nodo estaba fuera}
 \quien{Nilton}
@@ -505,104 +451,9 @@ lento) \textbf{solo antes del push} — nunca en las 100.000 escrituras.
 \end{minipage}
 \end{frame}
 
-
 % ═════════════════════════════════════════════════════════════
 % PREGUNTA 2 — LINA (al final, con la demo)
 % ═════════════════════════════════════════════════════════════
-\bloque{2}{Las cinco consultas reales}{%
-  Definan al menos 5 consultas reales: presencia actual de un usuario, historial de alertas de
-  un usuario, alertas recientes, qué usuarios recibieron una alerta, y qué usuarios tienen
-  pendiente una alerta. Después: ¿cómo queda el modelo para que cada consulta sea eficiente?}{%
-  Se responde ejecutándolas en vivo}
-
-\begin{frame}{El modelo salió de estas cinco preguntas}
-\vspace{2pt}
-\scriptsize
-\centering
-\begin{tabular}{@{}p{0.6cm}p{4.6cm}p{4.0cm}rr@{}}
-\toprule
-& \textbf{Consulta real} & \textbf{Tabla que la sirve} & \textbf{p50} & \textbf{p95} \\
-\midrule
-Q1 & Presencia actual de un usuario & \texttt{presencia} & 1,89 & 2,97 \\
-Q2 & Historial de alertas de un usuario & \texttt{historial\_usuario} & 2,64 & 3,34 \\
-Q3 & Alertas recientes (rango de fechas) & \texttt{historial\_usuario} & 2,21 & 3,29 \\
-Q4 & \textcolor{cmAmbar}{Qué usuarios recibieron una alerta} & \textcolor{cmAmbar}{\texttt{presencia\_por\_comuna}} & 2,29 & 3,61 \\
-Q5 & \textcolor{cmAmbar}{Quién tiene pendiente una alerta} & \textcolor{cmAmbar}{\texttt{estado\_entrega}} & 1,56 & 3,92 \\
-\bottomrule
-\end{tabular}
-
-\vspace{9pt}
-\begin{columns}[T]
-\begin{column}{0.47\textwidth}
-\textbf{\textcolor{cmAmbar}{Las dos que faltaban}}\\[3pt]
-\scriptsize
-\textbf{Q4} no se puede responder desde \texttt{presencia}: está particionada por
-\texttt{usuario\_id} y la zona no participa en el \emph{hash}.\\[3pt]
-\textbf{Q5} sencillamente no se guardaba en ningún lado.
-\end{column}
-\begin{column}{0.47\textwidth}
-\textbf{\textcolor{cmVerde}{Por qué son eficientes}}\\[3pt]
-\scriptsize
-Las cinco bajan de \medido{4 ms} en p95 porque cada una toca \textbf{una sola partición}.\\[3pt]
-Ninguna usa \texttt{ALLOW FILTERING}, ninguna ordena en memoria, ninguna cruza tablas.
-\end{column}
-\end{columns}
-
-\vspace{6pt}
-\begin{minipage}{0.93\textwidth}\scriptsize
-\textcolor{cmVerde!65!black}{\textbf{La regla:} en Cassandra la respuesta a una consulta nueva
-es una tabla nueva, no un índice. Por eso el modelo pasó de 3 tablas a 7.}
-\end{minipage}
-\guia{2}{Definan al menos 5 consultas reales… ¿cómo queda el modelo para que cada una sea eficiente?}
-\end{frame}
-
-\begin{frame}{Y una que el modelo NO debe responder}
-\footnotesize
-\vspace{2pt}
-\centering
-\textbf{«¿Cuántos usuarios únicos hay en línea, por zona?»}\\
-\tiny\textcolor{cmGris}{Una agregación sobre una columna que no es clave de partición.}
-
-\vspace{7pt}
-\begin{columns}[T]
-\begin{column}{0.47\textwidth}
-\scriptsize\textbf{\textcolor{cmRojo}{En Cassandra}}\\[3pt]
-\tiny
-\texttt{SELECT zona, count(*)}\\
-\texttt{FROM presencia GROUP BY zona;}\\[4pt]
-\textcolor{cmRojo}{\textbf{$\rightarrow$ RECHAZADA}}\\
-\tiny\textcolor{cmGris}{solo agrupa por columnas de la clave primaria; las filas de una zona
-están por todo el anillo}
-\end{column}
-\begin{column}{0.47\textwidth}
-\scriptsize\textbf{\textcolor{cmVerde!65!black}{En ClickHouse}}\\[3pt]
-\tiny
-\texttt{SELECT zona, uniqExact(usuario\_id)}\\
-\texttt{FROM presencia\_eventos GROUP BY zona;}\\[4pt]
-\textcolor{cmVerde!65!black}{\textbf{$\rightarrow$ es su caso de uso}}\\
-\tiny\textcolor{cmGris}{columnar: lee 2 de 6 columnas}
-\end{column}
-\end{columns}
-
-\vspace{7pt}
-\centering\scriptsize
-\begin{tabular}{@{}lrrr@{}}
-\toprule
-\textbf{Motor} & \textbf{Filas} & \textbf{Latencia} & \textbf{Costo por fila} \\
-\midrule
-Cassandra (\texttt{ALLOW FILTERING}) & 10.000 & 77,9 ms & 7,79 µs \\
-ClickHouse (columnar) & 2.000.000 & 77,9 ms & \medido{0,04 µs} \\
-\bottomrule
-\end{tabular}
-
-\vspace{5pt}
-\begin{minipage}{0.93\textwidth}\scriptsize
-\textcolor{cmAmbar}{\textbf{Cuidado al leer el dato:}} la latencia es la misma, pero \textbf{no
-sobre el mismo volumen} — ClickHouse agregó 200 veces más filas. Comparar latencias directas
-\emph{subestima} la diferencia. \textbf{Resuelven preguntas distintas}, y por eso la arquitectura
-tiene los dos.
-\end{minipage}
-\end{frame}
 
 \begin{frame}{Demostración en vivo}
 \footnotesize
@@ -640,7 +491,7 @@ P6 & La agregación en los dos motores & el rechazo real del \texttt{GROUP BY} \
 \begin{frame}{Lo que nos llevamos}
 \footnotesize
 \vspace{3pt}
-\begin{enumerate}[<+->]\itemsep5pt
+\begin{enumerate}\setlength\itemsep{5pt}
 \item \textbf{Las consultas produjeron el modelo, no al revés.} Escribirlas antes de diseñar
 reveló dos que ninguna tabla podía servir. Duplicar datos es el precio de que las cinco
 respondan en \medido{menos de 4 ms}.
