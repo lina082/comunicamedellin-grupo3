@@ -35,7 +35,7 @@ make status      # confirmar 3 nodos UN antes de exponer
 
 ## Orden de la exposición (15 min)
 
-**11 diapositivas · 2 por persona.** Siguen el orden de las preguntas guía del enunciado,
+**13 diapositivas · 2 por persona.** Siguen el orden de las preguntas guía del enunciado,
 y cada una lleva la guía impresa bajo el título.
 
 | Min | Pregunta guía | Quién | Slides |
@@ -45,17 +45,23 @@ y cada una lleva la guía impresa bajo el título.
 | 4–7 | **3 ·** Fan-out-on-Write: 1 alerta → 100.000 registros | Simón | 6–7 |
 | 7–9 | **4 ·** Demasiados usuarios en la misma partición | Elizabeth | 8–9 |
 | 9–11 | **5 ·** Replicación, hinted handoff, reparación | Nilton | 10–11 |
-| 11–15 | **2 ·** Las cinco consultas reales | **demo en vivo** | — |
+| 11–14 | **2 ·** Las cinco consultas — **demo en vivo** | Lina | 12 · *(demo)* · 13 |
+| 14–15 | ¿Preguntas? | — | 14 |
 
-La última diapositiva es «¿Preguntas?». **La demo no tiene diapositiva**: al terminar
-Nilton se pasa directo a `localhost:4173/taller.html` y se ejecutan los pipelines.
-Las conclusiones se dicen hablando, sin proyectar.
+### El bloque de la demo va «en sándwich»
 
-> **Ritmo:** unos 90 segundos por diapositiva, y ~4 minutos para la demo.
-> Conviene ensayar con cronómetro al menos una vez.
+Dos diapositivas de respiro envuelven la demo, para que no quede pegada al bloque anterior:
 
-En la demo, el orden útil es: **P1** (las cinco consultas, que responde la pregunta 2)
-y después lo que dé tiempo — P2 fan-out, P5 idempotencia, P6 analítica.
+1. **Slide 12 — abre.** «Pregunta guía 2 · Las cinco consultas reales… *esta no la
+   explicamos, la ejecutamos*». Se proyecta, se dice esa frase, y se pasa al navegador.
+2. **La demo.** `localhost:4173/taller.html` → botón **P1** (las cinco consultas). Si sobra
+   tiempo: P2 fan-out, P5 idempotencia, P6 analítica.
+3. **Slide 13 — cierra.** Al volver del navegador: «las cinco responden en menos de 4 ms
+   porque cada una toca una sola partición». Remata el bloque y da pie a las preguntas.
+
+> **Ritmo:** ~90 s por diapositiva de contenido, ~2,5 min de demo entre los dos separadores.
+> Ensayar con cronómetro al menos una vez.
+
 `demo-reparacion` (P4) tarda ~3 min: lánzalo en otra terminal al empezar el bloque de Nilton.
 
 ## Preguntas probables y dónde está la respuesta

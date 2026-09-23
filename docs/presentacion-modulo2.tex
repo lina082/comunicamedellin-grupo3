@@ -452,8 +452,44 @@ lento) \textbf{solo antes del push} — nunca en las 100.000 escrituras.
 \end{frame}
 
 % ═════════════════════════════════════════════════════════════
-% PREGUNTA 2 — LINA (al final, con la demo)
+% PREGUNTA 2 — se responde ejecutandola
+% Dos separadores envuelven la demo: el primero abre el bloque y el
+% segundo lo cierra, para que no quede pegada al bloque anterior.
 % ═════════════════════════════════════════════════════════════
+
+% ── PAN DE ARRIBA: abre el bloque ──────────────────────────
+\begin{frame}[plain]
+\centering\vfill
+{\scriptsize\textcolor{cmGris}{PREGUNTA GUÍA 2 DE 5}}\\[12pt]
+{\Large\textcolor{cmAzul}{\textbf{Las cinco consultas reales}}}\\[16pt]
+\begin{minipage}{0.80\textwidth}\centering\small\textcolor{cmGris}{%
+Definan al menos 5 consultas reales y, después:\\
+¿cómo queda el modelo para que cada consulta sea eficiente?}
+\end{minipage}\\[20pt]
+\rule{0.30\textwidth}{0.4pt}\\[14pt]
+{\large\textcolor{cmVerde}{\textbf{Esta no la explicamos.}}}\\[5pt]
+{\normalsize\textcolor{cmAzul}{La ejecutamos.}}
+\vfill
+\end{frame}
+
+% ── PAN DE ABAJO: cierra el bloque ─────────────────────────
+\begin{frame}[plain]
+\centering\vfill
+{\scriptsize\textcolor{cmGris}{LO QUE ACABAN DE VER}}\\[14pt]
+\begin{minipage}{0.86\textwidth}\centering
+{\large\textcolor{cmAzul}{\textbf{Las cinco consultas responden en menos de 4 ms}}}\\[8pt]
+{\small\textcolor{cmGris}{porque cada una toca \textbf{una sola partición}.}}\\[16pt]
+{\footnotesize\textcolor{cmGris}{Ninguna usa \texttt{ALLOW FILTERING}, ninguna ordena en
+memoria, ninguna cruza tablas.}}
+\end{minipage}\\[20pt]
+\rule{0.30\textwidth}{0.4pt}\\[14pt]
+\begin{minipage}{0.78\textwidth}\centering\small
+\textcolor{cmVerde}{\textbf{Si una consulta del camino crítico necesitara
+\texttt{ALLOW FILTERING},\\ nos faltaría una tabla.}}
+\end{minipage}
+\vfill
+\end{frame}
+
 
 % ═════════════════════════════════════════════ CIERRE
 \begin{frame}[plain]\centering\vfill
