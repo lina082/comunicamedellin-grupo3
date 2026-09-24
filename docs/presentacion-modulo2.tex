@@ -51,23 +51,34 @@
 
 % Caja con la pregunta guia del enunciado, al pie de cada bloque.
 % Va literal: es lo que el docente va a estar siguiendo.
-\newcommand{\guia}[2]{%
-  \vspace{-4pt}
-  \begingroup\scriptsize\raggedright
-  \textcolor{cmVerde}{\textbf{Guía #1 ·}}\;\textcolor{cmGris}{#2}\par
-  \endgroup
-  \vspace{4pt}}
 
-% Portadilla de bloque: numero grande, pregunta y responsable.
-\newcommand{\bloque}[4]{%
-  \begin{frame}[plain]
-  \centering\vfill
-  {\scriptsize\textcolor{cmGris}{PREGUNTA GUÍA #1 DE 5}}\\[10pt]
-  {\Large\textcolor{cmAzul}{\textbf{#2}}}\\[14pt]
-  \begin{minipage}{0.82\textwidth}\centering\small\textcolor{cmGris}{#3}\end{minipage}\\[16pt]
-  \rule{0.28\textwidth}{0.4pt}\\[10pt]
-  {\footnotesize\textbf{#4}}
-  \vfill\end{frame}}
+% ── Comandos de composicion visual ──────────────────────────────
+% Una idea por diapositiva: la cifra manda, el texto acompana.
+
+% Cifra gigante al centro con su etiqueta
+\newcommand{\cifra}[2]{%
+  \begin{center}
+  {\fontsize{46}{50}\selectfont\textcolor{cmAzul}{\textbf{#1}}}\\[5pt]
+  {\small\textcolor{cmGris}{#2}}
+  \end{center}}
+
+% Frase de remate, lo que hay que recordar
+\newcommand{\remate}[1]{%
+  \vfill
+  \begin{center}
+  \begin{minipage}{0.88\textwidth}\centering
+  \large\textcolor{cmVerde!65!black}{\textbf{#1}}
+  \end{minipage}
+  \end{center}
+  \vspace{6pt}}
+
+% Pregunta guia, discreta bajo el titulo
+\newcommand{\guia}[2]{%
+  \vspace{-5pt}
+  \begingroup\scriptsize\raggedright
+  \textcolor{cmVerde}{\textbf{Guía #1}}\;\textcolor{cmGris}{· #2}\par
+  \endgroup
+  \vspace{10pt}}
 
 \begin{document}
 
@@ -86,418 +97,315 @@
 \end{frame}
 
 % ═════════════════════════════════════════════ RUTA
-\begin{frame}{Las cinco preguntas guía}
-\footnotesize
-\vspace{2pt}
-La exposición sigue el orden del enunciado: una pregunta por bloque.
-
-\vspace{9pt}
+\begin{frame}{Cinco preguntas, cinco bloques}
+\vspace{6pt}
 \centering
-\begin{tabular}{@{}p{0.7cm}p{8.6cm}p{2.6cm}@{}}
+\small
+\begin{tabular}{@{}clp{2.4cm}@{}}
 \toprule
-& \textbf{Pregunta guía} & \textbf{Responsable} \\
+\textbf{Guía} & \textbf{Tema} & \textbf{Quién} \\
 \midrule
-1 & Tablas del modelo: Partition Key + Clustering Key + columnas, justificadas & Julián \\
+1 & Las tablas y sus claves & Julián \\
+3 & Fan-out: 1 → 100.000 & Simón \\
+4 & Particiones sobrecargadas & Elizabeth \\
+5 & Cuando cae un nodo & Nilton \\
+2 & Las cinco consultas & \textcolor{cmVerde}{demo} \\
+\bottomrule
+\end{tabular}
+
+\remate{La pregunta 2 no se explica: se ejecuta.}
+\end{frame}
+
+% ═════════════════════════════════════════════════════════════
+% GUÍA 1 — JULIÁN
+% ═════════════════════════════════════════════════════════════
+\begin{frame}{En Cassandra el modelo sale de las consultas}
+\quien{Julián}
+\guia{1}{Diseñar las tablas: Partition Key + Clustering Key + columnas}
+\centering
+\vspace{4pt}
+\begin{tikzpicture}[font=\small,
+  c/.style={rounded corners=3pt,minimum height=11mm,text width=34mm,align=center,inner sep=4pt},
+  rel/.style={c,draw=cmGris!45,fill=cmGris!7},
+  cas/.style={c,draw=cmVerde!55,fill=cmVerde!9},
+  f/.style={-{Stealth[length=2mm]},thick}]
+\node[rel] (a1) at (0,1.3)    {modelo las entidades};
+\node[rel] (a2) at (0,0)      {normalizo};
+\node[rel] (a3) at (0,-1.3)   {consulto lo que sea};
+\node[cas] (b1) at (5.6,1.3)  {\textbf{escribo las consultas}};
+\node[cas] (b2) at (5.6,0)    {una tabla por consulta};
+\node[cas] (b3) at (5.6,-1.3) {duplico el dato};
+\draw[f,cmGris!60] (a1)--(a2); \draw[f,cmGris!60] (a2)--(a3);
+\draw[f,cmVerde!70] (b1)--(b2); \draw[f,cmVerde!70] (b2)--(b3);
+\node[font=\scriptsize,text=cmGris] at (0,2.15) {RELACIONAL};
+\node[font=\scriptsize,text=cmVerde] at (5.6,2.15) {CASSANDRA};
+\end{tikzpicture}
+
+\remate{Dos de nuestras cinco consultas no tenían tabla.\\[2pt]
+\normalsize\textcolor{cmGris}{Por eso el modelo pasó de 3 tablas a 7.}}
+\end{frame}
+
+\begin{frame}{Las claves que elegimos}
+\quien{Julián}
+\guia{1}{…y justificar por qué eligieron cada una}
+\centering
+\small
+\begin{tabular}{@{}lll@{}}
+\toprule
+\textbf{Tabla} & \textbf{Partition Key} & \textbf{Por qué} \\
+\midrule
+\texttt{presencia} & \texttt{usuario\_id} & 100.000 valores: reparte parejo \\
 \addlinespace
-3 & Fan-out-on-Write: 1 alerta $\rightarrow$ 100.000 registros & Simón \\
+\texttt{historial\_usuario} & \texttt{usuario\_id} & ordenado por fecha \textsc{desc} \\
+ & {\footnotesize + \texttt{enviado\_en}} & {\footnotesize lectura secuencial, no scan} \\
 \addlinespace
-4 & Qué ocurre si demasiados usuarios caen en la misma partición & Elizabeth \\
+\texttt{presencia\_por\_comuna} & \texttt{(comuna, estado)} & 32 particiones, no 3 \\
 \addlinespace
-5 & Replicación, hinted handoff, reparación y recuperación tras una falla & Nilton \\
-\addlinespace
-2 & Cinco consultas reales y cómo el modelo las hace eficientes & \textcolor{cmGris}{demo en vivo} \\
+\texttt{estado\_entrega} & \texttt{(alerta\_id, bucket)} & el bucket evita el hotspot \\
+\bottomrule
+\end{tabular}
+
+\vspace{12pt}
+{\small\textcolor{cmGris}{\textbf{RF = 3} · dos réplicas en Medellín, una en Miami}}
+
+\remate{Es el mínimo que tolera perder un nodo.}
+\end{frame}
+
+% ═════════════════════════════════════════════════════════════
+% GUÍA 3 — SIMÓN
+% ═════════════════════════════════════════════════════════════
+\begin{frame}{Una alerta son cien mil escrituras}
+\quien{Simón}
+\guia{3}{¿Cuántas escrituras genera? ¿Cuánto almacenamiento?}
+\vspace{2pt}
+\cifra{45,9 GB}{al año, con RF = 3 y 20 alertas diarias}
+
+\vspace{-4pt}
+\centering
+{\small\textcolor{cmGris}{Repartido entre tres nodos: \textbf{15 GB por nodo}}}
+
+\remate{El fan-out no es un problema de espacio.}
+\end{frame}
+
+\begin{frame}{Es un problema de tiempo}
+\quien{Simón}
+\guia{3}{¿Qué ocurre si llegan 10 alertas simultáneamente?}
+\vspace{6pt}
+\centering
+\begin{tabular}{@{}lr@{\hspace{16mm}}lr@{}}
+\toprule
+\multicolumn{2}{@{}l}{\textbf{Caudal del sistema}} & \multicolumn{2}{l}{\textbf{Lo que espera una escritura}} \\
+\midrule
+throughput & \medido{7.509/s} & p50 & 93 ms \\
+10.000 entregas & 1,33 s & p95 & 143 ms \\
+proyección a 100 K & $\sim$13 s & p99 & \medido{156 ms} \\
 \bottomrule
 \end{tabular}
 
 \vspace{10pt}
-\begin{minipage}{0.9\textwidth}\scriptsize
-\textcolor{cmGris}{La pregunta 2 no se explica en diapositivas: se \textbf{responde
-ejecutando las cinco consultas en vivo} contra el clúster, al final de la exposición.}
-\end{minipage}
+{\small\textcolor{cmGris}{Si llegan 10 alertas a la vez, Kafka amortigua:\\
+se retrasa la entrega, no se pierde nada.}}
+
+\remate{Por eso el fan-out es asíncrono.}
 \end{frame}
 
-% ═════════════════════════════════════════════ CONTEXTO
-
-% ═════════════════════════════════════════════════════════════
-% PREGUNTA 1 — JULIÁN
-% ═════════════════════════════════════════════════════════════
-
-\begin{frame}{Las siete tablas y sus claves}
-\quien{Julián}
-\guia{1}{Identificar Partition Key + Clustering Key + columnas de cada tabla.}
-\vspace{-1pt}
-\centering
-\scriptsize
-\begin{tabular}{@{}p{2.85cm}p{2.75cm}p{1.75cm}p{1.35cm}p{1.35cm}p{2.5cm}@{}}
-\toprule
-\textbf{Tabla} & \textbf{Partition Key} & \textbf{Clustering} & \textbf{CL escr.} & \textbf{CL lect.} & \textbf{Por qué} \\
-\midrule
-\texttt{presencia} & \texttt{usuario\_id} & — & \texttt{ONE} & \texttt{ONE} & dato efímero; 2 s de desfase no cambia nada \\
-\addlinespace
-\texttt{historial\_usuario} & \texttt{usuario\_id} & \texttt{enviado\_en}$\downarrow$ & \texttt{QUORUM} & \texttt{ONE} & seguridad pública: no puede perderse \\
-\addlinespace
-\texttt{alertas} & \texttt{alerta\_id} & — & \texttt{QUORUM} & \texttt{QUORUM} & catálogo; aquí se cancela con 1 escritura \\
-\addlinespace
-\texttt{presencia\_por\_comuna} & \texttt{(comuna, estado)} & \texttt{usuario\_id} & \texttt{ONE} & \texttt{ONE} & misma info, indexada al revés \\
-\addlinespace
-\texttt{estado\_entrega} & \texttt{(alerta\_id, bucket)} & \texttt{usuario\_id} & \texttt{ONE} & \texttt{QUORUM} & el bucket evita el hotspot \\
-\addlinespace
-\texttt{eventos\_procesados} & \texttt{evento\_id} & — & \texttt{LWT} & \texttt{QUORUM} & guardia de idempotencia \\
-\bottomrule
-\end{tabular}
-
-\vspace{5pt}
-\begin{minipage}{0.93\textwidth}\tiny
-\textbf{RF~=~3} como \texttt{\{medellin:2, miami:1\}}: es el mínimo que tolera perder un nodo.
-Con RF~=~2 el quórum serían las dos réplicas y una caída bloquearía las escrituras.
-\end{minipage}
-\end{frame}
-
-\begin{frame}{Por qué esas claves y no otras}
-\quien{Julián}
-\guia{1}{…y justificar por qué eligieron cada una.}
-\footnotesize
-\vspace{2pt}
-\begin{itemize}\setlength\itemsep{4pt}
-\item \texttt{presencia} — \textbf{\texttt{usuario\_id}} es de alta cardinalidad
-($\sim$100.000 valores), así que el \emph{hash} reparte parejo por todo el anillo. Una lectura,
-un salto, una partición de una fila.
-
-\item \texttt{historial\_usuario} — el agrupamiento \textbf{\texttt{enviado\_en} descendente}
-ordena físicamente en disco de más reciente a más antiguo: «las últimas 20 alertas» es una
-lectura secuencial, no un \emph{scan}. A 20 alertas/día la partición pesa \medido{164 KB} tras
-un año: no necesita \emph{bucketing}.
-
-\item \texttt{presencia\_por\_comuna} — clave \textbf{compuesta}, no solo la comuna. Las 16
-comunas $\times$ 2 estados dan 32 particiones. Con solo la zona serían 3, y ahí está el problema
-que explica Elizabeth en la pregunta 4.
-
-\item \texttt{estado\_entrega} — el \textbf{bucket} es \texttt{hash(usuario\_id) mod 32}, y es
-obligatorio: sin él una alerta cae entera en una sola partición.
-\end{itemize}
-
-\vspace{4pt}
-\begin{minipage}{0.93\textwidth}\scriptsize
-\textcolor{cmGris}{Las dos tablas de presencia llevan \texttt{TTL} de 900 s: al cambiar de
-estado el usuario \textbf{cambia de partición}, y la fila antigua no se sobrescribe —hay que
-dejarla expirar.}
-\end{minipage}
-\end{frame}
-
-% ═════════════════════════════════════════════════════════════
-% PREGUNTA 3 — SIMÓN
-% ═════════════════════════════════════════════════════════════
-
-\begin{frame}{Cuántas escrituras y cuánto ocupan}
+\begin{frame}{Cancelar una alerta cuesta cien mil borrados}
 \quien{Simón}
-\guia{3}{¿Cuántas escrituras genera?, ¿10 alertas simultáneas?, ¿almacenamiento a 1 día, 1 mes y 1 año?}
-\footnotesize
-\vspace{2pt}
-\begin{columns}[T]
-\begin{column}{0.46\textwidth}
-\textbf{En disco}\\[4pt]
-\scriptsize
-\begin{tabular}{@{}lrr@{}}
-\toprule
-& \textbf{Filas} & \textbf{RF=3} \\
-\midrule
-1 alerta & 100 K & 6,44 MB \\
-1 día (20 alertas) & 2 M & 0,13 GB \\
-1 mes & 60 M & 3,77 GB \\
-1 año & 730 M & \medido{45,9 GB} \\
-\bottomrule
-\end{tabular}\\[5pt]
-\textcolor{cmVerde}{\scriptsize\textbf{15 GB por nodo: irrelevante.}}\\
-\tiny\textcolor{cmGris}{Medido: 22,5 B/fila en disco. La estimación analítica daba 331 B —la
-diferencia es la compresión LZ4, ratio 0,1098.}
-\end{column}
-\begin{column}{0.51\textwidth}
-\textbf{En tiempo} \tiny\textcolor{cmGris}{(medido con 10.000)}\\[4pt]
-\scriptsize
-\begin{tabular}{@{}lr@{\hspace{5mm}}lr@{}}
-\toprule
-\multicolumn{2}{@{}l}{\textbf{Caudal}} & \multicolumn{2}{l}{\textbf{Latencia}} \\
-\midrule
-Entregas & 9.999 & media & 90,8 ms \\
-Tiempo & 1,33 s & p50 & 93,4 ms \\
-Global & \medido{7.509/s} & p95 & 142,5 ms \\
-vs serie & 2,5$\times$ & p99 & \medido{156,4 ms} \\
-\bottomrule
-\end{tabular}\\[5pt]
-\tiny\textcolor{cmGris}{\textbf{No son lo mismo:} el caudal mide el sistema, la latencia mide lo
-que espera \emph{una} escritura concreta.}
-\end{column}
-\end{columns}
-
-\vspace{7pt}
-\begin{minipage}{0.95\textwidth}\scriptsize
-\textcolor{cmAmbar}{\textbf{10 alertas simultáneas:}} 1.000.000 de escrituras, $\sim$21,5 MB con
-RF=3. \textbf{Kafka amortigua} el pico: las alertas entran en el \emph{log} de inmediato y los
-\emph{workers} consumen al ritmo que Cassandra tolere. Se retrasa la entrega, no se pierde nada.
-\end{minipage}
-\end{frame}
-
-\begin{frame}{Cambios, cancelaciones y usuarios nuevos}
-\quien{Simón}
-\guia{3}{¿Qué ocurre si una alerta cambia o se cancela?, ¿y si un usuario se registra después?}
-\footnotesize
-\vspace{2pt}
-El dato está duplicado 100.000 veces, así que \textbf{corregirlo cuesta otras 100.000 escrituras}.
-
-\vspace{8pt}
+\guia{3}{¿Qué ocurre si una alerta cambia o se cancela?}
+\vspace{10pt}
 \centering
-\begin{tabular}{@{}p{2.9cm}p{4.3cm}p{4.9cm}@{}}
-\toprule
-\textbf{Operación} & \textbf{Costo} & \textbf{Qué hacemos} \\
-\midrule
-Corregir el texto & 100.000 \emph{upsert}; la clave no cambia, luego no duplica & se acepta: equivale a un fan-out nuevo \\
-\addlinespace
-Cancelar la alerta & 100.000 \emph{tombstones} & \textcolor{cmVerde}{\textbf{se evita}}: \texttt{cancelada=true} en \texttt{alertas} (1 escritura) y el cliente filtra al leer \\
-\bottomrule
-\end{tabular}
-
-\vspace{9pt}
-\begin{minipage}{0.95\textwidth}\scriptsize
-\textcolor{cmAmbar}{\textbf{Por qué no se borra:}} un \texttt{DELETE} no libera espacio —escribe
-un \emph{tombstone} que persiste \texttt{gc\_grace\_seconds} (10 días) y que \emph{toda} lectura
-posterior debe recorrer y descartar. Cien mil de ellos degradan las particiones afectadas.
-
-\vspace{6pt}
-\textcolor{cmAmbar}{\textbf{Usuario que se registra después:}} \textbf{no recibe} las alertas
-anteriores —su fila nunca se escribió. Es consecuencia directa del \emph{fan-out-on-write} y es
-el comportamiento deseado. Si hiciera falta, se relee Kafka desde el \emph{offset}.
-
-\vspace{6pt}
-\textcolor{cmGris}{\textbf{Duplicados} $\rightarrow$ los explica Nilton en la pregunta 5.}
-\end{minipage}
-\end{frame}
-
-% ═════════════════════════════════════════════════════════════
-% PREGUNTA 4 — ELIZABETH
-% ═════════════════════════════════════════════════════════════
-
-\begin{frame}{El error que parece correcto}
-\quien{Elizabeth}
-\guia{4}{Distribución de claves, tamaño de partición, cantidad de escrituras, posibilidad de
-particiones demasiado grandes.}
-\footnotesize
-\vspace{1pt}
-\centering
-\begin{tikzpicture}[font=\tiny,
-  mal/.style={draw=cmRojo!55,fill=cmRojo!7,rounded corners=2pt,
-              minimum width=6mm,minimum height=6mm},
-  bien/.style={draw=cmVerde!55,fill=cmVerde!10,rounded corners=1.5pt,
-               minimum width=3.4mm,minimum height=3.4mm}]
-\node[font=\scriptsize,text=cmRojo] at (-3.2,1.25) {\textbf{PK (alerta\_id)}};
-\node[mal,minimum width=17mm,minimum height=17mm] at (-3.2,0) {};
-\node[font=\scriptsize,text=cmRojo] at (-3.2,0) {\textbf{1}};
-\node[text=cmGris] at (-3.2,-1.35) {1 partición · 1.909 KB};
-\node[text=cmRojo!85] at (-3.2,-1.72) {toda la carga a 1 punto del anillo};
-
-\node[font=\Large,text=cmGris] at (-0.6,0) {vs};
-
-\node[font=\scriptsize,text=cmVerde!65!black] at (2.6,1.25) {\textbf{PK (alerta\_id, bucket)}};
-\foreach \i in {0,...,31}{
-  \node[bien] at ({1.55+mod(\i,8)*0.42},{0.62-floor(\i/8)*0.42}) {};
-}
-\node[text=cmGris] at (2.6,-1.35) {32 particiones · 71,7 KB c/u};
-\node[text=cmVerde!65!black] at (2.6,-1.72) {repartidas por todo el anillo};
+\begin{tikzpicture}[font=\small,
+  b/.style={rounded corners=3pt,minimum height=15mm,text width=42mm,align=center,inner sep=5pt}]
+\node[b,draw=cmRojo!55,fill=cmRojo!7] (mal) at (0,0)
+  {\textbf{\textcolor{cmRojo}{DELETE}}\\[3pt]
+   \scriptsize 100.000 \emph{tombstones}\\
+   \scriptsize que duran 10 días};
+\node[font=\Large,text=cmGris] at (3.4,0) {vs};
+\node[b,draw=cmVerde!55,fill=cmVerde!9] (bien) at (6.8,0)
+  {\textbf{\textcolor{cmVerde!65!black}{cancelada = true}}\\[3pt]
+   \scriptsize 1 escritura en \texttt{alertas}\\
+   \scriptsize el cliente filtra al leer};
 \end{tikzpicture}
 
-\vspace{7pt}
-\begin{minipage}{0.93\textwidth}\scriptsize
-\textcolor{cmAmbar}{\textbf{Lo contraintuitivo:}} 3,73 MB \emph{caben de sobra} en el límite
-práctico de 100 MB por partición. \textbf{El problema no es el tamaño}: es que las 100.000
-escrituras van a \emph{un} \emph{token} del anillo, y por tanto siempre a las mismas 3 réplicas.
+\vspace{12pt}
+{\small\textcolor{cmGris}{Un \texttt{DELETE} no libera espacio: deja una marca que
+\textbf{toda lectura} debe descartar.}}
 
-\vspace{4pt}
-Con 3 nodos no se nota, porque todos son réplica de todo. \textbf{Con 12 nodos: 3 saturados y
-9 ociosos.} Además, compactar y reparar una partición gigante es una operación atómica costosa;
-32 pequeñas se paralelizan.
-\end{minipage}
+\remate{Cambiamos una escritura masiva por una lectura barata.}
 \end{frame}
 
-\begin{frame}{Los otros dos focos de concentración}
+% ═════════════════════════════════════════════════════════════
+% GUÍA 4 — ELIZABETH
+% ═════════════════════════════════════════════════════════════
+\begin{frame}{La clave que parece correcta}
 \quien{Elizabeth}
-\guia{4}{Concentración de usuarios, cantidad de escrituras.}
-\footnotesize
-\vspace{2pt}
-\begin{itemize}\setlength\itemsep{6pt}
-\item \textbf{Presencia por zona.} Tres zonas producen \textbf{3 particiones} para 100.000
-usuarios con $\sim$10.000 escrituras/s. Es el motivo de \texttt{presencia\_por\_comuna}: las
-16 comunas $\times$ 2 estados dan \textbf{32 particiones} de $\sim$3.100 filas
-($\sim$370 KB cada una).
+\guia{4}{Qué ocurre si demasiados usuarios caen en la misma partición}
+\vspace{4pt}
+\centering
+\begin{tikzpicture}[font=\scriptsize,
+  bien/.style={draw=cmVerde!55,fill=cmVerde!12,rounded corners=1.5pt,
+               minimum width=4.2mm,minimum height=4.2mm}]
+\node[draw=cmRojo!55,fill=cmRojo!8,rounded corners=3pt,
+      minimum width=24mm,minimum height=24mm] at (-3,0) {};
+\node[font=\Large,text=cmRojo] at (-3,0) {\textbf{1}};
+\node[text=cmGris,font=\scriptsize] at (-3,-1.85) {1 partición · 1.909 KB};
 
-\item \textbf{Alerta que afecta varias zonas a la vez.} El fan-out no se reparte:
-se \textbf{triplica} sobre las mismas particiones. Con la clave por comuna se diluye entre 16
-\emph{buckets}, y el orden de escritura se aleatoriza para que los \emph{workers} no ataquen
-las comunas en el mismo orden.
-\end{itemize}
+\node[font=\large,text=cmGris] at (0,0) {vs};
 
+\foreach \i in {0,...,31}{
+  \node[bien] at ({2.05+mod(\i,8)*0.52},{0.78-floor(\i/8)*0.52}) {};
+}
+\node[text=cmGris,font=\scriptsize] at (3.85,-1.85) {32 particiones · 71,7 KB};
+\end{tikzpicture}
+
+\vspace{10pt}
+\centering
+{\small\textcolor{cmAmbar}{\textbf{3,73 MB caben de sobra en el límite de 100 MB.}}}\\[3pt]
+{\small\textcolor{cmGris}{El problema no es el tamaño.}}
+
+\remate{Las 100.000 escrituras van siempre a las mismas 3 réplicas.}
+\end{frame}
+
+\begin{frame}{Con 3 nodos no se nota. Con 12, sí.}
+\quien{Elizabeth}
+\guia{4}{Distribución de claves y concentración de usuarios}
 \vspace{8pt}
 \centering
-\begin{tabular}{@{}lrrr@{}}
+\small
+\begin{tabular}{@{}lrr@{}}
 \toprule
-\textbf{Clave de partición} & \textbf{Particiones} & \textbf{Filas c/u} & \textbf{Tamaño} \\
+\textbf{Si particionamos por…} & \textbf{Particiones} & \textbf{Filas c/u} \\
 \midrule
-solo \texttt{(zona)} & \textcolor{cmRojo}{\textbf{3}} & $\sim$33.000 & concentra el anillo \\
-\texttt{(zona, estado)} & 6 & $\sim$16.600 & mejora poco \\
-\texttt{(comuna, estado)} & \textcolor{cmVerde}{\textbf{32}} & $\sim$3.100 & \medido{$\sim$370 KB} \\
+solo la zona & \textcolor{cmRojo}{\textbf{3}} & $\sim$33.000 \\
+zona + estado & 6 & $\sim$16.600 \\
+\textbf{comuna + estado} & \textcolor{cmVerde}{\textbf{32}} & $\sim$3.100 \\
 \bottomrule
 \end{tabular}
 
-\vspace{8pt}
-\begin{minipage}{0.93\textwidth}\scriptsize
-\textcolor{cmVerde!65!black}{\textbf{La regla:} la clave de partición no se elige por la
-entidad, sino por cómo distribuye la carga.}
-\end{minipage}
+\vspace{12pt}
+{\small\textcolor{cmGris}{Con 12 nodos y la clave ingenua:
+\textbf{3 saturados y 9 ociosos}.}}
+
+\remate{La clave se elige por cómo reparte la carga,\\[2pt]
+\normalsize no por la entidad.}
 \end{frame}
 
 % ═════════════════════════════════════════════════════════════
-% PREGUNTA 5 — NILTON
+% GUÍA 5 — NILTON
 % ═════════════════════════════════════════════════════════════
-
-\begin{frame}{Qué pasa con lo escrito mientras el nodo estaba fuera}
+\begin{frame}{Tumbamos un nodo y seguimos escribiendo}
 \quien{Nilton}
-\guia{5}{Hinted handoff, reparación de réplicas, y qué ocurre con datos escritos mientras un nodo estaba fuera.}
-\footnotesize
-\vspace{2pt}
-\begin{columns}[T]
-\begin{column}{0.45\textwidth}
-\textbf{Tres mecanismos, en orden}\\[4pt]
-\scriptsize
-\begin{tabular}{@{}p{2.35cm}p{2.5cm}@{}}
-\toprule
-\textbf{Hinted handoff} & automático, solo \textbf{3 h} \\
-\addlinespace
-\textbf{Read repair} & solo lo que alguien lee \\
-\addlinespace
-\textbf{\texttt{nodetool}} \textbf{\texttt{repair}} & \textcolor{cmVerde!65!black}{única garantía completa} \\
-\bottomrule
-\end{tabular}\\[6pt]
-\textcolor{cmAmbar}{\textbf{Dos umbrales:}}\\
-\tiny \textbf{3 h} — pasa la ventana de \emph{hints}: hay que reparar.\\
-\tiny \textbf{10 días} (\texttt{gc\_grace}) — los borrados \textbf{resucitan}: hay que
-reemplazar el nodo, no reintegrarlo.
-\end{column}
-\begin{column}{0.52\textwidth}
-\textbf{Medido en vivo} \tiny\textcolor{cmGris}{(2.000 particiones)}\\[4pt]
-\scriptsize
+\guia{5}{Qué ocurre con datos escritos mientras un nodo estaba fuera}
+\vspace{6pt}
+\centering
+\small
 \begin{tabular}{@{}lccc@{}}
 \toprule
-\textbf{Particiones} & \texttt{cass1} & \texttt{cass2} & \texttt{cass3} \\
+\textbf{Particiones en disco} & \texttt{cass1} & \texttt{cass2} & \texttt{cass3} \\
 \midrule
 línea base & 0 & 0 & 0 \\
-sin \texttt{cass2} & 1.999 & \textcolor{cmRojo}{\textbf{0}} & 1.999 \\
-tras \texttt{repair} & 1.999 & \medido{1.999} & 1.999 \\
-\bottomrule
-\end{tabular}\\[6pt]
-\tiny\textcolor{cmGris}{Las escrituras \textbf{no se pierden}: con RF=3 quedan 2 réplicas vivas,
-suficientes para \texttt{QUORUM}. Lo que queda pendiente no es el dato, sino su
-\textbf{convergencia}.}
-\end{column}
-\end{columns}
-
-\vspace{7pt}
-\begin{minipage}{0.95\textwidth}\scriptsize
-\textcolor{cmAmbar}{\textbf{Lo que descubrimos midiendo:}} el hueco \textbf{no se ve con un
-\texttt{SELECT}}. Con RF=3 sobre 3 nodos los tres son réplica de todo, así que una lectura con
-\texttt{ONE} dirigida a \texttt{cass2} la sirve cualquier réplica viva y devuelve el dato
-correcto.
-
-\vspace{3pt}
-\textcolor{cmVerde!65!black}{\textbf{Consistencia eventual no significa que el cliente lea mal:
-significa que las réplicas divergen por dentro mientras el servicio responde bien.}} Por eso hay
-que reparar aunque nada parezca fallar.
-\end{minipage}
-\end{frame}
-
-\begin{frame}{Duplicados: Kafka reenvía el mismo evento}
-\quien{Nilton}
-\guia{3}{¿Cómo evitar duplicados?}
-\footnotesize
-\vspace{2pt}
-Kafka entrega \textbf{al menos una vez}: si un \emph{worker} muere antes de confirmar el
-\emph{offset}, al reiniciar reprocesa. En un fan-out eso es reenviar la alerta a 100.000 personas.
-
-\vspace{8pt}
-\centering
-\begin{tabular}{@{}p{4.6cm}p{4.6cm}@{}}
-\toprule
-\textcolor{cmVerde!65!black}{\textbf{Timestamp del EVENTO}} &
-\textcolor{cmRojo}{\textbf{Timestamp del WORKER}} \\
-\midrule
-\scriptsize lo fija el productor y viaja dentro del mensaje &
-\scriptsize cada reintento llama a \texttt{now()} \\
-\addlinespace
-\scriptsize misma clave primaria $\Rightarrow$ \emph{last-write-wins} &
-\scriptsize clave distinta $\Rightarrow$ fila nueva \\
-\addlinespace
-\hfill\medido{1 fila} tras 3 reenvíos\hfill\null &
-\hfill\textcolor{cmRojo}{\textbf{3 filas}} tras 3 reenvíos\hfill\null \\
+escribiendo sin \texttt{cass2} & 1.999 & \textcolor{cmRojo}{\textbf{0}} & 1.999 \\
+tras \texttt{nodetool repair} & 1.999 & \medido{1.999} & 1.999 \\
 \bottomrule
 \end{tabular}
 
-\vspace{8pt}
-\begin{minipage}{0.95\textwidth}\scriptsize
-\textcolor{cmVerde!65!black}{\textbf{La defensa no cuesta nada.}} Cassandra no tiene
-\texttt{UNIQUE}: un \texttt{INSERT} sobre una clave existente es un \emph{upsert} silencioso.
-Eso, que parece una carencia, \textbf{es} la garantía. Basta 1 ms de diferencia para romperlo.
+\vspace{12pt}
+{\small\textcolor{cmGris}{Las escrituras \textbf{no se pierden}: con RF = 3 quedan
+dos réplicas vivas,\\ suficientes para \texttt{QUORUM}.}}
 
-\vspace{4pt}
-\textcolor{cmAmbar}{\textbf{Lo que sí hay que proteger:}} el \emph{push} al celular ya salió y
-no se retira. El \emph{worker} lo reclama con \texttt{IF NOT EXISTS} (Paxos, 10--20$\times$ más
-lento) \textbf{solo antes del push} — nunca en las 100.000 escrituras.
+\remate{Ese hueco no se ve con un \texttt{SELECT}.}
+\end{frame}
+
+\begin{frame}{Qué significa «consistencia eventual»}
+\quien{Nilton}
+\guia{5}{Hinted handoff, reparación de réplicas, consistencia eventual}
+\vspace{10pt}
+\centering
+\begin{minipage}{0.86\textwidth}\centering
+{\large\textcolor{cmAzul}{\textbf{No es que el cliente lea mal.}}}\\[8pt]
+{\large\textcolor{cmVerde!65!black}{\textbf{Es que las réplicas divergen por dentro\\
+mientras el servicio responde bien.}}}
 \end{minipage}
+
+\vspace{16pt}
+\small
+\begin{tabular}{@{}lll@{}}
+\toprule
+\textbf{Mecanismo} & \textbf{Alcance} & \textbf{Límite} \\
+\midrule
+hinted handoff & automático & \textbf{3 horas} \\
+read repair & lo que se lee & oportunista \\
+\texttt{nodetool repair} & \textcolor{cmVerde!65!black}{completo} & antes de \textbf{10 días} \\
+\bottomrule
+\end{tabular}
+
+\vspace{10pt}
+{\footnotesize\textcolor{cmGris}{Pasados los 10 días (\texttt{gc\_grace}) los borrados resucitan.}}
+\end{frame}
+
+\begin{frame}{Reenviar el mismo evento no duplica}
+\quien{Nilton}
+\guia{3}{¿Cómo evitar duplicados?}
+\vspace{8pt}
+\centering
+\begin{tikzpicture}[font=\small,
+  b/.style={rounded corners=3pt,minimum height=20mm,text width=44mm,align=center,inner sep=6pt}]
+\node[b,draw=cmVerde!55,fill=cmVerde!9] at (0,0)
+  {\textbf{\textcolor{cmVerde!65!black}{timestamp del EVENTO}}\\[4pt]
+   \scriptsize misma clave primaria\\
+   \scriptsize \emph{last-write-wins}\\[5pt]
+   {\large\textcolor{cmVerde!65!black}{\textbf{1 fila}}}};
+\node[b,draw=cmRojo!55,fill=cmRojo!7] at (7,0)
+  {\textbf{\textcolor{cmRojo}{timestamp del WORKER}}\\[4pt]
+   \scriptsize clave distinta cada vez\\
+   \scriptsize \texttt{now()} en el reintento\\[5pt]
+   {\large\textcolor{cmRojo}{\textbf{3 filas}}}};
+\end{tikzpicture}
+
+\vspace{12pt}
+{\small\textcolor{cmGris}{Kafka entrega \textbf{al menos una vez}. Basta 1 ms de diferencia
+para romperlo.}}
+
+\remate{La idempotencia se diseña, no se añade.}
 \end{frame}
 
 % ═════════════════════════════════════════════════════════════
-% PREGUNTA 2 — se responde ejecutandola
-% Dos separadores envuelven la demo: el primero abre el bloque y el
-% segundo lo cierra, para que no quede pegada al bloque anterior.
+% GUÍA 2 — LA DEMO (sándwich)
 % ═════════════════════════════════════════════════════════════
-
-% ── PAN DE ARRIBA: abre el bloque ──────────────────────────
 \begin{frame}[plain]
 \centering\vfill
 {\scriptsize\textcolor{cmGris}{PREGUNTA GUÍA 2 DE 5}}\\[12pt]
 {\Large\textcolor{cmAzul}{\textbf{Las cinco consultas reales}}}\\[16pt]
-\begin{minipage}{0.80\textwidth}\centering\small\textcolor{cmGris}{%
-Definan al menos 5 consultas reales y, después:\\
-¿cómo queda el modelo para que cada consulta sea eficiente?}
-\end{minipage}\\[20pt]
-\rule{0.30\textwidth}{0.4pt}\\[14pt]
-{\large\textcolor{cmVerde}{\textbf{Esta no la explicamos.}}}\\[5pt]
-{\normalsize\textcolor{cmAzul}{La ejecutamos.}}
+\begin{minipage}{0.78\textwidth}\centering\small\textcolor{cmGris}{%
+¿Cómo queda el modelo para que cada consulta sea eficiente?}
+\end{minipage}\\[22pt]
+\rule{0.30\textwidth}{0.4pt}\\[16pt]
+{\large\textcolor{cmVerde}{\textbf{Esta no la explicamos.}}}\\[6pt]
+{\large\textcolor{cmAzul}{\textbf{La ejecutamos.}}}
 \vfill
 \end{frame}
 
-% ── PAN DE ABAJO: cierra el bloque ─────────────────────────
 \begin{frame}[plain]
 \centering\vfill
-{\scriptsize\textcolor{cmGris}{LO QUE ACABAN DE VER}}\\[14pt]
-\begin{minipage}{0.86\textwidth}\centering
-{\large\textcolor{cmAzul}{\textbf{Las cinco consultas responden en menos de 4 ms}}}\\[8pt]
-{\small\textcolor{cmGris}{porque cada una toca \textbf{una sola partición}.}}\\[16pt]
-{\footnotesize\textcolor{cmGris}{Ninguna usa \texttt{ALLOW FILTERING}, ninguna ordena en
-memoria, ninguna cruza tablas.}}
-\end{minipage}\\[20pt]
-\rule{0.30\textwidth}{0.4pt}\\[14pt]
-\begin{minipage}{0.78\textwidth}\centering\small
-\textcolor{cmVerde}{\textbf{Si una consulta del camino crítico necesitara
-\texttt{ALLOW FILTERING},\\ nos faltaría una tabla.}}
+{\scriptsize\textcolor{cmGris}{LO QUE ACABAN DE VER}}\\[16pt]
+{\fontsize{40}{44}\selectfont\textcolor{cmAzul}{\textbf{$<$ 4 ms}}}\\[10pt]
+\begin{minipage}{0.80\textwidth}\centering
+{\normalsize\textcolor{cmGris}{las cinco consultas, porque cada una toca
+\textbf{una sola partición}}}
+\end{minipage}\\[22pt]
+\rule{0.30\textwidth}{0.4pt}\\[16pt]
+\begin{minipage}{0.76\textwidth}\centering
+{\small\textcolor{cmVerde!65!black}{\textbf{Si una consulta del camino crítico
+necesitara \texttt{ALLOW FILTERING},\\ nos faltaría una tabla.}}}
 \end{minipage}
 \vfill
 \end{frame}
-
 
 % ═════════════════════════════════════════════ CIERRE
 \begin{frame}[plain]\centering\vfill
 {\logomarca[2.2]}\\[12pt]
 {\Large\textcolor{cmAzul}{\textbf{¿Preguntas?}}}\\[10pt]
-{\footnotesize\textcolor{cmGris}{Grupo 3 · Módulo 2 · ITM}}\\[14pt]
-{\tiny\textcolor{cmGris}{\texttt{make demo-fanout} · \texttt{make demo-idempotencia} ·
-\texttt{make demo-reparacion} · \texttt{make demo-analitica}}}
+{\footnotesize\textcolor{cmGris}{Grupo 3 · Módulo 2 · ITM}}
 \vfill\end{frame}
 
 \end{document}

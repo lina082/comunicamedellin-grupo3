@@ -28,6 +28,40 @@
 \newcommand{\mI}[1]{\textcolor{acento}{\small[M1,~Sec.~#1]}}
 \newcommand{\mII}[1]{\textcolor{acento}{\small[M2,~Sec.~#1]}}
 
+
+% ── Recursos visuales del informe ──────────────────────────────
+% Un informe tecnico es denso por naturaleza, pero la densidad no debe
+% esconder lo importante: estas cajas sacan del parrafo las cifras y los
+% hallazgos, para que se encuentren sin leer todo.
+\usepackage{tcolorbox}
+\tcbuselibrary{skins}
+
+% Hallazgo: lo que hay que recordar de la seccion
+\newtcolorbox{hallazgo}[1][]{
+  enhanced, colback=verde!5, colframe=verde!55!black,
+  boxrule=0pt, leftrule=2.5pt, arc=2pt,
+  left=9pt, right=9pt, top=7pt, bottom=7pt,
+  fontupper=\small, #1}
+
+% Advertencia: el matiz que evita una lectura equivocada
+\newtcolorbox{ojo}[1][]{
+  enhanced, colback=ambar!6, colframe=ambar,
+  boxrule=0pt, leftrule=2.5pt, arc=2pt,
+  left=9pt, right=9pt, top=7pt, bottom=7pt,
+  fontupper=\small, #1}
+
+% Fila de cifras destacadas: se leen de un vistazo
+\newcommand{\cifras}[1]{%
+  \begin{center}\small
+  \setlength{\tabcolsep}{14pt}
+  \begin{tabular}{@{}#1@{}}
+  \end{tabular}\end{center}}
+\newcommand{\dato}[2]{%
+  \begin{minipage}[t]{0.30\textwidth}\centering
+  {\Large\textcolor{itmazul}{\textbf{#1}}}\\[2pt]
+  {\scriptsize\textcolor{gris!30!black}{#2}}
+  \end{minipage}}
+
 \lstset{
   basicstyle=\ttfamily\scriptsize,
   keywordstyle=\color{itmazul}\bfseries,
@@ -87,12 +121,13 @@ Q5 & Usuarios con una alerta pendiente & $\sim$50/día & $<$1 s & \texttt{estado
 \end{tabular}
 \end{center}
 
-\noindent\textbf{Hallazgo.} Dos consultas quedaron sin tabla. Q4 no se puede
-responder desde \texttt{presencia}, particionada por \texttt{usuario\_id}: la zona
-no participa en el \emph{hash} y exigiría \texttt{ALLOW FILTERING} sobre todo el
-clúster. Q5 no se almacenaba. La respuesta de Cassandra no es un índice secundario
-sino \textbf{otra tabla}: se duplica el dato para servir otra consulta \mI{2.2}.
-Por eso el modelo pasó de tres a siete tablas.
+\begin{hallazgo}
+\textbf{Dos de las cinco consultas no tenían tabla.} Q4 no se puede responder desde
+\texttt{presencia} —particionada por \texttt{usuario\_id}, la zona no participa en el
+\emph{hash}— y Q5 no se almacenaba. En Cassandra la respuesta a una consulta nueva no es
+un índice secundario: es \textbf{otra tabla} \mI{2.2}. Por eso el modelo pasó de tres a
+siete.
+\end{hallazgo}
 
 % ============================================================
 \section{Modelo de datos}
@@ -333,14 +368,16 @@ Una alerta genera 100.000 inserciones. Estimación analítica frente a medición
 \end{tabular}
 \end{center}
 
-\noindent\textbf{Difieren en un factor de 14,7, y no es error de la estimación: es
-la compresión.} \texttt{nodetool} reporta \texttt{SSTable Compression Ratio} de
-\textbf{0,1098} —LZ4 comprime a una novena parte—; el resto lo aporta la
-codificación de SSTable, que no repite la clave de partición en cada fila. Las
-alertas comprimen especialmente bien porque replican el mismo título y cuerpo en
-100.000 filas. \textbf{Estimar sin considerar la compresión sobredimensiona el
-almacenamiento en un orden de magnitud.} Proyectamos con el valor medido y
-conservamos el analítico como cota superior para datos incompresibles.
+\begin{ojo}
+\textbf{Difieren en un factor de 14,7, y no es un error de la estimación: es la
+compresión.} \texttt{nodetool} reporta un \texttt{SSTable Compression Ratio} de
+\textbf{0,1098} —LZ4 comprime a una novena parte—, y el resto lo aporta la codificación
+de SSTable, que no repite la clave de partición en cada fila.
+
+\smallskip
+\textbf{Estimar sin medir sobredimensiona el almacenamiento en un orden de magnitud.}
+Proyectamos con el valor medido y dejamos el analítico como cota superior.
+\end{ojo}
 
 \begin{center}\small
 \begin{tabular}{@{}lrrrr@{}}
@@ -408,13 +445,16 @@ Mismas 50.000 filas en dos tablas idénticas salvo la clave de partición
 \end{tabular}
 \end{center}
 
-\noindent\textbf{El problema no es el tamaño.} 3,73~MB está muy por debajo del
-límite de 100~MB, así que por tamaño la clave ingenua parecería aceptable. El
-problema es que las 100.000 escrituras van a un único \emph{token} del anillo y
-siempre al mismo conjunto de tres réplicas. Con RF~=~3 sobre tres nodos el efecto
-se disimula porque todos son réplica de todo; en un clúster de 12 nodos, tres
-estarían saturados y nueve ociosos. Además las particiones grandes penalizan
-compactación y reparación, que operan por partición.
+\begin{ojo}
+\textbf{El problema no es el tamaño.} 3,73~MB está muy por debajo del límite de 100~MB,
+así que por tamaño la clave ingenua parecería aceptable. El problema es que las 100.000
+escrituras van a un único \emph{token} del anillo, y por tanto siempre a las mismas tres
+réplicas.
+
+\smallskip
+Con RF~=~3 sobre tres nodos el efecto se disimula porque todos son réplica de todo.
+\textbf{En un clúster de 12 nodos: tres saturados y nueve ociosos.}
+\end{ojo}
 
 \smallskip
 \noindent\textbf{Los otros dos \emph{hotspots}.} (i)~Presencia por zona: tres
@@ -530,17 +570,18 @@ Tras \texttt{nodetool repair} & 1.999 & \textcolor{verde}{\textbf{1.999}} & 1.99
 \end{tabular}
 \end{center}
 
-\noindent\textbf{Hallazgo: el hueco es invisible para el cliente.} La primera
-versión de la medición intentaba detectarlo con \texttt{SELECT ... CONSISTENCY ONE}
-dirigido al nodo reincorporado, y siempre devolvía el valor correcto. Con RF~=~3
-sobre tres nodos, \textbf{los tres son réplica de todo} (\texttt{nodetool
-getendpoints}), así que la lectura la sirve cualquier réplica viva. Esto no
-invalida la medición, la corrige: \textbf{la consistencia eventual no significa que
-el cliente lea datos incorrectos, sino que las réplicas divergen internamente
-mientras el servicio responde bien}. Por eso el hueco solo se ve con métricas de
-almacenamiento por nodo, y por eso hay que reparar aunque nada parezca fallar: la
-divergencia se manifiesta más tarde, cuando caiga otro nodo y las réplicas
-restantes ya no basten. \emph{(\texttt{Local write count} no sirve: se reinicia con
+\begin{hallazgo}
+\textbf{El hueco es invisible para el cliente.} La primera versión de la medición lo
+buscaba con \texttt{SELECT ... CONSISTENCY ONE} contra el nodo reincorporado, y siempre
+devolvía el valor correcto: con RF~=~3 sobre tres nodos los tres son réplica de todo
+(\texttt{nodetool getendpoints}), así que la lectura la sirve cualquier réplica viva.
+
+\smallskip
+\textbf{Consistencia eventual no significa que el cliente lea datos incorrectos, sino que
+las réplicas divergen internamente mientras el servicio responde bien.} Por eso el hueco
+solo se ve con métricas de almacenamiento por nodo, y por eso hay que reparar aunque nada
+parezca fallar: la divergencia se manifiesta después, cuando caiga otro nodo.
+\end{hallazgo} \emph{(\texttt{Local write count} no sirve: se reinicia con
 el proceso y \texttt{repair} no lo incrementa, porque escribe SSTables sin pasar por
 el camino normal de escritura.)}
 
