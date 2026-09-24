@@ -35,33 +35,28 @@ make status      # confirmar 3 nodos UN antes de exponer
 
 ## Orden de la exposición (15 min)
 
-**13 diapositivas · 2 por persona.** Siguen el orden de las preguntas guía del enunciado,
-y cada una lleva la guía impresa bajo el título.
+**13 diapositivas.** Una idea por diapositiva: la cifra manda y el texto acompaña.
+El detalle lo dice quien expone — para eso está el guion hablado.
 
 | Min | Pregunta guía | Quién | Slides |
 |---|---|---|---|
-| 0–1 | *(portada y ruta)* | quien abra | 1–3 |
-| 1–4 | **1 ·** Tablas: Partition Key + Clustering Key + columnas | Julián | 4–5 |
-| 4–7 | **3 ·** Fan-out-on-Write: 1 alerta → 100.000 registros | Simón | 6–7 |
-| 7–9 | **4 ·** Demasiados usuarios en la misma partición | Elizabeth | 8–9 |
-| 9–11 | **5 ·** Replicación, hinted handoff, reparación | Nilton | 10–11 |
-| 11–14 | **2 ·** Las cinco consultas — **demo en vivo** | Lina | 12 · *(demo)* · 13 |
-| 14–15 | ¿Preguntas? | — | 14 |
+| 0–1 | *(portada y ruta)* | quien abra | 1–2 |
+| 1–4 | **1 ·** Las tablas y sus claves | Julián | 3–4 |
+| 4–7 | **3 ·** Fan-out: 1 alerta → 100.000 | Simón | 5–7 |
+| 7–9 | **4 ·** Particiones sobrecargadas | Elizabeth | 8–9 |
+| 9–12 | **5 ·** Cuando cae un nodo + duplicados | Nilton | 10–12 |
+| 12–15 | **2 ·** Las cinco consultas | **demo en vivo** | — |
+| — | ¿Preguntas? | — | 13 |
 
-### El bloque de la demo va «en sándwich»
+**La demo no tiene diapositiva.** Al terminar Nilton se pasa directo a
+`localhost:4173/taller.html` y se ejecutan los pipelines. Las conclusiones se dicen
+hablando, sin proyectar.
 
-Dos diapositivas de respiro envuelven la demo, para que no quede pegada al bloque anterior:
-
-1. **Slide 12 — abre.** «Pregunta guía 2 · Las cinco consultas reales… *esta no la
-   explicamos, la ejecutamos*». Se proyecta, se dice esa frase, y se pasa al navegador.
-2. **La demo.** `localhost:4173/taller.html` → botón **P1** (las cinco consultas). Si sobra
-   tiempo: P2 fan-out, P5 idempotencia, P6 analítica.
-3. **Slide 13 — cierra.** Al volver del navegador: «las cinco responden en menos de 4 ms
-   porque cada una toca una sola partición». Remata el bloque y da pie a las preguntas.
-
-> **Ritmo:** ~90 s por diapositiva de contenido, ~2,5 min de demo entre los dos separadores.
+> **Ritmo:** ~70 segundos por diapositiva y ~3 minutos de demo.
 > Ensayar con cronómetro al menos una vez.
 
+En la demo el orden útil es: **P1** (las cinco consultas, que responde la pregunta 2)
+y después lo que dé tiempo — P2 fan-out, P5 idempotencia, P6 analítica.
 `demo-reparacion` (P4) tarda ~3 min: lánzalo en otra terminal al empezar el bloque de Nilton.
 
 ## Preguntas probables y dónde está la respuesta
