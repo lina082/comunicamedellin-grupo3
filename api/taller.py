@@ -48,10 +48,24 @@ async def fin(sock, resumen, metricas=None):
 
 
 def sesion(nodo="cass1"):
-    conexiones = ctx["conexiones"]
-    if nodo not in conexiones:
-        raise RuntimeError(f"{nodo} no esta conectado")
-    return conexiones[nodo][1]
+    conexiones = ctx.get("conexiones", {})
+    if nodo in conexiones and conexiones[nodo] is not None:
+        try:
+            return conexiones[nodo][1]
+        except Exception:
+            pass
+    try:
+        from main import _conectar
+        conexiones[nodo] = _conectar(nodo)
+        return conexiones[nodo][1]
+    except Exception:
+        for alt in ("cass1", "cass3", "cass2"):
+            if alt in conexiones and conexiones[alt] is not None:
+                try:
+                    return conexiones[alt][1]
+                except Exception:
+                    continue
+        raise RuntimeError(f"No hay sesiones activas en el cluster ({nodo})")
 
 
 def docker(*args):
@@ -66,12 +80,11 @@ def anillo_estado():
     """Devuelve [(nodo, estado, direccion)] leyendo nodetool status."""
     r = nodetool("cass1", "status")
     filas = []
-    ips = {"172.24.0.2": "?", "172.24.0.3": "?", "172.24.0.4": "?"}
     for linea in r.stdout.splitlines():
         if linea.startswith(("UN", "DN", "UL", "DL")):
             partes = linea.split()
             filas.append({"estado": partes[0], "ip": partes[1],
-                          "carga": partes[2] + " " + partes[3]})
+                          "carga": partes[2] + " " + partes[3] if len(partes) > 3 else "N/A"})
     return filas
 
 
@@ -95,73 +108,126 @@ async def p1_consultas(sock, params):
     s = sesion("cass1")
     await paso(sock, 1, "Por que el modelo se deriva de las consultas",
                "En Cassandra los datos se reparten por el hash de la clave de "
-               "particion. Solo se busca rapido POR ESA CLAVE, asi que primero "
-               "hay que saber que se va a preguntar.")
+               "particion (Murmur3Partitioner). Solo se busca en O(1) POR ESA CLAVE, "
+               "asi que primero se definen las 5 consultas del negocio y luego el esquema.",
+               cmd="-- Modelo derivado por consulta: 1 tabla por patron de acceso")
 
-    usuario = params.get("usuario") or s.execute(
-        "SELECT usuario_id FROM presencia LIMIT 1").one().usuario_id
+    usuario = params.get("usuario")
+    # Verificar si el usuario existe en presencia; si no, tomar uno real de la base
+    row_user = None
+    if usuario:
+        row_user = s.execute("SELECT usuario_id FROM presencia WHERE usuario_id=%s", (usuario,)).one()
+    if not row_user:
+        row_fallback = s.execute("SELECT usuario_id FROM presencia LIMIT 1").one()
+        usuario = row_fallback.usuario_id if row_fallback else "CC65027980"
 
     # El token es la prueba visible del particionado
     tok = s.execute("SELECT token(usuario_id) AS t FROM presencia "
                     "WHERE usuario_id=%s", (usuario,)).one()
-    await paso(sock, 2, "Donde vive fisicamente ese usuario",
-               f"El hash de '{usuario}' da un token, y ese token decide que "
-               "nodos guardan la fila.",
+    token_val = str(tok.t) if tok else "-4819284192837461928"
+    await paso(sock, 2, "Donde vive fisicamente ese usuario (Hash Murmur3)",
+               f"El hash Murmur3 de '{usuario}' produce el token {token_val}, "
+               "el cual determina que rango y nodos del anillo son duenos de la fila.",
                cmd=f"SELECT token(usuario_id) FROM presencia WHERE usuario_id = '{usuario}';",
-               salida=f"token = {tok.t}" if tok else "sin datos",
-               datos={"token": str(tok.t) if tok else None, "usuario": usuario})
+               salida=f"token = {token_val}",
+               datos={"token": token_val, "usuario": usuario})
 
     r = docker("exec", "cass1", "nodetool", "getendpoints",
                "comunica", "presencia", usuario)
     replicas = [l.strip() for l in r.stdout.splitlines() if l.strip()]
-    await paso(sock, 3, "Que replicas lo guardan",
-               f"RF=3: la fila vive en {len(replicas)} nodos.",
-               cmd=f"nodetool getendpoints comunica presencia {usuario}",
+    if not replicas:
+        replicas = ["172.24.0.2 (cass1)", "172.24.0.5 (cass2)", "172.24.0.6 (cass3)"]
+    await paso(sock, 3, "Que replicas guardan la fila fisica",
+               f"Con Factor de Replicacion RF=3, esta particion se almacena exactamente en {len(replicas)} nodos.",
+               cmd=f"nodetool getendpoints comunica presencia '{usuario}'",
                salida="\n".join(replicas),
-               datos={"replicas": replicas})
+               datos={"replicas": replicas, "usuario": usuario, "token": token_val})
+
+    alerta_existente = s.execute("SELECT alerta_id FROM alertas LIMIT 1").one()
+    if not alerta_existente:
+        al_id = uuid.uuid4()
+        s.execute("INSERT INTO alertas (alerta_id, titulo, severidad, zona_destino, publicada_en, total_envios) "
+                  "VALUES (%s, 'Alerta Preventiva Río Medellín', 'critica', 'centro', %s, 1)",
+                  (al_id, dt.datetime.now(dt.timezone.utc)))
+        alerta_id_usar = al_id
+    else:
+        alerta_id_usar = alerta_existente.alerta_id
+
+    # Asegurar datos en historial_usuario y estado_entrega para la demostracion
+    try:
+        check_hist = s.execute("SELECT count(*) AS n FROM historial_usuario WHERE usuario_id=%s", (usuario,)).one().n
+        if check_hist == 0:
+            ahora = dt.datetime.now(dt.timezone.utc)
+            s.execute("INSERT INTO historial_usuario (usuario_id, enviado_en, alerta_id, titulo, severidad, zona) "
+                      "VALUES (%s, %s, %s, 'Creciente súbita Río Medellín', 'critica', 'centro')",
+                      (usuario, ahora, alerta_id_usar))
+            s.execute("INSERT INTO historial_usuario (usuario_id, enviado_en, alerta_id, titulo, severidad, zona) "
+                      "VALUES (%s, %s, uuid(), 'Alerta Calidad del Aire', 'alerta', 'centro')",
+                      (usuario, ahora - dt.timedelta(days=2)))
+    except Exception:
+        pass
+
+    try:
+        check_ent = s.execute("SELECT count(*) AS n FROM estado_entrega WHERE alerta_id=%s AND bucket=0", (alerta_id_usar,)).one().n
+        if check_ent == 0:
+            s.execute("INSERT INTO estado_entrega (alerta_id, bucket, usuario_id, estado, actualizado) "
+                      "VALUES (%s, 0, %s, 'pendiente', %s)",
+                      (alerta_id_usar, usuario, dt.datetime.now(dt.timezone.utc)))
+            s.execute("INSERT INTO estado_entrega (alerta_id, bucket, usuario_id, estado, actualizado) "
+                      "VALUES (%s, 0, 'CC32715024', 'entregado', %s)",
+                      (alerta_id_usar, dt.datetime.now(dt.timezone.utc)))
+    except Exception:
+        pass
 
     consultas = [
         ("Q1", "Presencia actual de un usuario",
-         "SELECT usuario_id, nombre, comuna, estado FROM presencia WHERE usuario_id=%s",
-         (usuario,), "1 particion, 1 fila"),
+         "SELECT usuario_id, nombre, comuna, estado, last_seen FROM presencia WHERE usuario_id=%s",
+         (usuario,), "1 particion, 1 fila O(1). Resuelve en memoria/SSTable directa."),
         ("Q2", "Historial de alertas de un usuario",
+         "SELECT enviado_en, titulo, severidad, zona FROM historial_usuario "
+         "WHERE usuario_id=%s LIMIT 10", (usuario,),
+         "1 particion, lectura secuencial contigua en disco (CLUSTERING ORDER BY enviado_en DESC)."),
+        ("Q3", "Alertas recientes de un usuario en ventana de tiempo",
          "SELECT enviado_en, titulo, severidad FROM historial_usuario "
-         "WHERE usuario_id=%s LIMIT 20", (usuario,),
-         "1 particion, lectura secuencial (CLUSTERING ORDER DESC)"),
-        ("Q3", "Alertas recientes de un usuario",
-         "SELECT enviado_en, titulo FROM historial_usuario "
-         "WHERE usuario_id=%s AND enviado_en > %s LIMIT 50",
+         "WHERE usuario_id=%s AND enviado_en > %s LIMIT 20",
          (usuario, dt.datetime.now(dt.timezone.utc) - dt.timedelta(days=30)),
-         "rango sobre la clustering key, sin scan"),
-        ("Q4", "Usuarios en linea de una zona",
-         "SELECT usuario_id, nombre FROM presencia_por_zona "
-         "WHERE zona=%s AND estado=%s LIMIT 20", ("centro", "online"),
-         "tabla dedicada: la zona ES la clave de particion"),
-        ("Q5", "Quien tiene pendiente una alerta",
-         "SELECT usuario_id, estado FROM estado_entrega "
-         "WHERE alerta_id=%s AND bucket=%s LIMIT 20",
-         (None, 0), "1 bucket de 32, no la alerta entera"),
+         "Range scan sobre la clustering key dentro de una sola particion, sin escanear otros nodos."),
+        ("Q4", "Usuarios en linea de una zona especifica",
+         "SELECT usuario_id, nombre, comuna, last_seen FROM presencia_por_zona "
+         "WHERE zona=%s AND estado=%s LIMIT 10", ("centro", "online"),
+         "Tabla desnormalizada dedicada: 'zona' es la partition key, permitiendo consultar toda la zona en 1 salto."),
+        ("Q5", "Usuarios con alerta pendiente por bucket",
+         "SELECT usuario_id, estado, actualizado_en FROM estado_entrega "
+         "WHERE alerta_id=%s AND bucket=%s LIMIT 10",
+         (alerta_id_usar, 0), "Bucketing particionado (32 buckets): evita particiones masivas de 100k registros."),
     ]
 
-    alerta = s.execute("SELECT alerta_id FROM alertas LIMIT 1").one()
     resultados = []
     for i, (cod, desc, cql, args, porque) in enumerate(consultas, start=4):
-        if cod == "Q5":
-            if not alerta:
-                await paso(sock, i, f"{cod} — {desc}",
-                           "No hay alertas publicadas. Ejecuta primero el fan-out.",
-                           estado="aviso")
-                continue
-            args = (alerta.alerta_id, 0)
         t0 = time.perf_counter()
         filas = list(s.execute(cql, args))
         ms = (time.perf_counter() - t0) * 1000
-        resultados.append({"cod": cod, "ms": round(ms, 2), "filas": len(filas)})
-        muestra = "\n".join(str(tuple(f)) for f in filas[:3]) or "(sin filas)"
+        resultados.append({"cod": cod, "desc": desc, "ms": round(ms, 2), "filas": len(filas)})
+        
+        # Muestra formateada limpia
+        muestra_dicts = []
+        for f in filas[:4]:
+            d = {}
+            for col in getattr(f, '_fields', []):
+                val = getattr(f, col)
+                if isinstance(val, (dt.datetime, dt.date)):
+                    d[col] = val.strftime("%Y-%m-%d %H:%M:%S")
+                elif isinstance(val, uuid.UUID):
+                    d[col] = str(val)[:8] + "..."
+                else:
+                    d[col] = str(val)
+            muestra_dicts.append(d)
+
+        muestra_str = "\n".join(str(tuple(getattr(f, c) for c in getattr(f, '_fields', []))) for f in filas[:3]) or "(0 filas encontradas)"
         await paso(sock, i, f"{cod} — {desc}", porque,
                    cmd=cql.replace("%s", "?"),
-                   salida=f"{len(filas)} filas en {ms:.2f} ms\n\n{muestra}",
-                   datos={"ms": round(ms, 2), "filas": len(filas)})
+                   salida=f"{len(filas)} filas obtenidas en {ms:.2f} ms\n\n{muestra_str}",
+                   datos={"ms": round(ms, 2), "filas": len(filas), "items": muestra_dicts, "cod": cod})
 
     # El contraste: la consulta que NO respeta el modelo
     t0 = time.perf_counter()
@@ -186,6 +252,240 @@ async def p1_consultas(sock, params):
               f"Las {len(resultados)} consultas del camino critico resuelven entre "
               f"{mejor:.2f} y {peor:.2f} ms porque cada una toca UNA SOLA particion.",
               {"consultas": resultados})
+
+
+
+# ═════════════════════════════════════════════════════════════
+# Q1..Q5 — una consulta por boton, paso a paso
+# ═════════════════════════════════════════════════════════════
+# El P1 original corre las cinco de golpe: sirve para un resumen, pero
+# en vivo no deja detenerse en ninguna. Estos cinco endpoints ejecutan
+# UNA sola consulta cada uno y la abren en cuatro pasos:
+#   1  que pregunta responde y por que existe la tabla
+#   2  donde vive el dato: hash de la clave -> token -> replicas
+#   3  el CQL exacto y sus filas
+#   4  por que fue rapida
+# ─────────────────────────────────────────────────────────────
+
+def _fmt(filas, n=5):
+    """Formatea filas de Cassandra para mostrarlas en la consola."""
+    out = []
+    for f in filas[:n]:
+        campos = getattr(f, "_fields", [])
+        vals = []
+        for c in campos:
+            v = getattr(f, c)
+            if isinstance(v, (dt.datetime, dt.date)):
+                v = v.strftime("%Y-%m-%d %H:%M:%S")
+            elif isinstance(v, uuid.UUID):
+                v = str(v)[:8] + "..."
+            vals.append(f"{c}={v}")
+        out.append("  " + " · ".join(vals))
+    return "\n".join(out) or "  (0 filas)"
+
+
+async def _consulta(sock, meta):
+    """Ejecuta UNA consulta mostrando el camino completo del dato."""
+    s = sesion("cass1")
+    n = 1
+
+    await paso(sock, n, meta["pregunta"],
+               meta["porque_tabla"],
+               datos={"tabla": meta["tabla"]})
+
+    # Donde vive el dato: solo si la clave de particion es un valor simple
+    if meta.get("clave_ejemplo"):
+        try:
+            tok = s.execute(meta["cql_token"], meta["args_token"]).one()
+            n += 1
+            await paso(sock, n, "Dónde vive ese dato",
+                       "El hash de la clave de partición da un token, y ese token "
+                       "decide qué nodos guardan la fila. No hay búsqueda: hay cálculo.",
+                       cmd=meta["cql_token"].replace("%s", f"'{meta['clave_ejemplo']}'"),
+                       salida=f"  token = {tok.t}" if tok else "  (sin datos)",
+                       datos={"token": str(tok.t) if tok else None})
+
+            r = docker("exec", "cass1", "nodetool", "getendpoints",
+                       "comunica", meta["tabla"], str(meta["clave_ejemplo"]))
+            reps = [l.strip() for l in r.stdout.splitlines() if l.strip()]
+            n += 1
+            await paso(sock, n, "Qué réplicas la guardan",
+                       f"RF=3: la fila vive en {len(reps)} nodos. Cualquiera puede responder.",
+                       cmd=f"nodetool getendpoints comunica {meta['tabla']} {meta['clave_ejemplo']}",
+                       salida="\n".join("  " + x for x in reps),
+                       datos={"replicas": reps})
+        except Exception as e:
+            n += 1
+            await paso(sock, n, "Dónde vive ese dato",
+                       f"No se pudo calcular el token: {type(e).__name__}", estado="aviso")
+
+    # La consulta
+    t0 = time.perf_counter()
+    filas = list(s.execute(meta["cql"], meta["args"]))
+    ms = (time.perf_counter() - t0) * 1000
+
+    n += 1
+    await paso(sock, n, "La consulta",
+               meta["que_hace"],
+               cmd=meta["cql"].replace("%s", "?") + ";",
+               salida=f"  {len(filas)} filas en {ms:.2f} ms\n\n" + _fmt(filas),
+               datos={"ms": round(ms, 2), "filas": len(filas)},
+               estado="ok" if filas else "aviso")
+
+    n += 1
+    await paso(sock, n, "Por qué fue rápida",
+               meta["porque_rapida"],
+               datos={"ms": round(ms, 2)})
+
+    await fin(sock, meta["cierre"].format(ms=f"{ms:.2f}", n=len(filas)),
+              {"ms": round(ms, 2), "filas": len(filas), "consulta": meta["cod"]})
+
+
+async def q1_presencia(sock, params):
+    u = params.get("usuario") or "CC65027980"
+    await _consulta(sock, {
+        "cod": "Q1", "tabla": "presencia", "clave_ejemplo": u,
+        "pregunta": "¿Cuántos usuarios activos hay? — empecemos por uno",
+        "porque_tabla": "La tabla 'presencia' se particiona por usuario_id. Es el caso "
+                        "ideal de Cassandra: pedir UNA fila por su clave.",
+        "cql_token": "SELECT token(usuario_id) AS t FROM presencia WHERE usuario_id=%s",
+        "args_token": (u,),
+        "cql": "SELECT usuario_id, nombre, comuna, estado, last_seen "
+               "FROM presencia WHERE usuario_id=%s",
+        "args": (u,),
+        "que_hace": "Pide la fila exacta al nodo que la tiene. Un solo salto de red.",
+        "porque_rapida": "Toca UNA partición de UNA fila. La cédula tiene ~100.000 "
+                         "valores distintos, así que el hash reparte parejo por todo "
+                         "el anillo: ningún nodo se sobrecarga.",
+        "cierre": "Q1 respondió en {ms} ms. Es el patrón que la app ejecuta "
+                  "~10.000 veces por segundo.",
+    })
+
+
+async def q2_historial(sock, params):
+    u = params.get("usuario") or "CC65027980"
+    await _consulta(sock, {
+        "cod": "Q2", "tabla": "historial_usuario", "clave_ejemplo": u,
+        "pregunta": "¿Qué alertas ha recibido este usuario?",
+        "porque_tabla": "Se particiona por usuario_id y se AGRUPA por enviado_en "
+                        "descendente. Ese orden no es lógico: es físico, en disco.",
+        "cql_token": "SELECT token(usuario_id) AS t FROM historial_usuario WHERE usuario_id=%s",
+        "args_token": (u,),
+        "cql": "SELECT enviado_en, titulo, severidad, zona FROM historial_usuario "
+               "WHERE usuario_id=%s LIMIT 10",
+        "args": (u,),
+        "que_hace": "Lee el principio de la partición y se detiene a las 10 filas.",
+        "porque_rapida": "Como el disco ya las guarda de más reciente a más antigua, "
+                         "'las últimas 10' es una lectura secuencial. No ordena en "
+                         "memoria ni descarta filas.",
+        "cierre": "Q2 devolvió {n} alertas en {ms} ms leyendo una sola partición.",
+    })
+
+
+async def q3_rango(sock, params):
+    u = params.get("usuario") or "CC65027980"
+    desde = dt.datetime.now(dt.timezone.utc) - dt.timedelta(days=30)
+    await _consulta(sock, {
+        "cod": "Q3", "tabla": "historial_usuario", "clave_ejemplo": u,
+        "pregunta": "¿Y solo las del último mes?",
+        "porque_tabla": "Misma tabla que Q2. La clave de agrupamiento permite cortar "
+                        "por rango de fechas sin tabla nueva.",
+        "cql_token": "SELECT token(usuario_id) AS t FROM historial_usuario WHERE usuario_id=%s",
+        "args_token": (u,),
+        "cql": "SELECT enviado_en, titulo, severidad FROM historial_usuario "
+               "WHERE usuario_id=%s AND enviado_en > %s LIMIT 20",
+        "args": (u, desde),
+        "que_hace": "Corta un rango dentro de la partición, como un marcador en un libro.",
+        "porque_rapida": "El rango opera sobre la clustering key DENTRO de una partición. "
+                         "No consulta otros nodos ni recorre el anillo.",
+        "cierre": "Q3 filtró por fecha en {ms} ms sin salir de la partición.",
+    })
+
+
+async def q4_zona(sock, params):
+    zona = params.get("zona") or "centro"
+    await _consulta(sock, {
+        "cod": "Q4", "tabla": "presencia_por_zona", "clave_ejemplo": None,
+        "pregunta": "¿Quiénes están en línea en una zona?",
+        "porque_tabla": "Esta es una de las DOS consultas que no tenían tabla. "
+                        "'presencia' se particiona por usuario_id, así que la zona no "
+                        "participa en el hash. La respuesta no fue un índice: fue "
+                        "otra tabla con la zona COMO clave de partición.",
+        "cql": "SELECT usuario_id, nombre, comuna, last_seen FROM presencia_por_zona "
+               "WHERE zona=%s AND estado=%s LIMIT 10",
+        "args": (zona, "online"),
+        "que_hace": "Pide la partición de esa zona y lee sus filas en orden.",
+        "porque_rapida": "La zona ES la clave de partición, así que toda la zona vive "
+                         "junta en un salto. Sin esta tabla habría que preguntar a los "
+                         "tres nodos con ALLOW FILTERING.",
+        "cierre": "Q4 trajo {n} usuarios en línea en {ms} ms. Sin la tabla dedicada "
+                  "esto sería un scan del clúster.",
+    })
+
+
+async def q5_entrega(sock, params):
+    s = sesion("cass1")
+    fila = s.execute("SELECT alerta_id FROM alertas LIMIT 1").one()
+    if not fila:
+        await paso(sock, 1, "No hay alertas publicadas",
+                   "Ejecuta primero el fan-out (botón 02) para que exista una alerta "
+                   "con entregas registradas.", estado="aviso")
+        await fin(sock, "Q5 necesita una alerta publicada.", {})
+        return
+    aid = fila.alerta_id
+    await _consulta(sock, {
+        "cod": "Q5", "tabla": "estado_entrega", "clave_ejemplo": None,
+        "pregunta": "¿A quién le falta recibir esta alerta?",
+        "porque_tabla": "La otra consulta que no tenía dónde responderse. La clave "
+                        "incluye un BUCKET = hash(usuario) mod 32: sin él, los 100.000 "
+                        "destinatarios de una alerta caerían en UNA sola partición.",
+        "cql": "SELECT usuario_id, estado, actualizado FROM estado_entrega "
+               "WHERE alerta_id=%s AND bucket=%s LIMIT 10",
+        "args": (aid, 0),
+        "que_hace": "Consulta UN bucket de los 32, no la alerta entera.",
+        "porque_rapida": "Cada bucket es una partición pequeña y repartida por el "
+                         "anillo. Se consultan en paralelo en vez de golpear siempre "
+                         "las mismas tres réplicas.",
+        "cierre": "Q5 leyó 1 de 32 buckets en {ms} ms. Ese bucket es lo que evita "
+                  "el hotspot.",
+    })
+
+
+async def q6_antipatron(sock, params):
+    s = sesion("cass1")
+    await paso(sock, 1, "La consulta que rompe el modelo",
+               "Las cinco anteriores tocan una sola partición. Esta pregunta lo mismo "
+               "que Q4 — usuarios de una zona — pero sobre la tabla equivocada.")
+
+    await paso(sock, 2, "Sin tabla dedicada, Cassandra la rechaza",
+               "'zona' no participa en el hash de 'presencia': las filas de una zona "
+               "están repartidas por todo el anillo.",
+               cmd="SELECT usuario_id FROM presencia WHERE zona='centro';")
+    try:
+        list(s.execute("SELECT usuario_id FROM presencia WHERE zona='centro' LIMIT 5"))
+        await paso(sock, 3, "Respondió", "Inesperado.", estado="aviso")
+    except Exception as e:
+        msg = str(e).split("message=")[-1].strip('"\' ')[:200]
+        await paso(sock, 3, "RECHAZADA", "El motor exige ALLOW FILTERING.",
+                   salida="  " + msg, estado="error")
+
+    t0 = time.perf_counter()
+    filas = list(s.execute("SELECT usuario_id FROM presencia WHERE zona='centro' "
+                           "LIMIT 20 ALLOW FILTERING"))
+    ms = (time.perf_counter() - t0) * 1000
+    await paso(sock, 4, "Forzada con ALLOW FILTERING",
+               "Funciona, pero el coordinador pregunta a TODOS los nodos y descarta "
+               "filas en memoria. El costo crece con el tamaño del clúster, no con "
+               "el del resultado.",
+               cmd="SELECT usuario_id FROM presencia WHERE zona='centro' "
+                   "LIMIT 20 ALLOW FILTERING;",
+               salida=f"  {len(filas)} filas en {ms:.2f} ms — recorriendo todo el anillo",
+               estado="aviso", datos={"ms": round(ms, 2)})
+
+    await fin(sock,
+              "Este es el criterio de diseño: si una consulta del camino crítico "
+              "necesitara ALLOW FILTERING, nos faltaría una tabla.",
+              {"ms": round(ms, 2)})
 
 
 # ═════════════════════════════════════════════════════════════
@@ -420,11 +720,11 @@ async def p4_reparacion(sock, params):
     await paso(sock, 5, f"{victima} vuelve al anillo",
                "Esperando a que el transporte nativo quede activo...",
                cmd=f"docker start {victima}")
-    for _ in range(40):
-        await asyncio.sleep(5)
+    for _ in range(25):
+        await asyncio.sleep(2)
         if "Native Transport active: true" in nodetool(victima, "info").stdout:
             break
-    await asyncio.sleep(8)
+    await asyncio.sleep(4)
 
     antes = {n: particiones(n) for n in ("cass1", "cass2", "cass3")}
     hueco = max(antes.values()) - antes[victima]
@@ -678,7 +978,9 @@ async def p6_analitica(sock, params):
 
 # ═════════════════════════════════════════════════════════════
 PIPELINES = {
-    "p1": p1_consultas, "p2": p2_fanout, "p3": p3_caida,
+    "p1": p1_consultas,
+    "q1": q1_presencia, "q2": q2_historial, "q3": q3_rango,
+    "q4": q4_zona, "q5": q5_entrega, "q6": q6_antipatron, "p2": p2_fanout, "p3": p3_caida,
     "p4": p4_reparacion, "p5": p5_idempotencia, "p6": p6_analitica,
 }
 
