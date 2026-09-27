@@ -935,9 +935,9 @@ const WS = API.replace(/^http/, "ws");
 // y el que responde el punto que no se expone en diapositivas.
 const BLOQUES = [
   { guia: "2", titulo: "Las cinco consultas reales",
-    enunciado: "Definan al menos 5 consultas reales… ¿cómo queda el modelo para que cada consulta sea eficiente?",
+    enunciado: "Definan al menos 5 consultas reales: presencia actual de un usuario, historial de alertas de un usuario, alertas recientes, qué usuarios recibieron una alerta, y qué usuarios tienen pendiente una alerta. ¿Cómo queda el modelo para que cada consulta sea eficiente?",
     quien: "se responde ejecutándola", destacado: true,
-    puntos: ["q1", "q2", "q3", "q4", "q5", "q6", "p1"] },
+    puntos: ["q1", "q2", "q3", "q4", "q5", "qz", "q6", "p1"] },
   { guia: "3", titulo: "Fan-out-on-Write",
     enunciado: "1 alerta → 100.000 registros: ¿cuántas escrituras genera?, ¿10 alertas simultáneas?, ¿cómo evitar duplicados?",
     quien: "Simón · Nilton", destacado: false, puntos: ["p2", "p5"] },
@@ -954,7 +954,7 @@ const PUNTOS = [
     id: "q1", n: "Q1", rubricTag: "Partition Key · O(1)",
     titulo: "Presencia actual de un usuario",
     desc: "Calcula el token con el hash de la cédula, localiza las 3 réplicas que guardan la fila y pide el dato en un solo salto.",
-    cita: "«Presencia actual de un usuario» · ~10.000 consultas/s en producción",
+    cita: "«Presencia actual de un usuario» · consulta 1 de las 5 del enunciado",
     dur: "~2 s",
     paramsHtml: `
       <label>Usuario:</label>
@@ -966,7 +966,7 @@ const PUNTOS = [
     id: "q2", n: "Q2", rubricTag: "Clustering Key · DESC",
     titulo: "Historial de alertas de un usuario",
     desc: "El agrupamiento por fecha descendente ordena las filas en disco, así que «las últimas 10» es una lectura secuencial.",
-    cita: "«Historial de alertas de un usuario» · la pantalla principal de la app",
+    cita: "«Historial de alertas de un usuario» · consulta 2 de las 5 del enunciado",
     dur: "~2 s",
     paramsHtml: `
       <label>Usuario:</label>
@@ -978,7 +978,7 @@ const PUNTOS = [
     id: "q3", n: "Q3", rubricTag: "Range Scan en partición",
     titulo: "Alertas del último mes",
     desc: "Corta un rango de fechas dentro de la misma partición, sin consultar otros nodos ni crear una tabla nueva.",
-    cita: "«Alertas recientes» · filtrado por ventana temporal",
+    cita: "«Alertas recientes» · consulta 3 de las 5 del enunciado",
     dur: "~2 s",
     paramsHtml: `
       <label>Usuario:</label>
@@ -987,14 +987,23 @@ const PUNTOS = [
     diagramSvg: ""
   },
   {
-    id: "q4", n: "Q4", rubricTag: "Tabla desnormalizada",
+    id: "q4", n: "Q4", rubricTag: "Tabla desde la alerta",
+    titulo: "Qué usuarios recibieron una alerta",
+    desc: "Una de las dos consultas que NO tenían tabla. El historial se particiona por usuario, así que no se puede preguntar al revés —quiénes recibieron X— sin una tabla que parta de la alerta.",
+    cita: "«Qué usuarios recibieron una alerta» · consulta 4 de las 5 del enunciado",
+    dur: "~2 s",
+    paramsHtml: "",
+    diagramSvg: ""
+  },
+  {
+    id: "qz", n: "+", rubricTag: "Extra · antes del fan-out",
     titulo: "Usuarios en línea de una zona",
-    desc: "Una de las dos consultas que NO tenían tabla. La respuesta de Cassandra no fue un índice: fue otra tabla con la zona como clave de partición.",
-    cita: "«Qué usuarios recibieron una alerta» · sin esta tabla sería un scan del clúster",
+    desc: "No es una de las cinco del enunciado: es la consulta que decide A QUIÉN enviar la alerta, antes de que el fan-out ocurra.",
+    cita: "Consulta de apoyo · también necesitó su propia tabla",
     dur: "~2 s",
     paramsHtml: `
       <label>Zona:</label>
-      <select class="param-input" id="param-q4-zona">
+      <select class="param-input" id="param-qz-zona">
         <option value="centro">centro</option>
         <option value="norte">norte</option>
         <option value="sur">sur</option>
@@ -1006,7 +1015,7 @@ const PUNTOS = [
     id: "q5", n: "Q5", rubricTag: "Bucketing × 32",
     titulo: "Quién tiene pendiente una alerta",
     desc: "La otra consulta sin tabla. El bucket = hash(usuario) mod 32 evita que los 100.000 destinatarios caigan en una sola partición.",
-    cita: "«Qué usuarios tienen pendiente una alerta» · requiere haber corrido el fan-out",
+    cita: "«Qué usuarios tienen pendiente una alerta» · consulta 5 de las 5 del enunciado",
     dur: "~2 s",
     paramsHtml: "",
     diagramSvg: ""
@@ -1532,7 +1541,7 @@ function ejecutar(punto) {
   // las consultas sueltas leen su propio campo
   if (["q1","q2","q3"].includes(punto))
     params.usuario = document.getElementById(`param-${punto}-user`)?.value || "CC65027980";
-  if (punto === "q4") params.zona = document.getElementById("param-q4-zona")?.value || "centro";
+  if (punto === "qz") params.zona = document.getElementById("param-qz-zona")?.value || "centro";
   else if (punto === "p2") params.total = parseInt(document.getElementById("param-p2-total")?.value || "10000", 10);
   else if (punto === "p3") params.nodo = document.getElementById("param-p3-nodo")?.value || "cass2";
   else if (punto === "p4") params.filas = parseInt(document.getElementById("param-p4-filas")?.value || "2000", 10);

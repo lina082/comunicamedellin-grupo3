@@ -402,24 +402,53 @@ async def q3_rango(sock, params):
     })
 
 
-async def q4_zona(sock, params):
+async def q4_recibieron(sock, params):
+    """Que usuarios RECIBIERON una alerta (enunciado, consulta 4 de 5)."""
+    s = sesion("cass1")
+    fila = s.execute("SELECT alerta_id, titulo FROM alertas LIMIT 1").one()
+    if not fila:
+        await paso(sock, 1, "No hay alertas publicadas",
+                   "Ejecuta primero el fan-out (boton 02) para que exista una alerta "
+                   "con entregas registradas.", estado="aviso")
+        await fin(sock, "Q4 necesita una alerta publicada.", {})
+        return
+    aid = fila.alerta_id
+    await _consulta(sock, {
+        "cod": "Q4", "tabla": "estado_entrega", "clave_ejemplo": None,
+        "pregunta": "¿Qué usuarios recibieron esta alerta?",
+        "porque_tabla": f"Alerta: «{fila.titulo}». Es una de las DOS consultas que no "
+                        "tenian tabla. El historial se particiona por usuario, asi que "
+                        "no se puede preguntar al reves —quienes recibieron X— sin una "
+                        "tabla que parta de la alerta.",
+        "cql": "SELECT usuario_id, estado, actualizado FROM estado_entrega "
+               "WHERE alerta_id=%s AND bucket=%s AND estado='entregado' "
+               "LIMIT 10 ALLOW FILTERING",
+        "args": (aid, 0),
+        "que_hace": "Lee un bucket de la alerta y se queda con los ya entregados.",
+        "porque_rapida": "La alerta ES la clave de particion, asi que sus destinatarios "
+                         "viven juntos. El filtro por estado actua DENTRO de la "
+                         "particion, no sobre el anillo: por eso aqui ALLOW FILTERING "
+                         "no es un antipatron.",
+        "cierre": "Q4 encontro {n} usuarios que ya recibieron la alerta, en {ms} ms.",
+    })
+
+
+async def qz_zona(sock, params):
+    """Extra: usuarios en linea de una zona. No es una de las cinco del enunciado."""
     zona = params.get("zona") or "centro"
     await _consulta(sock, {
-        "cod": "Q4", "tabla": "presencia_por_zona", "clave_ejemplo": None,
-        "pregunta": "¿Quiénes están en línea en una zona?",
-        "porque_tabla": "Esta es una de las DOS consultas que no tenían tabla. "
-                        "'presencia' se particiona por usuario_id, así que la zona no "
-                        "participa en el hash. La respuesta no fue un índice: fue "
-                        "otra tabla con la zona COMO clave de partición.",
+        "cod": "QZ", "tabla": "presencia_por_zona", "clave_ejemplo": None,
+        "pregunta": "¿Quienes estan en linea en una zona? (consulta extra)",
+        "porque_tabla": "No es una de las cinco del enunciado: es la consulta que "
+                        "decide A QUIEN enviar la alerta antes del fan-out. Necesita "
+                        "su propia tabla porque 'presencia' se particiona por usuario.",
         "cql": "SELECT usuario_id, nombre, comuna, last_seen FROM presencia_por_zona "
                "WHERE zona=%s AND estado=%s LIMIT 10",
         "args": (zona, "online"),
-        "que_hace": "Pide la partición de esa zona y lee sus filas en orden.",
-        "porque_rapida": "La zona ES la clave de partición, así que toda la zona vive "
-                         "junta en un salto. Sin esta tabla habría que preguntar a los "
-                         "tres nodos con ALLOW FILTERING.",
-        "cierre": "Q4 trajo {n} usuarios en línea en {ms} ms. Sin la tabla dedicada "
-                  "esto sería un scan del clúster.",
+        "que_hace": "Pide la particion de esa zona y lee sus filas en orden.",
+        "porque_rapida": "La zona ES la clave de particion, asi que toda la zona vive "
+                         "junta en un salto.",
+        "cierre": "QZ trajo {n} usuarios en linea en {ms} ms.",
     })
 
 
@@ -980,7 +1009,7 @@ async def p6_analitica(sock, params):
 PIPELINES = {
     "p1": p1_consultas,
     "q1": q1_presencia, "q2": q2_historial, "q3": q3_rango,
-    "q4": q4_zona, "q5": q5_entrega, "q6": q6_antipatron, "p2": p2_fanout, "p3": p3_caida,
+    "q4": q4_recibieron, "qz": qz_zona, "q5": q5_entrega, "q6": q6_antipatron, "p2": p2_fanout, "p3": p3_caida,
     "p4": p4_reparacion, "p5": p5_idempotencia, "p6": p6_analitica,
 }
 
