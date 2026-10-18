@@ -1,0 +1,737 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ComunicaMedellín · Mini-Lakehouse (Taller 3)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #07090e;
+  --bg-surface: #0e131f;
+  --bg-card: #131927;
+  --bg-card-hover: #182133;
+
+  --border: #202b3f;
+  --border-glow: #38bdf8;
+
+  --medellin-green: #10b981;
+  --medellin-green-glow: rgba(16, 185, 129, 0.35);
+  --medellin-cyan: #06b6d4;
+  --medellin-blue: #3b82f6;
+  --medellin-purple: #8b5cf6;
+  --medellin-amber: #f59e0b;
+  --medellin-rose: #f43f5e;
+
+  --text-main: #f8fafc;
+  --text-muted: #94a3b8;
+  --text-dim: #64748b;
+
+  --font-brand: 'Space Grotesk', system-ui, sans-serif;
+  --font-sans: 'Plus Jakarta Sans', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+
+  --radius-sm: 8px;
+  --radius-md: 14px;
+  --radius-lg: 20px;
+}
+
+[data-theme="light"] {
+  --bg: #f4f7fb;
+  --bg-surface: #ffffff;
+  --bg-card: #ffffff;
+  --bg-card-hover: #f8fafc;
+  --border: #dbe2ee;
+  --text-main: #0f172a;
+  --text-muted: #475569;
+  --text-dim: #64748b;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: #060910; }
+::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #334155; }
+
+body {
+  background: var(--bg);
+  background-image:
+    radial-gradient(circle at 15% 10%, rgba(16, 185, 129, 0.05) 0%, transparent 40%),
+    radial-gradient(circle at 85% 20%, rgba(59, 130, 246, 0.05) 0%, transparent 40%);
+  color: var(--text-main);
+  font-family: var(--font-sans);
+  font-size: 12.5px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  min-height: 100vh;
+}
+
+.container { max-width: 1180px; margin: 0 auto; padding: 20px 16px 60px; }
+
+header { margin-bottom: 18px; }
+.header-top {
+  display: flex; justify-content: space-between; align-items: center;
+  gap: 16px; flex-wrap: wrap; padding-bottom: 14px;
+  border-bottom: 1px solid var(--border);
+}
+.brand-wrapper { display: flex; align-items: center; gap: 10px; }
+.brand-logo-badge {
+  width: 34px; height: 34px; border-radius: 8px;
+  background: linear-gradient(135deg, #10b981 0%, #06b6d4 50%, #3b82f6 100%);
+  display: grid; place-items: center; font-size: 17px;
+  box-shadow: 0 0 12px var(--medellin-green-glow);
+}
+.brand-title-group h1 {
+  font-family: var(--font-brand); font-size: 20px; font-weight: 700;
+  letter-spacing: -0.02em; line-height: 1.15;
+  background: linear-gradient(135deg, #ffffff 30%, #38bdf8 70%, #10b981 100%);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+}
+.brand-tagline {
+  font-size: 10px; font-family: var(--font-mono); color: var(--medellin-green);
+  text-transform: uppercase; letter-spacing: 0.1em; font-weight: 700;
+}
+.header-desc { color: var(--text-muted); font-size: 12px; max-width: 80ch; margin-top: 4px; }
+.header-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.btn-action {
+  background: var(--bg-card); border: 1px solid var(--border); color: var(--text-main);
+  padding: 6px 12px; border-radius: var(--radius-sm); font-family: var(--font-sans);
+  font-size: 11.5px; font-weight: 600; cursor: pointer; display: inline-flex;
+  align-items: center; gap: 6px; transition: all 0.15s ease;
+}
+.btn-action:hover { background: var(--bg-card-hover); border-color: var(--medellin-cyan); }
+.btn-action.primary {
+  background: linear-gradient(135deg, #059669 0%, #10b981 100%); color: #ffffff;
+  border-color: transparent; box-shadow: 0 2px 10px var(--medellin-green-glow);
+}
+
+.cluster-hud-bar { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: 10px; }
+.hud-pill {
+  display: inline-flex; align-items: center; gap: 6px; background: var(--bg-card);
+  border: 1px solid var(--border); padding: 4px 10px; border-radius: 4px;
+  font-family: var(--font-mono); font-size: 10.5px; font-weight: 600;
+}
+.hud-dot { width: 6px; height: 6px; border-radius: 50%; }
+.hud-pill.online { border-color: rgba(16, 185, 129, 0.3); background: rgba(16, 185, 129, 0.05); color: #34d399; }
+.hud-pill.online .hud-dot { background: var(--medellin-green); box-shadow: 0 0 6px var(--medellin-green); }
+.hud-pill.offline { border-color: rgba(244, 63, 94, 0.3); background: rgba(244, 63, 94, 0.08); color: var(--medellin-rose); }
+.hud-pill.offline .hud-dot { background: var(--medellin-rose); box-shadow: 0 0 6px var(--medellin-rose); }
+
+.alert-banner {
+  margin-top: 10px; padding: 8px 14px; border-radius: var(--radius-sm);
+  background: rgba(245, 158, 11, 0.08); border-left: 3px solid var(--medellin-amber);
+  color: var(--text-main); font-size: 12px;
+}
+
+.puntos-list { display: flex; flex-direction: column; gap: 14px; margin-top: 16px; }
+
+.bloque-sep {
+  margin: 42px 0 18px; padding: 18px 22px; border-left: 3px solid var(--border);
+  background: linear-gradient(90deg, var(--bg-surface) 0%, transparent 85%);
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+}
+.bloque-sep:first-child { margin-top: 8px; }
+.bloque-sep.destacado {
+  border-left-color: var(--medellin-green);
+  background: linear-gradient(90deg, rgba(16,185,129,0.10) 0%, rgba(16,185,129,0.02) 60%, transparent 90%);
+  padding: 22px;
+}
+.bloque-guia {
+  font-family: var(--font-mono); font-size: 10.5px; font-weight: 600;
+  letter-spacing: .14em; text-transform: uppercase; color: var(--text-dim); margin-bottom: 6px;
+}
+.bloque-sep.destacado .bloque-guia { color: var(--medellin-green); }
+.bloque-titulo { font-family: var(--font-brand); font-size: 19px; font-weight: 700; margin: 0 0 6px; color: var(--text-main); letter-spacing: -.02em; }
+.bloque-sep.destacado .bloque-titulo { font-size: 22px; }
+.bloque-enunciado { font-size: 13px; color: var(--text-muted); margin: 0 0 8px; max-width: 78ch; line-height: 1.55; }
+.bloque-quien {
+  display: inline-block; font-family: var(--font-mono); font-size: 10.5px;
+  color: var(--text-dim); padding: 3px 9px; border: 1px solid var(--border); border-radius: 20px;
+}
+.bloque-sep.destacado .bloque-quien { color: var(--medellin-green); border-color: var(--medellin-green); }
+@media (max-width: 640px) {
+  .bloque-sep { padding: 15px 16px; margin-top: 30px; }
+  .bloque-titulo, .bloque-sep.destacado .bloque-titulo { font-size: 17px; }
+}
+
+.punto-body { display: grid; grid-template-rows: 0fr; transition: grid-template-rows .32s cubic-bezier(.4,0,.2,1); }
+.punto-card.abierta .punto-body { grid-template-rows: 1fr; }
+.punto-body > .punto-body-inner { overflow: hidden; min-height: 0; }
+@media (prefers-reduced-motion: reduce) { .punto-body { transition: none; } }
+.btn-toggle {
+  background: transparent; border: 1px solid var(--border); color: var(--text-muted);
+  border-radius: var(--radius-sm); padding: 7px 13px; font-family: var(--font-mono);
+  font-size: 11px; cursor: pointer; white-space: nowrap; transition: border-color .15s, color .15s;
+}
+.btn-toggle:hover { border-color: var(--medellin-green); color: var(--medellin-green); }
+.btn-toggle .chev { display: inline-block; transition: transform .25s; }
+.punto-card.abierta .btn-toggle .chev { transform: rotate(90deg); }
+
+.punto-card {
+  background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-md);
+  overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.3); transition: border-color 0.2s ease;
+}
+.punto-card:hover { border-color: rgba(56, 189, 248, 0.35); }
+
+.punto-header {
+  padding: 12px 18px; display: grid; grid-template-columns: auto 1fr auto; gap: 14px;
+  align-items: center; background: linear-gradient(180deg, rgba(255,255,255,0.015) 0%, transparent 100%);
+  border-bottom: 1px solid var(--border);
+}
+@media (max-width: 768px) {
+  .punto-header { grid-template-columns: auto 1fr; row-gap: 10px; }
+  .punto-header .card-actions { grid-column: 1 / -1; }
+}
+.punto-badge-num {
+  font-family: var(--font-brand); font-size: 11.5px; font-weight: 800;
+  background: linear-gradient(135deg, #10b981 0%, #06b6d4 100%); color: #ffffff;
+  padding: 4px 8px; border-radius: 4px;
+}
+.punto-title-box h2 {
+  font-family: var(--font-brand); font-size: 15px; font-weight: 700; letter-spacing: -0.01em;
+  margin-bottom: 2px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+}
+.rubric-tag {
+  font-size: 10px; font-family: var(--font-mono); padding: 1px 6px; border-radius: 3px;
+  background: rgba(16, 185, 129, 0.12); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.25); font-weight: 600;
+}
+.punto-desc { font-size: 12px; color: var(--text-muted); line-height: 1.4; }
+.punto-quote {
+  display: block; margin-top: 3px; font-size: 11px; color: var(--text-dim); font-style: italic;
+  border-left: 2px solid var(--border); padding-left: 8px;
+}
+.btn-run-punto {
+  background: linear-gradient(135deg, #2563eb 0%, #38bdf8 100%); color: #ffffff; border: 0;
+  padding: 7px 15px; border-radius: var(--radius-sm); font-family: var(--font-brand);
+  font-size: 12px; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center;
+  gap: 6px; white-space: nowrap; transition: all 0.15s ease; box-shadow: 0 2px 8px rgba(37, 99, 235, 0.3);
+}
+.btn-run-punto:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(56, 189, 248, 0.4); }
+.btn-run-punto:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+.btn-run-punto.running { background: var(--medellin-amber); }
+.spinner { width: 10px; height: 10px; border: 2px solid #ffffff; border-top-color: transparent; border-radius: 50%; animation: spin 0.7s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.punto-flow-container { padding: 8px 16px; background: #080c14; border-bottom: 1px solid var(--border); }
+.flow-title-bar {
+  display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;
+  font-family: var(--font-brand); font-size: 11px; font-weight: 700; color: var(--medellin-cyan);
+  text-transform: uppercase; letter-spacing: 0.08em;
+}
+.flow-diagram-svg { width: 100%; height: auto; max-height: 85px; overflow: visible; }
+.flow-box { transition: all 0.2s ease; }
+.flow-box rect { fill: #111827; stroke: #243044; stroke-width: 1.2; }
+.flow-box.active rect { fill: #16253c !important; stroke: #38bdf8 !important; filter: drop-shadow(0 0 6px rgba(56, 189, 248, 0.6)); }
+.flow-box.active-green rect { fill: #0e221b !important; stroke: #10b981 !important; filter: drop-shadow(0 0 6px rgba(16, 185, 129, 0.6)); }
+.flow-box text.title { fill: #ffffff; font-family: var(--font-brand); font-size: 10.5px; font-weight: 700; }
+.flow-box text.subtitle { fill: #94a3b8; font-family: var(--font-mono); font-size: 8.5px; }
+.flow-path { fill: none; stroke: #243044; stroke-width: 1.5; stroke-dasharray: 4, 4; }
+.flow-path.active { stroke: #38bdf8; stroke-width: 2; animation: dash-pulse 0.5s linear infinite; }
+@keyframes dash-pulse { to { stroke-dashoffset: -16; } }
+
+.punto-params {
+  padding: 8px 18px; background: rgba(0,0,0,0.15); border-bottom: 1px solid var(--border);
+  display: flex; gap: 12px; align-items: center; flex-wrap: wrap; font-size: 11.5px; color: var(--text-muted);
+}
+
+.punto-console { background: #05070d; display: none; }
+.punto-console.open { display: block; }
+.pipeline-steps { padding: 10px 16px; max-height: 380px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; }
+.step-card {
+  display: grid; grid-template-columns: 22px 1fr; gap: 10px; padding: 8px 12px;
+  background: rgba(255, 255, 255, 0.015); border: 1px solid var(--border); border-radius: 6px;
+  animation: step-in 0.18s ease-out;
+}
+@keyframes step-in { from { opacity: 0; transform: translateY(-2px); } to { opacity: 1; transform: translateY(0); } }
+.step-bullet {
+  width: 22px; height: 22px; border-radius: 50%; background: var(--bg-surface); color: var(--text-muted);
+  font-family: var(--font-mono); font-size: 10.5px; font-weight: 700; display: grid; place-items: center;
+  margin-top: 1px; border: 1px solid var(--border);
+}
+.step-card.ok .step-bullet { background: rgba(16, 185, 129, 0.15); color: var(--medellin-green); border-color: rgba(16, 185, 129, 0.4); }
+.step-card.aviso .step-bullet { background: rgba(245, 158, 11, 0.15); color: var(--medellin-amber); border-color: rgba(245, 158, 11, 0.4); }
+.step-card.error .step-bullet { background: rgba(244, 63, 94, 0.15); color: var(--medellin-rose); border-color: rgba(244, 63, 94, 0.4); }
+.step-content { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.step-title { font-size: 12.5px; font-weight: 700; font-family: var(--font-brand); color: var(--text-main); }
+.step-detail { font-size: 11.5px; color: var(--text-muted); line-height: 1.4; }
+.step-cmd {
+  font-family: var(--font-mono); font-size: 11px; background: rgba(56, 189, 248, 0.06);
+  border-left: 2px solid var(--medellin-cyan); color: #7dd3fc; padding: 5px 8px; border-radius: 3px;
+  white-space: pre-wrap; word-break: break-all; line-height: 1.35;
+}
+.step-output {
+  font-family: var(--font-mono); font-size: 11px; background: #020306; border: 1px solid var(--border);
+  color: #e2e8f0; padding: 6px 10px; border-radius: 4px; white-space: pre-wrap; word-break: break-all;
+  max-height: 140px; overflow-y: auto; line-height: 1.35;
+}
+.step-metrics { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; margin-top: 2px; }
+.metric-pill {
+  font-family: var(--font-mono); font-size: 10.5px; padding: 2px 7px; border-radius: 4px;
+  background: rgba(16, 185, 129, 0.12); border: 1px solid rgba(16, 185, 129, 0.3); color: #34d399; font-weight: 600;
+}
+.metric-pill.cyan { background: rgba(6, 182, 212, 0.12); border-color: rgba(6, 182, 212, 0.3); color: #38bdf8; }
+.metric-pill.purple { background: rgba(139, 92, 246, 0.12); border-color: rgba(139, 92, 246, 0.3); color: #c084fc; }
+.metric-pill.amber { background: rgba(245, 158, 11, 0.12); border-color: rgba(245, 158, 11, 0.3); color: #fbbf24; }
+
+.console-summary {
+  padding: 10px 16px; background: rgba(56, 189, 248, 0.06); border-top: 1px solid var(--border);
+  font-size: 12px; color: var(--text-main); display: flex; align-items: flex-start; gap: 8px;
+}
+.console-summary b { color: #38bdf8; }
+
+footer {
+  margin-top: 60px; padding-top: 24px; border-top: 1px solid var(--border); display: flex;
+  justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;
+  color: var(--text-dim); font-size: 13px;
+}
+footer code { font-family: var(--font-mono); color: var(--medellin-cyan); }
+</style>
+</head>
+<body>
+
+<div class="container">
+
+  <header>
+    <div class="header-top">
+      <div>
+        <div class="brand-wrapper">
+          <div class="brand-logo-badge">🦆</div>
+          <div class="brand-title-group">
+            <span class="brand-tagline">ComunicaMedellín · Taller 3 · Tópicos Avanzados BD</span>
+            <h1>Mini-Lakehouse · Demostración en Vivo</h1>
+          </div>
+        </div>
+        <p class="header-desc">
+          Del operacional al analítico: cada punto ejecuta de verdad un paso del pipeline
+          (<strong>Cassandra → Bronze → Silver → Gold → DuckDB</strong>) y muestra el comando
+          real, la salida real y por qué.
+        </p>
+      </div>
+      <div class="header-actions">
+        <button class="btn-action primary" onclick="ejecutarTodos()">
+          <span>▶</span> Pipeline Completo en Secuencia
+        </button>
+        <button class="btn-action" onclick="limpiarTodasConsolas()">
+          <span>🧹</span> Limpiar
+        </button>
+        <button class="btn-action" onclick="toggleTheme()" title="Cambiar tema">
+          <span id="theme-icon">🌙</span>
+        </button>
+      </div>
+    </div>
+    <div class="cluster-hud-bar" id="cluster-hud">
+      <span class="hud-pill"><span class="hud-dot"></span> Conectando con API :8765...</span>
+    </div>
+    <div class="alert-banner" id="banner-aviso" style="display:none;"></div>
+  </header>
+
+  <main class="puntos-list" id="puntos-container"></main>
+
+  <footer>
+    <div>
+      API FastAPI en <code>http://localhost:8765</code> (<code>make api</code> en
+      comunicamedellin-grupo3) · Pipeline en <code>ENTREGA3/scripts/</code>.
+    </div>
+    <div>Tópicos Avanzados de Bases de Datos · ITM 2026</div>
+  </footer>
+
+</div>
+
+<script>
+const API = location.hostname === "localhost" || location.hostname === "127.0.0.1"
+  ? `http://${location.hostname}:8765` : "http://localhost:8765";
+const WS = API.replace(/^http/, "ws");
+
+const BLOQUES = [
+  { guia: "1", titulo: "Diseño dimensional (sin código)",
+    enunciado: "Las 5 preguntas del Data Warehouse ya respondidas en docs/modelo_dimensional.md: proceso de negocio, granularidad, dimensiones, métricas y estrategia SCD.",
+    quien: "entregable de solo lectura", destacado: false, puntos: ["l0"] },
+  { guia: "2-3", titulo: "Bronze y Silver",
+    enunciado: "Extracción tal cual desde Cassandra (Bronze, inmutable) y limpieza de calidad (Silver): tipos, nulos, duplicados.",
+    quien: "scripts/extract.py · scripts/transform_silver.py", destacado: false, puntos: ["l1", "l2"] },
+  { guia: "4", titulo: "Modelo dimensional Gold",
+    enunciado: "Esquema en constelación: FACT_ENTREGAS y FACT_PRESENCIA_HORA comparten DIM_TIEMPO, DIM_USUARIO y DIM_ZONA.",
+    quien: "scripts/transform_gold.py", destacado: true, puntos: ["l3"] },
+  { guia: "5", titulo: "Consultas y Benchmark",
+    enunciado: "5 consultas analíticas sobre Gold con DuckDB, y el benchmark central del taller: Cassandra (OLTP, ALLOW FILTERING) vs DuckDB (columnar).",
+    quien: "scripts/analyze.py", destacado: true, puntos: ["l4", "l5"] },
+];
+
+const PUNTOS = [
+  {
+    id: "l0", n: "00", rubricTag: "Paso 0 · Datos reales",
+    titulo: "Poblar alertas en Cassandra",
+    desc: "El Módulo 1 solo siembra usuarios. Este seed publica 60 alertas variadas (severidad/zona/fecha) con fan-out real a una muestra de usuarios, escribiendo historial_usuario y estado_entrega.",
+    cita: "«seed_alertas.py — una sola vez, antes de correr el pipeline»",
+    dur: "~3 s", paramsHtml: "",
+    diagramSvg: `
+      <svg class="flow-diagram-svg" viewBox="0 0 920 100">
+        <path id="l0-l1" class="flow-path" d="M130,50 L230,50" />
+        <path id="l0-l2" class="flow-path" d="M370,50 L470,50" />
+        <path id="l0-l3" class="flow-path" d="M610,50 L710,50" />
+        <g class="flow-box"><rect x="10" y="25" width="120" height="50" rx="8" />
+          <text x="70" y="48" text-anchor="middle" class="title">seed_alertas.py</text>
+          <text x="70" y="63" text-anchor="middle" class="subtitle">60 alertas</text></g>
+        <g class="flow-box"><rect x="230" y="25" width="140" height="50" rx="8" />
+          <text x="300" y="48" text-anchor="middle" class="title">Cassandra RF=3</text>
+          <text x="300" y="63" text-anchor="middle" class="subtitle">alertas, historial</text></g>
+        <g class="flow-box"><rect x="470" y="25" width="140" height="50" rx="8" />
+          <text x="540" y="48" text-anchor="middle" class="title">estado_entrega</text>
+          <text x="540" y="63" text-anchor="middle" class="subtitle">entregado/leído/fallido</text></g>
+        <g class="flow-box"><rect x="710" y="25" width="200" height="50" rx="8" />
+          <text x="810" y="48" text-anchor="middle" class="title" style="fill:#34d399;">Listo para el pipeline</text>
+          <text x="810" y="63" text-anchor="middle" class="subtitle">L1 en adelante</text></g>
+      </svg>`
+  },
+  {
+    id: "l1", n: "01", rubricTag: "Paso 2 · Bronze",
+    titulo: "Extracción desde Cassandra (Bronze)",
+    desc: "Copia presencia, alertas, historial_usuario y estado_entrega tal cual a Parquet. Bronze es inmutable: nunca se sobreescribe, cada corrida agrega un archivo con timestamp.",
+    cita: "«Lo que llega a Bronze debe ser idéntico a lo que existe en la fuente»",
+    dur: "~2 s", paramsHtml: "",
+    diagramSvg: `
+      <svg class="flow-diagram-svg" viewBox="0 0 920 100">
+        <path id="l1-l1" class="flow-path" d="M150,50 L250,50" />
+        <path id="l1-l2" class="flow-path" d="M450,50 L550,50" />
+        <g class="flow-box"><rect x="10" y="25" width="140" height="50" rx="8" />
+          <text x="80" y="48" text-anchor="middle" class="title">Cassandra OLTP</text>
+          <text x="80" y="63" text-anchor="middle" class="subtitle">4 tablas</text></g>
+        <g class="flow-box"><rect x="250" y="25" width="200" height="50" rx="8" />
+          <text x="350" y="48" text-anchor="middle" class="title">extract.py</text>
+          <text x="350" y="63" text-anchor="middle" class="subtitle">SELECT * -&gt; DataFrame</text></g>
+        <g class="flow-box"><rect x="550" y="25" width="200" height="50" rx="8" />
+          <text x="650" y="48" text-anchor="middle" class="title" style="fill:#34d399;">lakehouse/bronze/</text>
+          <text x="650" y="63" text-anchor="middle" class="subtitle">*.parquet, inmutable</text></g>
+      </svg>`
+  },
+  {
+    id: "l2", n: "02", rubricTag: "Paso 3 · Silver",
+    titulo: "Limpieza de calidad (Silver)",
+    desc: "Tipos correctos, nulos resueltos, duplicados eliminados. Sin reglas de negocio todavía. Genera el reporte de calidad obligatorio (docs/reporte_calidad.txt).",
+    cita: "«Un dato Silver debe poder ser analizado sin sorpresas técnicas»",
+    dur: "~1 s", paramsHtml: "",
+    diagramSvg: `
+      <svg class="flow-diagram-svg" viewBox="0 0 920 100">
+        <path id="l2-l1" class="flow-path" d="M150,50 L250,50" />
+        <path id="l2-l2" class="flow-path" d="M450,50 L550,50" />
+        <g class="flow-box"><rect x="10" y="25" width="140" height="50" rx="8" />
+          <text x="80" y="48" text-anchor="middle" class="title">Bronze (raw)</text>
+          <text x="80" y="63" text-anchor="middle" class="subtitle">snapshot más reciente</text></g>
+        <g class="flow-box"><rect x="250" y="25" width="200" height="50" rx="8" />
+          <text x="350" y="48" text-anchor="middle" class="title">transform_silver.py</text>
+          <text x="350" y="63" text-anchor="middle" class="subtitle">tipos · nulos · duplicados</text></g>
+        <g class="flow-box"><rect x="550" y="25" width="200" height="50" rx="8" />
+          <text x="650" y="48" text-anchor="middle" class="title" style="fill:#34d399;">lakehouse/silver/</text>
+          <text x="650" y="63" text-anchor="middle" class="subtitle">reporte_calidad.txt</text></g>
+      </svg>`
+  },
+  {
+    id: "l3", n: "03", rubricTag: "Paso 4 · Gold · Esquema en constelación",
+    titulo: "Modelo dimensional (Gold)",
+    desc: "Construye 4 dimensiones conformadas (DIM_TIEMPO, DIM_USUARIO, DIM_ZONA, DIM_ALERTA) y 2 tablas de hechos (FACT_ENTREGAS, FACT_PRESENCIA_HORA).",
+    cita: "«Gold es el corazón del laboratorio: aquí se materializa el diseño del Paso 1»",
+    dur: "~1 s", paramsHtml: "",
+    diagramSvg: `
+      <svg class="flow-diagram-svg" viewBox="0 0 920 110">
+        <path id="l3-l1" class="flow-path" d="M150,55 L250,30" />
+        <path id="l3-l2" class="flow-path" d="M150,55 L250,80" />
+        <path id="l3-l3" class="flow-path" d="M450,30 L560,30" />
+        <path id="l3-l4" class="flow-path" d="M450,80 L560,80" />
+        <g class="flow-box"><rect x="10" y="30" width="140" height="50" rx="8" />
+          <text x="80" y="53" text-anchor="middle" class="title">Silver (limpio)</text>
+          <text x="80" y="68" text-anchor="middle" class="subtitle">4 tablas</text></g>
+        <g class="flow-box"><rect x="250" y="10" width="200" height="40" rx="8" />
+          <text x="350" y="30" text-anchor="middle" class="title" style="font-size:10px;">4 DIM conformadas</text>
+          <text x="350" y="43" text-anchor="middle" class="subtitle">tiempo · usuario · zona · alerta</text></g>
+        <g class="flow-box"><rect x="250" y="60" width="200" height="40" rx="8" />
+          <text x="350" y="80" text-anchor="middle" class="title" style="font-size:10px;">transform_gold.py</text>
+          <text x="350" y="93" text-anchor="middle" class="subtitle">merges + surrogate keys</text></g>
+        <g class="flow-box"><rect x="560" y="10" width="220" height="40" rx="8" />
+          <text x="670" y="30" text-anchor="middle" class="title" style="fill:#34d399;font-size:10.5px;">FACT_ENTREGAS</text>
+          <text x="670" y="43" text-anchor="middle" class="subtitle">1 fila = 1 intento de entrega</text></g>
+        <g class="flow-box"><rect x="560" y="60" width="220" height="40" rx="8" />
+          <text x="670" y="80" text-anchor="middle" class="title" style="fill:#34d399;font-size:10.5px;">FACT_PRESENCIA_HORA</text>
+          <text x="670" y="93" text-anchor="middle" class="subtitle">1 fila = 1 usuario x 1 hora</text></g>
+      </svg>`
+  },
+  {
+    id: "l4", n: "04", rubricTag: "Paso 5 · DuckDB",
+    titulo: "Las 5 consultas analíticas",
+    desc: "DuckDB lee Gold directamente (sin cargar nada): volumen y fallos de entrega por tiempo/severidad/zona/usuario, y proporción de tiempo online por zona y hora.",
+    cita: "«Implementen mínimo 5 consultas significativas sobre su modelo Gold»",
+    dur: "~1 s", paramsHtml: "",
+    diagramSvg: `
+      <svg class="flow-diagram-svg" viewBox="0 0 920 100">
+        <path id="l4-l1" class="flow-path" d="M150,50 L250,50" />
+        <path id="l4-l2" class="flow-path" d="M450,50 L550,50" />
+        <g class="flow-box"><rect x="10" y="25" width="140" height="50" rx="8" />
+          <text x="80" y="48" text-anchor="middle" class="title">Gold (Parquet)</text>
+          <text x="80" y="63" text-anchor="middle" class="subtitle">4 dim + 2 fact</text></g>
+        <g class="flow-box"><rect x="250" y="25" width="200" height="50" rx="8" />
+          <text x="350" y="48" text-anchor="middle" class="title">DuckDB</text>
+          <text x="350" y="63" text-anchor="middle" class="subtitle">read_parquet() · 5 queries</text></g>
+        <g class="flow-box"><rect x="550" y="25" width="200" height="50" rx="8" />
+          <text x="650" y="48" text-anchor="middle" class="title" style="fill:#34d399;">Resultados en ms</text>
+          <text x="650" y="63" text-anchor="middle" class="subtitle">sin índices, sin ETL extra</text></g>
+      </svg>`
+  },
+  {
+    id: "l5", n: "05", rubricTag: "Paso 5.2 · El benchmark central",
+    titulo: "Benchmark: Cassandra vs DuckDB",
+    desc: "Misma pregunta (contar entregas fallidas), dos motores: Cassandra necesita ALLOW FILTERING (scan completo del clúster); DuckDB solo lee la columna que necesita del Parquet columnar.",
+    cita: "«El experimento central del laboratorio»",
+    dur: "~1 s", paramsHtml: "",
+    diagramSvg: `
+      <svg class="flow-diagram-svg" viewBox="0 0 920 110">
+        <path id="l5-l1" class="flow-path" d="M120,35 L220,35" />
+        <path id="l5-l2" class="flow-path" d="M120,75 L220,75" />
+        <g class="flow-box"><rect x="10" y="12" width="100" height="46" rx="8" />
+          <text x="60" y="32" text-anchor="middle" class="title" style="font-size:10.5px;">Misma</text>
+          <text x="60" y="47" text-anchor="middle" class="subtitle">pregunta</text></g>
+        <g class="flow-box"><rect x="220" y="12" width="280" height="46" rx="8" />
+          <text x="360" y="32" text-anchor="middle" class="title" style="fill:#f43f5e;font-size:10.5px;">Cassandra · ALLOW FILTERING</text>
+          <text x="360" y="47" text-anchor="middle" class="subtitle">scan completo del clúster</text></g>
+        <g class="flow-box"><rect x="220" y="62" width="280" height="46" rx="8" />
+          <text x="360" y="82" text-anchor="middle" class="title" style="fill:#38bdf8;font-size:10.5px;">DuckDB · columnar</text>
+          <text x="360" y="97" text-anchor="middle" class="subtitle">solo lee fallido_flag</text></g>
+        <path id="l5-l3" class="flow-path" d="M500,35 L620,55" />
+        <path id="l5-l4" class="flow-path" d="M500,85 L620,55" />
+        <g class="flow-box"><rect x="620" y="30" width="290" height="50" rx="8" />
+          <text x="765" y="52" text-anchor="middle" class="title" style="fill:#34d399;">Factor de mejora medido</text>
+          <text x="765" y="67" text-anchor="middle" class="subtitle">ver métrica al ejecutar</text></g>
+      </svg>`
+  },
+];
+
+const cont = document.getElementById("puntos-container");
+function tarjeta(p) {
+  const el = document.createElement("section");
+  el.className = "punto-card";
+  el.id = `card-${p.id}`;
+  el.innerHTML = `
+    <div class="punto-header">
+      <span class="punto-badge-num">${p.n}</span>
+      <div class="punto-title-box">
+        <h2>${p.titulo} <span class="rubric-tag">${p.rubricTag}</span></h2>
+        <p class="punto-desc">${p.desc}</p>
+        <span class="punto-quote">${p.cita}</span>
+      </div>
+      <div class="card-actions">
+        <button class="btn-toggle" data-toggle="${p.id}" aria-expanded="false" aria-controls="body-${p.id}">
+          <span class="chev">▸</span> Ver flujo
+        </button>
+        <button class="btn-run-punto" id="btn-${p.id}" data-punto="${p.id}">
+          <span>⚡</span> Ejecutar · ${p.dur}
+        </button>
+      </div>
+    </div>
+    <div class="punto-body" id="body-${p.id}"><div class="punto-body-inner">
+      <div class="punto-flow-container">
+        <div class="flow-title-bar">
+          <span>Flujo de Datos en Tiempo Real</span>
+          <span id="flow-status-${p.id}" style="font-family:var(--font-mono);font-size:11px;color:var(--text-dim);">Listo para ejecutar</span>
+        </div>
+        ${p.diagramSvg}
+      </div>
+      <div class="punto-params">${p.paramsHtml}</div>
+      <div class="punto-console" id="con-${p.id}">
+        <div class="pipeline-steps" id="pasos-${p.id}"></div>
+      </div>
+    </div></div>
+  `;
+  return el;
+}
+
+BLOQUES.forEach(b => {
+  const sep = document.createElement("div");
+  sep.className = "bloque-sep" + (b.destacado ? " destacado" : "");
+  sep.innerHTML = `
+    <div class="bloque-guia">Paso ${b.guia} de la guía</div>
+    <h2 class="bloque-titulo">${b.titulo}</h2>
+    <p class="bloque-enunciado">${b.enunciado}</p>
+    <span class="bloque-quien">${b.quien}</span>`;
+  cont.appendChild(sep);
+  b.puntos.forEach(id => {
+    const p = PUNTOS.find(x => x.id === id);
+    if (p) cont.appendChild(tarjeta(p));
+  });
+});
+
+function esc(s) {
+  return String(s ?? "").replace(/[&<>]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]));
+}
+
+function activarFlujoDiagrama(punto) {
+  const card = document.getElementById(`card-${punto}`);
+  if (!card) return;
+  card.querySelectorAll(".flow-box").forEach(b => b.classList.add("active"));
+  card.querySelectorAll(".flow-path").forEach(p => p.classList.add("active"));
+  const status = document.getElementById(`flow-status-${punto}`);
+  if (status) { status.textContent = "Pipeline en ejecución..."; status.style.color = "var(--medellin-cyan)"; }
+}
+
+function pintarPaso(cajaId, d) {
+  const pasos = document.getElementById("pasos-" + cajaId);
+  const el = document.createElement("div");
+  el.className = "step-card " + (d.estado || "ok");
+  let html = `<div class="step-bullet">${d.n ?? "•"}</div>
+    <div class="step-content">
+      <span class="step-title">${esc(d.titulo)}</span>`;
+  if (d.detalle) html += `<div class="step-detail">${esc(d.detalle)}</div>`;
+  if (d.cmd) html += `<div class="step-cmd">${esc(d.cmd)}</div>`;
+  if (d.salida) html += `<div class="step-output">${esc(d.salida)}</div>`;
+  const dd = d.datos || {};
+  const mets = [];
+  if (dd.filas !== undefined) mets.push(`<span class="metric-pill cyan">${Number(dd.filas).toLocaleString("es-CO")} filas</span>`);
+  if (dd.ms !== undefined) mets.push(`<span class="metric-pill">${dd.ms} ms</span>`);
+  if (dd.retenido_pct !== undefined) mets.push(`<span class="metric-pill">${dd.retenido_pct}% retenido</span>`);
+  if (dd.factor !== undefined) mets.push(`<span class="metric-pill amber">⚡ ${dd.factor}× más rápido</span>`);
+  if (dd.alertas !== undefined) mets.push(`<span class="metric-pill purple">${dd.alertas} alertas</span>`);
+  if (dd.entregas !== undefined) mets.push(`<span class="metric-pill purple">${Number(dd.entregas).toLocaleString("es-CO")} entregas</span>`);
+  if (mets.length) html += `<div class="step-metrics">${mets.join("")}</div>`;
+  el.innerHTML = html + `</div>`;
+  pasos.appendChild(el);
+  pasos.scrollTop = pasos.scrollHeight;
+}
+
+function ejecutar(punto) {
+  const btn = document.getElementById("btn-" + punto);
+  const con = document.getElementById("con-" + punto);
+  const pasos = document.getElementById("pasos-" + punto);
+  const oldSum = con.querySelector(".console-summary");
+  if (oldSum) oldSum.remove();
+  pasos.innerHTML = "";
+  con.classList.add("open");
+  btn.disabled = true;
+  btn.classList.add("running");
+  const textoOrig = btn.innerHTML;
+  btn.innerHTML = `<span class="spinner"></span> Ejecutando…`;
+  activarFlujoDiagrama(punto);
+
+  let sock;
+  try {
+    sock = new WebSocket(`${WS}/lakehouse/ws/${punto}`);
+  } catch (e) {
+    finalizar();
+    pasos.innerHTML = `<div class="step-card error"><div class="step-bullet">!</div><div class="step-content"><span class="step-title">Error de Conexión</span><div class="step-detail">${esc(e.message)}</div></div></div>`;
+    return;
+  }
+
+  function finalizar() {
+    btn.disabled = false;
+    btn.classList.remove("running");
+    btn.innerHTML = textoOrig;
+    const status = document.getElementById(`flow-status-${punto}`);
+    if (status) { status.textContent = "Pipeline finalizado ✓"; status.style.color = "var(--medellin-green)"; }
+    cargarSalud();
+  }
+
+  sock.onopen = () => sock.send(JSON.stringify({}));
+  sock.onmessage = ev => {
+    const d = JSON.parse(ev.data);
+    if (d.tipo === "paso") pintarPaso(punto, d);
+    else if (d.tipo === "fin") {
+      const r = document.createElement("div");
+      r.className = "console-summary";
+      r.innerHTML = `<div>💡 <b>Conclusión:</b> ${esc(d.resumen)}</div>`;
+      con.appendChild(r);
+    } else if (d.tipo === "error") {
+      const e = document.createElement("div");
+      e.className = "step-card error";
+      e.innerHTML = `<div class="step-bullet">✕</div><div class="step-content"><span class="step-title">Error</span><div class="step-detail">${esc(d.mensaje)}</div></div>`;
+      pasos.appendChild(e);
+    }
+  };
+  sock.onclose = finalizar;
+  sock.onerror = () => {
+    pasos.innerHTML = `<div class="step-card error"><div class="step-bullet">✕</div><div class="step-content"><span class="step-title">No hay conexión con la API :8765</span><div class="step-detail">Ejecuta <code>make api</code> en comunicamedellin-grupo3.</div></div></div>`;
+    finalizar();
+  };
+}
+
+function abrir(id, estado) {
+  const card = document.getElementById(`card-${id}`);
+  const btn = document.querySelector(`[data-toggle="${id}"]`);
+  if (!card) return;
+  const abierta = estado !== undefined ? estado : !card.classList.contains("abierta");
+  card.classList.toggle("abierta", abierta);
+  if (btn) {
+    btn.setAttribute("aria-expanded", String(abierta));
+    btn.innerHTML = `<span class="chev">▸</span> ${abierta ? "Ocultar flujo" : "Ver flujo"}`;
+  }
+}
+
+document.querySelectorAll(".btn-toggle").forEach(b => b.addEventListener("click", () => abrir(b.dataset.toggle)));
+document.querySelectorAll(".btn-run-punto").forEach(b => b.addEventListener("click", () => { abrir(b.dataset.punto, true); ejecutar(b.dataset.punto); }));
+
+async function ejecutarTodos() {
+  for (const p of PUNTOS) {
+    abrir(p.id, true);
+    document.getElementById(`card-${p.id}`)?.scrollIntoView({ behavior: "smooth", block: "start" });
+    ejecutar(p.id);
+    await new Promise(resolve => {
+      const interval = setInterval(() => {
+        const btn = document.getElementById(`btn-${p.id}`);
+        if (!btn || !btn.classList.contains("running")) { clearInterval(interval); resolve(); }
+      }, 500);
+    });
+    await new Promise(r => setTimeout(r, 800));
+  }
+}
+
+function limpiarTodasConsolas() {
+  PUNTOS.forEach(p => {
+    const pasos = document.getElementById(`pasos-${p.id}`);
+    const con = document.getElementById(`con-${p.id}`);
+    if (pasos) pasos.innerHTML = "";
+    const oldSum = con.querySelector(".console-summary");
+    if (oldSum) oldSum.remove();
+    con.classList.remove("open");
+    const card = document.getElementById(`card-${p.id}`);
+    if (card) {
+      card.querySelectorAll(".flow-box").forEach(b => b.classList.remove("active"));
+      card.querySelectorAll(".flow-path").forEach(path => path.classList.remove("active"));
+    }
+  });
+}
+
+async function cargarSalud() {
+  const contHud = document.getElementById("cluster-hud");
+  const aviso = document.getElementById("banner-aviso");
+  try {
+    const r = await fetch(`${API}/lakehouse/estado`);
+    const d = await r.json();
+    const pills = [
+      `<span class="hud-pill ${d.cassandra_vivo ? "online" : "offline"}"><span class="hud-dot"></span> Cassandra ${d.cassandra_vivo ? "UP" : "DOWN"}</span>`,
+      `<span class="hud-pill online"><span class="hud-dot"></span> Bronze: ${d.bronze} archivos</span>`,
+      `<span class="hud-pill online"><span class="hud-dot"></span> Silver: ${d.silver} archivos</span>`,
+      `<span class="hud-pill online"><span class="hud-dot"></span> Gold: ${d.gold} archivos</span>`,
+    ];
+    contHud.innerHTML = pills.join("");
+    if (!d.cassandra_vivo) {
+      aviso.style.display = "block";
+      aviso.innerHTML = `<strong>⚠️ Cassandra no está arriba:</strong> corre <code>make up</code> en comunicamedellin-grupo3 antes de ejecutar L0/L1.`;
+    } else {
+      aviso.style.display = "none";
+    }
+  } catch (e) {
+    contHud.innerHTML = `<span class="hud-pill offline"><span class="hud-dot"></span> API :8765 Desconectada</span>`;
+    aviso.style.display = "block";
+    aviso.innerHTML = `<strong>API Offline:</strong> ejecuta <code>make api</code> en comunicamedellin-grupo3 para conectar en vivo.`;
+  }
+}
+cargarSalud();
+setInterval(cargarSalud, 12000);
+
+function toggleTheme() {
+  const current = document.documentElement.getAttribute("data-theme");
+  const next = current === "light" ? "dark" : "light";
+  document.documentElement.setAttribute("data-theme", next);
+  document.getElementById("theme-icon").textContent = next === "light" ? "☀️" : "🌙";
+}
+</script>
+
+</body>
+</html>

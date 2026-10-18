@@ -60,6 +60,11 @@ from taller import router as taller_router, ctx as taller_ctx  # noqa: E402
 taller_ctx["conexiones"] = conexiones
 app.include_router(taller_router)
 
+# Pipeline del Mini-Lakehouse (Taller 3): extract/silver/gold/analyze
+# reales en ../taller-3-lakehouse/scripts/, expuestos punto por punto.
+from lakehouse import router as lakehouse_router  # noqa: E402
+app.include_router(lakehouse_router)
+
 
 def leer(nodo: str, usuario: str, nivel: str):
     """Lee la presencia de un usuario desde un nodo concreto."""

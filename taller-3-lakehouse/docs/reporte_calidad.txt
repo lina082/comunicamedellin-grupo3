@@ -1,0 +1,26 @@
+
+=== REPORTE DE CALIDAD — PRESENCIA ===
+Filas Bronze originales :     10,000
+Filas Silver resultantes:     10,000
+Filas eliminadas        :          0
+Porcentaje retenido     :     100.0%
+
+=== REPORTE DE CALIDAD — ALERTAS ===
+Filas Bronze originales :         69
+Filas Silver resultantes:         69
+Filas eliminadas        :          0
+Porcentaje retenido     :     100.0%
+
+=== REPORTE DE CALIDAD — HISTORIAL_USUARIO ===
+Filas Bronze originales :     86,594
+Filas Silver resultantes:     86,594
+Filas eliminadas        :          0
+Porcentaje retenido     :     100.0%
+
+=== REPORTE DE CALIDAD — ESTADO_ENTREGA ===
+Filas Bronze originales :     24,002
+Filas Silver resultantes:     24,002
+Filas eliminadas        :          0
+Porcentaje retenido     :     100.0%
+
+Silver completo.

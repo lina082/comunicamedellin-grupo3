@@ -440,6 +440,26 @@ Los documentos HTML se abren con doble clic; ver
 
 ---
 
+## Taller 3 — Mini-Lakehouse
+
+Extiende este mismo proyecto con una capa analítica: Cassandra (OLTP) →
+Bronze → Silver → Gold (Parquet) → DuckDB, con un esquema dimensional en
+constelación y benchmark contra la base operacional. Ver
+[`taller-3-lakehouse/README.md`](taller-3-lakehouse/README.md) para el
+detalle completo.
+
+```bash
+cd taller-3-lakehouse
+pip install -r requirements.txt
+python scripts/seed_alertas.py   # solo la primera vez
+python main.py                   # corre todo el pipeline
+```
+
+Demo interactiva igual a `frontend/taller.html` del Módulo 2:
+`make api` (arriba) y abrir `taller-3-lakehouse/lakehouse.html`.
+
+---
+
 ## Notas de operación
 
 **El arranque tarda ~4 minutos.** Los nodos de Cassandra arrancan en
@@ -476,10 +496,16 @@ make clean && make up && make schema
 │   ├── cql/schema.cql              # esquema Cassandra comentado
 │   └── clickhouse/                 # esquema OLAP + consultas de demo
 ├── demo/scripts/                   # scripts del reto práctico
-├── api/main.py                     # FastAPI + WebSocket
+├── api/
+│   ├── main.py                     # FastAPI + WebSocket
+│   ├── taller.py                   # pipelines del Módulo 2 (6 puntos)
+│   └── lakehouse.py                # pipeline del Taller 3 (6 puntos)
 ├── frontend/
 │   ├── index.html                  # panel en vivo (sin build)
+│   ├── taller.html                 # demo interactiva Módulo 2
 │   └── demo-data.json              # corrida real grabada (modo demo)
+├── taller-3-lakehouse/             # Taller 3: Mini-Lakehouse (Bronze/Silver/Gold)
+│   └── README.md                   # ver ahí para el detalle completo
 └── docs/
     ├── arquitectura.tex            # documento de entrega
     ├── presentacion.tex            # diapositivas Beamer

@@ -1,0 +1,60 @@
+// Mini-Lakehouse ComunicaMedellin — esquema en constelacion
+// Pegar en https://dbdiagram.io/d y exportar como PNG a docs/modelo_dimensional.png
+
+Table dim_tiempo {
+  tiempo_sk int [pk]
+  fecha date
+  anio int
+  trimestre int
+  mes int
+  mes_nombre varchar
+  dia int
+  dia_semana int
+  dia_nombre varchar
+  es_fin_semana bool
+}
+
+Table dim_usuario {
+  usuario_sk int [pk]
+  usuario_id varchar
+  nombre varchar
+  zona varchar
+  comuna varchar
+  dispositivo varchar
+}
+
+Table dim_zona {
+  zona_sk int [pk]
+  zona varchar
+}
+
+Table dim_alerta {
+  alerta_sk int [pk]
+  alerta_id varchar
+  titulo varchar
+  severidad varchar
+  zona_destino varchar
+}
+
+Table fact_entregas {
+  entrega_sk int [pk]
+  tiempo_sk int [ref: > dim_tiempo.tiempo_sk]
+  usuario_sk int [ref: > dim_usuario.usuario_sk]
+  alerta_sk int [ref: > dim_alerta.alerta_sk]
+  zona_sk int [ref: > dim_zona.zona_sk]
+  estado varchar
+  intentos int
+  entregado_flag int
+  fallido_flag int
+  latencia_entrega_seg float
+}
+
+Table fact_presencia_hora {
+  presencia_sk int [pk]
+  tiempo_sk int [ref: > dim_tiempo.tiempo_sk]
+  usuario_sk int [ref: > dim_usuario.usuario_sk]
+  zona_sk int [ref: > dim_zona.zona_sk]
+  hora_del_dia int
+  online_flag int
+  eventos int
+}

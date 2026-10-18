@@ -1,0 +1,32 @@
+┌─────────────────────────────────────────────────────────────────┐
+│             SISTEMA OPERACIONAL (OLTP)                           │
+│    Cassandra x3 (presencia, alertas, historial_usuario,          │
+│                   estado_entrega) — NetworkTopologyStrategy      │
+└───────────────────────────┬─────────────────────────────────────┘
+                   │ extract.py (SELECT * sobre cada tabla)
+                   ▼
+┌─────────────────────────────────────────────────────────────────┐
+│             ZONA BRONZE (Raw / Landing)                          │
+│    lakehouse/bronze/*.parquet — datos tal cual, con timestamp    │
+│             Inmutables. Fuente de verdad.                        │
+└───────────────────────────┬─────────────────────────────────────┘
+                   │ transform_silver.py
+                   ▼
+┌─────────────────────────────────────────────────────────────────┐
+│             ZONA SILVER (Cleansed)                                │
+│    lakehouse/silver/*.parquet — tipos correctos, sin duplicados   │
+│          Nulos resueltos. Reporte de calidad impreso.              │
+└───────────────────────────┬─────────────────────────────────────┘
+                   │ transform_gold.py (modelo en constelacion)
+                   ▼
+┌─────────────────────────────────────────────────────────────────┐
+│             ZONA GOLD (Serving)                                   │
+│    lakehouse/gold/*.parquet — dim_tiempo, dim_usuario, dim_zona,  │
+│    dim_alerta, fact_entregas, fact_presencia_hora                 │
+└───────────────────────────┬─────────────────────────────────────┘
+                   │ DuckDB lee Gold directamente (analyze.py)
+                   ▼
+┌─────────────────────────────────────────────────────────────────┐
+│          DuckDB (Motor Analitico Columnar)                        │
+│    5 consultas analiticas + benchmark vs. Cassandra (OLTP)        │
+└─────────────────────────────────────────────────────────────────┘

@@ -1,0 +1,593 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="claude:viewport-fit-sides" content="cover">
+<title>Modelo Dimensional ComunicaMedellín</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500..700&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* Layout: una columna editorial (ficha tecnica de arquitectura) que abre con
+   el diagrama en constelacion a ancho completo, luego las 5 preguntas como
+   fichas numeradas con su razonamiento, cerrando con el contraste SCD. */
+:root {
+  --bg: #f6f3ec;
+  --surface: #ffffff;
+  --ink: #1c1a16;
+  --ink-soft: #5c574c;
+  --line: #ded7c6;
+  --accent: #b5542a;
+  --accent-soft: #e8d9c8;
+  --fact-a: #2f6f5e;
+  --fact-a-soft: #dce9e3;
+  --fact-b: #2458a8;
+  --fact-b-soft: #dde6f3;
+  --shared: #8a6d1f;
+  --shared-soft: #efe4c4;
+  --font-display: 'Fraunces', Georgia, serif;
+  --font-body: 'IBM Plex Sans', system-ui, sans-serif;
+  --font-mono: 'IBM Plex Mono', 'Courier New', monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #15130f;
+    --surface: #1d1a15;
+    --ink: #f1ede3;
+    --ink-soft: #b6ae9c;
+    --line: #37322a;
+    --accent: #e0834f;
+    --accent-soft: #3a2a1f;
+    --fact-a: #5fb79c;
+    --fact-a-soft: #1f332c;
+    --fact-b: #6fa3e8;
+    --fact-b-soft: #1e2c40;
+    --shared: #d8bb5c;
+    --shared-soft: #342c16;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #15130f;
+  --surface: #1d1a15;
+  --ink: #f1ede3;
+  --ink-soft: #b6ae9c;
+  --line: #37322a;
+  --accent: #e0834f;
+  --accent-soft: #3a2a1f;
+  --fact-a: #5fb79c;
+  --fact-a-soft: #1f332c;
+  --fact-b: #6fa3e8;
+  --fact-b-soft: #1e2c40;
+  --shared: #d8bb5c;
+  --shared-soft: #342c16;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-body);
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+
+.page {
+  max-width: 920px;
+  margin: 0 auto;
+  padding-block: 56px 80px;
+}
+
+/* ───────── Masthead ───────── */
+.masthead {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding-bottom: 32px;
+  border-bottom: 2px solid var(--ink);
+  margin-bottom: 40px;
+}
+.kicker {
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--accent);
+  font-weight: 600;
+}
+h1 {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: clamp(32px, 6vw, 48px);
+  line-height: 1.05;
+  letter-spacing: -0.01em;
+  margin: 0;
+  text-wrap: balance;
+}
+.subhead {
+  font-size: 16px;
+  color: var(--ink-soft);
+  max-width: 62ch;
+  line-height: 1.55;
+  margin: 0;
+}
+.byline {
+  display: flex;
+  gap: 18px;
+  flex-wrap: wrap;
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  color: var(--ink-soft);
+  margin-top: 6px;
+}
+.byline b { color: var(--ink); font-weight: 600; }
+
+/* ───────── Section scaffolding ───────── */
+section { margin-bottom: 56px; }
+.section-head {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+.section-num {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--ink-soft);
+  min-width: 28px;
+}
+h2 {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 24px;
+  margin: 0;
+  letter-spacing: -0.01em;
+  text-wrap: balance;
+}
+.lede {
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--ink-soft);
+  max-width: 68ch;
+  margin: 0 0 20px;
+}
+.lede b { color: var(--ink); font-weight: 600; }
+
+/* ───────── Diagram card ───────── */
+.diagram-card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 28px 24px 20px;
+}
+.diagram-scroll { overflow-x: auto; }
+.diagram-scroll svg { display: block; margin: 0 auto; max-width: 100%; height: auto; min-width: 640px; }
+figcaption {
+  font-size: 13px;
+  color: var(--ink-soft);
+  margin-top: 16px;
+  line-height: 1.55;
+  border-top: 1px solid var(--line);
+  padding-top: 14px;
+}
+figure { margin: 0; }
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px;
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+}
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  color: var(--ink-soft);
+}
+.swatch { width: 11px; height: 11px; border-radius: 2px; flex-shrink: 0; }
+
+/* ───────── Question cards (the 5 questions) ───────── */
+.q-list { display: flex; flex-direction: column; gap: 0; }
+.q-card {
+  display: grid;
+  grid-template-columns: 56px 1fr;
+  gap: 20px;
+  padding: 26px 0;
+  border-top: 1px solid var(--line);
+}
+.q-list .q-card:first-child { border-top: none; }
+.q-index {
+  font-family: var(--font-display);
+  font-size: 34px;
+  font-weight: 600;
+  color: var(--accent);
+  line-height: 1;
+}
+.q-body { min-width: 0; }
+.q-title {
+  font-family: var(--font-display);
+  font-size: 19px;
+  font-weight: 600;
+  margin: 0 0 8px;
+  text-wrap: balance;
+}
+.q-text { font-size: 14.5px; line-height: 1.6; color: var(--ink); margin: 0 0 12px; }
+.q-text + .q-text { margin-top: -4px; }
+.q-text b { font-weight: 600; }
+
+table.spec {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  margin-top: 10px;
+}
+table.spec th, table.spec td {
+  text-align: left;
+  padding: 9px 10px;
+  border-bottom: 1px solid var(--line);
+  vertical-align: top;
+}
+table.spec th {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  font-weight: 600;
+}
+table.spec td.mono, table.spec th.mono { font-family: var(--font-mono); }
+.tag {
+  display: inline-block;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  padding: 2px 7px;
+  border-radius: 3px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.tag.shared { background: var(--shared-soft); color: var(--shared); }
+.tag.fact-a { background: var(--fact-a-soft); color: var(--fact-a); }
+.tag.fact-b { background: var(--fact-b-soft); color: var(--fact-b); }
+.tag.scd0 { background: var(--line); color: var(--ink-soft); }
+.tag.scd1 { background: var(--accent-soft); color: var(--accent); }
+
+.callout {
+  background: var(--accent-soft);
+  border-left: 3px solid var(--accent);
+  padding: 14px 16px;
+  font-size: 13.5px;
+  line-height: 1.6;
+  color: var(--ink);
+  border-radius: 0 3px 3px 0;
+  margin-top: 14px;
+}
+.callout b { color: var(--accent); }
+
+pre.scd-sample {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  line-height: 1.7;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  padding: 14px 16px;
+  overflow-x: auto;
+  margin: 14px 0 0;
+  color: var(--ink);
+}
+pre.scd-sample .dim { color: var(--ink-soft); }
+pre.scd-sample .hl { color: var(--accent); font-weight: 600; }
+
+/* ───────── Footer ───────── */
+footer {
+  border-top: 2px solid var(--ink);
+  padding-top: 20px;
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  color: var(--ink-soft);
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+footer code { color: var(--accent); }
+
+@media (max-width: 600px) {
+  .q-card { grid-template-columns: 36px 1fr; gap: 14px; }
+  .q-index { font-size: 24px; }
+  table.spec { font-size: 12px; }
+  table.spec th, table.spec td { padding: 7px 6px; }
+}
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div class="masthead">
+    <span class="kicker">Taller 3 · Paso 1 · Diseño del Data Warehouse</span>
+    <h1>El modelo dimensional de ComunicaMedellín</h1>
+    <p class="subhead">
+      Dos procesos de negocio, una sola arquitectura: cómo la entrega de
+      alertas y la presencia de usuarios comparten el mismo armazón de
+      dimensiones sin convertirse en dos lakehouses separados.
+    </p>
+    <div class="byline">
+      <span><b>Equipo 3</b> · Tópicos Avanzados en Bases de Datos</span>
+      <span><b>Fuente</b> · Cassandra (3 nodos), NetworkTopologyStrategy</span>
+      <span><b>Esquema</b> · Constelación · 4 dimensiones, 2 hechos</span>
+    </div>
+  </div>
+
+  <section>
+    <div class="section-head">
+      <span class="section-num">00</span>
+      <h2>El mecanismo: dos hechos, un armazón compartido</h2>
+    </div>
+    <p class="lede">
+      <b>FACT_ENTREGAS</b> mide si una alerta llegó; <b>FACT_PRESENCIA_HORA</b> mide
+      si un usuario estaba conectado. Son preguntas distintas, pero ambas necesitan
+      saber <i>cuándo</i>, <i>quién</i> y <i>en qué zona</i> — por eso comparten
+      tres dimensiones en vez de duplicarlas. Solo <code>DIM_ALERTA</code> es
+      exclusiva: la presencia no tiene alerta de la cual depender.
+    </p>
+
+    <div class="diagram-card">
+      <figure>
+        <div class="diagram-scroll">
+          <svg viewBox="0 0 900 480" role="img" aria-label="Diagrama del esquema en constelación: FACT_ENTREGAS y FACT_PRESENCIA_HORA comparten las dimensiones DIM_TIEMPO, DIM_USUARIO y DIM_ZONA mediante claves foráneas; DIM_ALERTA solo se conecta a FACT_ENTREGAS.">
+            <defs>
+              <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 Z" fill="currentColor"/>
+              </marker>
+            </defs>
+
+            <!-- shared dimensions row (top) -->
+            <g font-family="IBM Plex Mono, monospace">
+              <!-- DIM_TIEMPO -->
+              <rect x="40" y="18" width="160" height="56" rx="4" fill="none" stroke="var(--shared)" stroke-width="1.6"/>
+              <text x="120" y="40" text-anchor="middle" font-size="13" font-weight="600" fill="var(--shared)">DIM_TIEMPO</text>
+              <text x="120" y="58" text-anchor="middle" font-size="10" fill="currentColor" opacity="0.65">fecha, mes, trimestre</text>
+
+              <!-- DIM_USUARIO -->
+              <rect x="370" y="18" width="160" height="56" rx="4" fill="none" stroke="var(--shared)" stroke-width="1.6"/>
+              <text x="450" y="40" text-anchor="middle" font-size="13" font-weight="600" fill="var(--shared)">DIM_USUARIO</text>
+              <text x="450" y="58" text-anchor="middle" font-size="10" fill="currentColor" opacity="0.65">zona, comuna, dispositivo</text>
+
+              <!-- DIM_ZONA -->
+              <rect x="700" y="18" width="160" height="56" rx="4" fill="none" stroke="var(--shared)" stroke-width="1.6"/>
+              <text x="780" y="40" text-anchor="middle" font-size="13" font-weight="600" fill="var(--shared)">DIM_ZONA</text>
+              <text x="780" y="58" text-anchor="middle" font-size="10" fill="currentColor" opacity="0.65">norte · centro · sur</text>
+            </g>
+
+            <!-- two fact tables -->
+            <g font-family="IBM Plex Mono, monospace">
+              <rect x="110" y="190" width="260" height="150" rx="5" fill="var(--fact-a-soft)" stroke="var(--fact-a)" stroke-width="1.8"/>
+              <text x="240" y="216" text-anchor="middle" font-size="14" font-weight="600" fill="var(--fact-a)">FACT_ENTREGAS</text>
+              <line x1="130" y1="226" x2="350" y2="226" stroke="var(--fact-a)" stroke-width="1" opacity="0.4"/>
+              <text x="130" y="244" font-size="10.5" fill="currentColor">entrega_sk</text>
+              <text x="130" y="260" font-size="10.5" fill="currentColor" opacity="0.75">intentos</text>
+              <text x="130" y="276" font-size="10.5" fill="currentColor" opacity="0.75">entregado_flag, fallido_flag</text>
+              <text x="130" y="292" font-size="10.5" fill="currentColor" opacity="0.75">latencia_entrega_seg</text>
+              <text x="130" y="314" font-size="10" fill="var(--fact-b)" font-weight="600">+ alerta_sk</text>
+              <text x="240" y="330" text-anchor="middle" font-size="9.5" fill="currentColor" opacity="0.6">grano: 1 fila = 1 intento de entrega</text>
+
+              <rect x="530" y="190" width="260" height="150" rx="5" fill="var(--fact-b-soft)" stroke="var(--fact-b)" stroke-width="1.8"/>
+              <text x="660" y="216" text-anchor="middle" font-size="14" font-weight="600" fill="var(--fact-b)">FACT_PRESENCIA_HORA</text>
+              <line x1="550" y1="226" x2="770" y2="226" stroke="var(--fact-b)" stroke-width="1" opacity="0.4"/>
+              <text x="550" y="244" font-size="10.5" fill="currentColor">presencia_sk</text>
+              <text x="550" y="260" font-size="10.5" fill="currentColor" opacity="0.75">hora_del_dia</text>
+              <text x="550" y="276" font-size="10.5" fill="currentColor" opacity="0.75">online_flag</text>
+              <text x="550" y="292" font-size="10.5" fill="currentColor" opacity="0.75">eventos</text>
+              <text x="660" y="330" text-anchor="middle" font-size="9.5" fill="currentColor" opacity="0.6">grano: 1 fila = 1 usuario x 1 hora</text>
+            </g>
+
+            <!-- DIM_ALERTA: exclusive to FACT_ENTREGAS -->
+            <g font-family="IBM Plex Mono, monospace">
+              <rect x="40" y="400" width="200" height="56" rx="4" fill="var(--fact-a-soft)" stroke="var(--fact-a)" stroke-width="1.6" stroke-dasharray="1,0"/>
+              <text x="140" y="422" text-anchor="middle" font-size="13" font-weight="600" fill="var(--fact-a)">DIM_ALERTA</text>
+              <text x="140" y="440" text-anchor="middle" font-size="10" fill="currentColor" opacity="0.65">título, severidad, zona_destino</text>
+            </g>
+            <text x="150" y="388" font-size="10" fill="var(--fact-a)" font-weight="600" text-anchor="middle">exclusiva de FACT_ENTREGAS</text>
+
+            <!-- connecting arrows: shared dims -> both facts -->
+            <g stroke="var(--shared)" stroke-width="1.4" fill="none" opacity="0.85" marker-end="url(#arrow)">
+              <path d="M110,74 C110,120 180,150 220,190"/>
+              <path d="M140,74 C250,120 450,150 560,190"/>
+              <path d="M440,74 C380,130 300,160 260,190"/>
+              <path d="M460,74 C540,130 600,160 650,190"/>
+              <path d="M750,74 C600,130 400,160 340,190"/>
+              <path d="M790,74 C740,130 700,160 670,190"/>
+            </g>
+            <text x="300" y="150" font-size="9.5" fill="var(--shared)" text-anchor="middle" transform="rotate(-18 300 150)">tiempo_sk</text>
+            <text x="470" y="150" font-size="9.5" fill="var(--shared)" text-anchor="middle">usuario_sk</text>
+            <text x="620" y="150" font-size="9.5" fill="var(--shared)" text-anchor="middle" transform="rotate(14 620 150)">zona_sk</text>
+
+            <!-- DIM_ALERTA -> FACT_ENTREGAS only -->
+            <g stroke="var(--fact-a)" stroke-width="1.4" fill="none" marker-end="url(#arrow)">
+              <path d="M180,400 C190,370 210,355 230,342"/>
+            </g>
+            <text x="150" y="375" font-size="9.5" fill="var(--fact-a)" text-anchor="middle">alerta_sk</text>
+          </svg>
+        </div>
+        <figcaption>
+          <b>Lo que hace a esto una constelación y no dos estrellas sueltas:</b>
+          <code>DIM_TIEMPO</code>, <code>DIM_USUARIO</code> y <code>DIM_ZONA</code>
+          (arriba) tienen flechas hacia <i>ambas</i> tablas de hechos — son
+          conformadas, un solo catálogo de usuarios y fechas para todo el
+          lakehouse. <code>DIM_ALERTA</code> (abajo) solo conecta a
+          <code>FACT_ENTREGAS</code>: la presencia de un usuario no depende de
+          ninguna alerta.
+        </figcaption>
+      </figure>
+      <div class="legend">
+        <span class="legend-item"><span class="swatch" style="background:var(--shared)"></span>Dimensión conformada (compartida)</span>
+        <span class="legend-item"><span class="swatch" style="background:var(--fact-a)"></span>FACT_ENTREGAS + su dimensión exclusiva</span>
+        <span class="legend-item"><span class="swatch" style="background:var(--fact-b)"></span>FACT_PRESENCIA_HORA</span>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="section-head">
+      <span class="section-num">01–05</span>
+      <h2>Las cinco preguntas del diseño</h2>
+    </div>
+    <p class="lede">
+      La guía del taller las exige responder antes de escribir una sola línea
+      de código. Son las que fijaron la forma del diagrama de arriba.
+    </p>
+
+    <div class="q-list">
+
+      <div class="q-card">
+        <span class="q-index">1</span>
+        <div class="q-body">
+          <h3 class="q-title">¿Cuál es el proceso de negocio?</h3>
+          <p class="q-text">
+            Dos, porque el sistema operacional ya expone dos cargas con
+            garantías CAP opuestas: <b>entrega de alertas</b> (no puede
+            perderse, escritura QUORUM) y <b>presencia de usuarios</b>
+            (tolera desactualización, escritura ONE). Modelarlas juntas en
+            un solo hecho habría forzado una granularidad mentirosa.
+          </p>
+          <p class="q-text">
+            Pregunta de negocio que el lakehouse debe responder: <i>¿qué tan
+            rápido y con qué cobertura llegan las alertas, y cómo se
+            relaciona con cuántos usuarios estaban realmente conectados para
+            recibirlas?</i>
+          </p>
+        </div>
+      </div>
+
+      <div class="q-card">
+        <span class="q-index">2</span>
+        <div class="q-body">
+          <h3 class="q-title">¿Cuál es la granularidad?</h3>
+          <table class="spec">
+            <tr><th>Hecho</th><th>Una fila es…</th></tr>
+            <tr>
+              <td class="mono"><span class="tag fact-a">FACT_ENTREGAS</span></td>
+              <td>un intento de entrega de <b>una alerta</b> a <b>un usuario</b></td>
+            </tr>
+            <tr>
+              <td class="mono"><span class="tag fact-b">FACT_PRESENCIA_HORA</span></td>
+              <td>un snapshot de presencia de <b>un usuario</b> en <b>una hora</b></td>
+            </tr>
+          </table>
+          <div class="callout">
+            <b>Límite reconocido, no escondido:</b> <code>presencia</code> en
+            Cassandra guarda solo el último estado escrito, no un historial de
+            cambios. El hecho proyecta ese snapshot sobre la hora de
+            <code>last_seen</code> — representa "última hora vista", no "cada
+            hora que estuvo conectado". Capturar eso de verdad exigiría leer
+            el tópico Kafka <code>presencia-eventos</code> en vez de la tabla.
+          </div>
+        </div>
+      </div>
+
+      <div class="q-card">
+        <span class="q-index">3</span>
+        <div class="q-body">
+          <h3 class="q-title">¿Cuáles son las dimensiones?</h3>
+          <table class="spec">
+            <tr><th>Dimensión</th><th>Atributos</th><th>¿Cambia?</th></tr>
+            <tr>
+              <td class="mono"><span class="tag shared">DIM_TIEMPO</span></td>
+              <td>fecha, año, mes, trimestre, día_semana, fin_de_semana</td>
+              <td><span class="tag scd0">Tipo 0</span></td>
+            </tr>
+            <tr>
+              <td class="mono"><span class="tag shared">DIM_USUARIO</span></td>
+              <td>usuario_id, nombre, zona, comuna, dispositivo</td>
+              <td><span class="tag scd1">Tipo 1</span></td>
+            </tr>
+            <tr>
+              <td class="mono"><span class="tag shared">DIM_ZONA</span></td>
+              <td>zona (norte / centro / sur)</td>
+              <td><span class="tag scd0">Tipo 0</span></td>
+            </tr>
+            <tr>
+              <td class="mono"><span class="tag fact-a">DIM_ALERTA</span></td>
+              <td>alerta_id, título, severidad, zona_destino</td>
+              <td><span class="tag scd0">Tipo 0</span></td>
+            </tr>
+          </table>
+          <p class="q-text" style="margin-top:14px">
+            Tres conformadas, una exclusiva — el mismo reparto que muestra el
+            diagrama de arriba.
+          </p>
+        </div>
+      </div>
+
+      <div class="q-card">
+        <span class="q-index">4</span>
+        <div class="q-body">
+          <h3 class="q-title">¿Cuáles son las métricas?</h3>
+          <table class="spec">
+            <tr><th>Métrica</th><th>Tipo</th><th>Por qué</th></tr>
+            <tr>
+              <td class="mono">intentos</td>
+              <td>Aditiva</td>
+              <td>se suma por alerta, usuario o zona</td>
+            </tr>
+            <tr>
+              <td class="mono">entregado_flag / fallido_flag</td>
+              <td>Aditiva (0/1)</td>
+              <td>sumar da la cuenta de éxitos o fallos</td>
+            </tr>
+            <tr>
+              <td class="mono">latencia_entrega_seg</td>
+              <td>No aditiva</td>
+              <td>solo AVG o percentil — sumarla entre usuarios no significa nada</td>
+            </tr>
+            <tr>
+              <td class="mono">online_flag</td>
+              <td>Semi-aditiva</td>
+              <td>se suma por zona/hora ("cuántos en línea"), pero no en el tiempo</td>
+            </tr>
+          </table>
+        </div>
+      </div>
+
+      <div class="q-card">
+        <span class="q-index">5</span>
+        <div class="q-body">
+          <h3 class="q-title">¿Qué estrategia SCD?</h3>
+          <p class="q-text">
+            <code>DIM_USUARIO</code> en <b>Tipo 1</b>: se sobrescribe, sin
+            historial. No es una elección estética — es lo único honesto
+            dado que Cassandra actualiza <code>presencia</code> en el lugar
+            y el valor anterior simplemente se pierde.
+          </p>
+          <pre class="scd-sample"><span class="dim">-- Tipo 2 real exigiría leer el cambio ANTES de que Cassandra lo sobrescriba,</span>
+<span class="dim">-- por ejemplo consumiendo 'presencia-eventos' en vez de la tabla:</span>
+
+usuario_sk  usuario_id  zona    valido_desde  valido_hasta  activo
+<span class="hl">1           CC650279    norte   2026-01-01    2026-06-30    false</span>
+<span class="hl">2           CC650279    centro  2026-07-01    9999-12-31    true</span></pre>
+          <p class="q-text" style="margin-top:14px">
+            <code>DIM_ALERTA</code>, en cambio, es Tipo 0: una alerta
+            publicada no se edita después — es un evento, no un perfil que
+            cambie.
+          </p>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <footer>
+    <span>ComunicaMedellín · Equipo 3 · ITM 2026</span>
+    <span>Fuente completa en <code>docs/modelo_dimensional.md</code></span>
+  </footer>
+
+</div>
+</body>
+</html>
