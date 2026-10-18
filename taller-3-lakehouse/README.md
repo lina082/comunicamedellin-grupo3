@@ -2,8 +2,8 @@
 
 **Equipo 3** · Tópicos Avanzados en Bases de Datos · ITM 2026
 
-Extiende el proyecto operacional de ComunicaMedellín (carpeta raíz de este
-repositorio, Módulos 1 y 2) con una capa analítica mínima pero completa: un pipeline
+Extiende el proyecto operacional de ComunicaMedellín (`comunicamedellin-grupo3/`,
+Módulos 1 y 2) con una capa analítica mínima pero completa: un pipeline
 ETL que mueve datos del OLTP (Cassandra) a un lakehouse en capas
 Bronze/Silver/Gold sobre Parquet, modelado con un esquema dimensional en
 constelación y consultado con DuckDB.
@@ -46,9 +46,9 @@ del OLTP real).
 ## Requisitos
 
 - Python 3.10+
-- El clúster de Cassandra del proyecto base corriendo (raíz del repo):
+- El clúster de Cassandra del proyecto base corriendo (`comunicamedellin-grupo3/`):
   ```bash
-  cd ..
+  cd ../comunicamedellin-grupo3
   make up       # levanta cass1/cass2/cass3 (~2 min la primera vez)
   make schema   # crea el keyspace 'comunica'
   make seed     # 10.000 usuarios simulados
@@ -80,7 +80,61 @@ python main.py
 ```
 
 `main.py` corre `extract.py → transform_silver.py → transform_gold.py →
-analyze.py` en secuencia y se detiene si algún paso falla.
+analyze.py → reporte_negocio.py` en secuencia y se detiene si algún paso
+falla.
+
+## Calidad de datos: suciedad deliberada
+
+`seed_alertas.py` no escribe datos perfectos. Inyecta, con probabilidad
+controlada, exactamente lo que Cassandra deja escribir sin violar su
+propio esquema (nada fabricado fuera del motor real):
+
+| Suciedad | Dónde | Regla de Silver |
+|---|---|---|
+| Severidad nula | `historial_usuario` | **Se descarta** — campo crítico, no se infiere sin inventar el dato |
+| Zona destino nula | `alertas` | **Se infiere** cruzando con la zona real de los destinatarios en `historial_usuario` |
+| Estado de entrega nulo | `estado_entrega` | **Se descarta** — sin él no se puede clasificar éxito/fallo |
+| Severidad con formato sucio (`" CRITICA"`, `"Critica "`) | `historial_usuario` | **Se normaliza** (`.strip().lower()`) — el dato está completo, solo mal escrito |
+| Intentos negativo | `estado_entrega` | **Se descarta** — valor imposible por definición |
+| Reloj desincronizado (`actualizado` < `enviado_en`) | `estado_entrega` | **Se descarta y se reporta como error de reloj distribuido** — en un sistema AP (Sec. 1.2, consistencia eventual) dos escrituras concurrentes pueden registrarse fuera de orden |
+
+Criterio general: **campo crítico sin el cual la fila no se puede
+interpretar honestamente → se descarta; campo no crítico que se puede
+inferir de otra fuente del mismo dataset → se rellena cruzando tablas,
+nunca con un valor inventado desde cero.**
+
+No se simulan duplicados: la `PRIMARY KEY` de cada tabla (ver
+`infra/cql/schema.cql` del proyecto base) hace que Cassandra sobreescriba
+cualquier reintento con la misma clave, así que un duplicado real nunca
+llegaría a Bronze — simularlo habría sido inventar un escenario que el
+motor no produce.
+
+El reporte completo (cuántas filas cayeron por cada regla, no solo un
+total agregado) queda en
+[`docs/reporte_calidad.txt`](docs/reporte_calidad.txt).
+
+## Reporte de negocio: North Star, apoyo y vanity metrics
+
+`scripts/reporte_negocio.py` responde la pregunta que de verdad importa
+en Gold: no "¿las tablas están bien hechas?" sino "¿qué le dice esto al
+negocio?". Usa el framework de tres niveles:
+
+- **North Star Metric — % de entregas a tiempo (≤ 90s).** La única
+  métrica que resume si ComunicaMedellín cumple su promesa central:
+  que una alerta de riesgo público *llegue* y llegue *rápido*. Es
+  accionable (cualquier equipo tiene una palanca real sobre ella) y no
+  se puede inflar sin mejorar el servicio de verdad.
+- **Métricas de apoyo** — explican el *por qué* sube o baja la North
+  Star: tasa de fallo por severidad, latencia p50/p90 por zona, % de
+  destinatarios online al momento del envío (con su limitación
+  documentada: `presencia` es un snapshot, no un historial exacto).
+- **Vanity metrics** — alertas publicadas, usuarios registrados,
+  entregas históricas totales. Se ven bien en una diapositiva, pero
+  siempre suben con el tiempo y no dicen si el producto funciona.
+
+```bash
+python scripts/reporte_negocio.py
+```
 
 ## Resultados del Benchmark
 
@@ -110,12 +164,12 @@ Generado automáticamente en cada corrida: [`docs/reporte_calidad.txt`](docs/rep
 
 ## Demo interactiva (como la del Módulo 2)
 
-Igual que `frontend/taller.html` (Módulo 2), hay una página con un botón
-por cada paso del taller que ejecuta el script real (no una simulación) y
-muestra el comando, la salida y las métricas en vivo:
+Igual que `comunicamedellin-grupo3/frontend/taller.html`, hay una página con
+un botón por cada paso del taller que ejecuta el script real (no una
+simulación) y muestra el comando, la salida y las métricas en vivo:
 
 ```bash
-cd ..
+cd ../comunicamedellin-grupo3
 make api          # terminal 1 → API FastAPI en :8765 (monta api/lakehouse.py)
 ```
 
@@ -131,38 +185,34 @@ sin build ni servidor de frontend). Los 6 puntos:
 | 04 · Las 5 consultas | `scripts/analyze.py`, tiempos medidos reales |
 | 05 · Benchmark | Cassandra (`ALLOW FILTERING`) vs DuckDB, factor de mejora real |
 
-El backend de esta demo (`../api/lakehouse.py`) corre cada script del
-taller con `subprocess` y parsea su salida real para emitirla paso a paso
-por WebSocket — el mismo patrón que `../api/taller.py` del Módulo 2.
+El backend de esta demo (`api/lakehouse.py`, en el repo del proyecto base)
+corre cada script del taller con `subprocess` y parsea su salida real para
+emitirla paso a paso por WebSocket — el mismo patrón que `api/taller.py`
+del Módulo 2.
 
 ## Estructura
 
 ```
-taller-3-lakehouse/
+ENTREGA3/
 ├── lakehouse/
 │   ├── bronze/              ← Parquet raw de Cassandra (con timestamp)
 │   ├── silver/               ← Parquet limpio
 │   └── gold/                 ← modelo dimensional (4 dims + 2 facts)
 ├── scripts/
-│   ├── seed_alertas.py       ← puebla alertas/historial/entregas reales
+│   ├── seed_alertas.py       ← puebla alertas/historial/entregas (con suciedad real)
 │   ├── extract.py            ← Paso 2: extracción Bronze
-│   ├── transform_silver.py   ← Paso 3: limpieza + reporte de calidad
+│   ├── transform_silver.py   ← Paso 3: limpieza por regla explícita + reporte
 │   ├── transform_gold.py     ← Paso 4: modelo dimensional
-│   └── analyze.py            ← Paso 5: 5 consultas + benchmark
+│   ├── analyze.py            ← Paso 5: 5 consultas + benchmark
+│   └── reporte_negocio.py    ← North Star / apoyo / vanity metrics
 ├── docs/
-│   ├── modelo_dimensional.md         ← Paso 1: las 5 preguntas de diseño
-│   ├── modelo_dimensional.dbml       ← diagrama fuente para dbdiagram.io
-│   ├── modelo_dimensional_visual.html← versión ilustrada del Paso 1
+│   ├── modelo_dimensional.md    ← Paso 1: las 5 preguntas de diseño
+│   ├── modelo_dimensional.dbml  ← diagrama fuente para dbdiagram.io
 │   ├── arquitectura_lakehouse.txt
-│   └── reporte_calidad.txt           ← generado por transform_silver.py
-├── lakehouse.html             ← demo interactiva (ver sección anterior)
-├── Taller.pdf                 ← enunciado original del docente
+│   └── reporte_calidad.txt      ← generado por transform_silver.py
 ├── requirements.txt
-└── main.py                    ← ejecuta todo el pipeline en orden
+└── main.py                   ← ejecuta todo el pipeline en orden
 ```
-
-El backend de la demo interactiva (`api/lakehouse.py`) vive en `../api/`
-junto al resto de la API del proyecto, no dentro de esta carpeta.
 
 ## Integrantes
 

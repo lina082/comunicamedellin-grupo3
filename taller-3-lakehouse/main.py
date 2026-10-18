@@ -9,6 +9,7 @@ PASOS = [
     ("Limpieza → Silver", "scripts/transform_silver.py"),
     ("Modelo → Gold", "scripts/transform_gold.py"),
     ("Análisis y Benchmark", "scripts/analyze.py"),
+    ("Reporte de negocio", "scripts/reporte_negocio.py"),
 ]
 
 

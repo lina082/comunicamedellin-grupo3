@@ -6,21 +6,30 @@ Filas eliminadas        :          0
 Porcentaje retenido     :     100.0%
 
 === REPORTE DE CALIDAD — ALERTAS ===
-Filas Bronze originales :         69
-Filas Silver resultantes:         69
+Filas Bronze originales :         60
+Filas Silver resultantes:         60
 Filas eliminadas        :          0
 Porcentaje retenido     :     100.0%
+Motivo de cada eliminacion:
+  zona_destino nula, inferida de historial_usuario       -1
 
 === REPORTE DE CALIDAD — HISTORIAL_USUARIO ===
-Filas Bronze originales :     86,594
-Filas Silver resultantes:     86,594
-Filas eliminadas        :          0
-Porcentaje retenido     :     100.0%
+Filas Bronze originales :     24,000
+Filas Silver resultantes:     23,002
+Filas eliminadas        :        998
+Porcentaje retenido     :      95.8%
+Motivo de cada eliminacion:
+  severidad nula (critica, no se infiere)         998
 
 === REPORTE DE CALIDAD — ESTADO_ENTREGA ===
-Filas Bronze originales :     24,002
-Filas Silver resultantes:     24,002
-Filas eliminadas        :          0
-Porcentaje retenido     :     100.0%
+Filas Bronze originales :     24,000
+Filas Silver resultantes:     21,274
+Filas eliminadas        :      2,726
+Porcentaje retenido     :      88.6%
+Motivo de cada eliminacion:
+  estado nulo (critico, no se infiere)            716
+  intentos negativo (valor imposible)             523
+  reloj distribuido: actualizado < enviado_en      595
+  sin fila de historial para validar el reloj      998
 
 Silver completo.

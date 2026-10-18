@@ -301,7 +301,8 @@ async def l5_benchmark(sock, params):
               f"optimizada para servir por clave de particion, no para "
               f"agregar sobre columnas arbitrarias.",
               {"ms_cassandra": float(ms_cass), "ms_duckdb": float(ms_duck),
-               "factor": float(factor)})
+               "factor": float(factor), "filas": int(filas_cass.replace(",", "")),
+               "fallidas": int(fallidas_cass.replace(",", ""))})
 
 
 # ═════════════════════════════════════════════════════════════

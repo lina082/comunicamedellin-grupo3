@@ -59,6 +59,28 @@ de `FACT_ENTREGAS`.
 | `FACT_PRESENCIA_HORA` | `eventos` | Aditiva | cuenta de snapshots |
 | `FACT_PRESENCIA_HORA` | `online_flag` | Semi-aditiva | se puede sumar por zona/hora (da "usuarios online"), pero sumarlo en el tiempo no tiene sentido — por eso Q5 usa `AVG`/proporción, no `SUM` acumulado |
 
+### De las métricas al valor de negocio
+
+Tener las métricas correctas no es tener valor de negocio: hace falta
+decidir cuál de ellas *resume* el producto y cuáles solo lo *explican*.
+`scripts/reporte_negocio.py` aplica el framework North Star / apoyo /
+vanity sobre estas mismas métricas de `FACT_ENTREGAS`:
+
+- **North Star: % de entregas con `latencia_entrega_seg` ≤ 90s.**
+  Construida sobre la métrica no aditiva de la tabla — justo la que
+  "solo tiene sentido como percentil" es la que mejor resume si el
+  sistema cumple su promesa (entregar rápido), no un conteo.
+- **Apoyo:** `fallido_flag` agrupado por severidad (¿falla más donde
+  más importa?), `latencia_entrega_seg` agrupado por zona (¿hay una
+  zona lenta?), cruce con `online_flag` de `FACT_PRESENCIA_HORA`
+  (¿a quién le llega rápido algo que igual no va a ver?).
+- **Vanity:** conteos simples de `DIM_ALERTA`, `DIM_USUARIO` y filas
+  de `FACT_ENTREGAS` — crecen solos con el tiempo, no dicen si el
+  servicio funciona.
+
+Detalle completo y resultados reales en el README del proyecto,
+sección "Reporte de negocio".
+
 ## Pregunta 5 — Estrategia SCD
 
 Dimensión elegida: **`DIM_USUARIO`**.
