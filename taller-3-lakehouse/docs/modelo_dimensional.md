@@ -137,6 +137,9 @@ el contenido de una alerta publicada nunca se modifica después de emitida
         zona_destino
 ```
 
-Diagrama exportable a `dbdiagram.io` / draw.io: ver
-`docs/modelo_dimensional.dbml` para el código fuente DBML listo para
-pegar en https://dbdiagram.io.
+Versión exportada como imagen: `docs/modelo_dimensional.png`.
+
+![Diagrama del modelo en constelación](modelo_dimensional.png)
+
+Fuente editable en `docs/modelo_dimensional.dbml`, lista para pegar en
+https://dbdiagram.io.

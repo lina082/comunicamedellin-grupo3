@@ -36,8 +36,11 @@ Cassandra (OLTP) → Bronze (raw) → Silver (limpio) → Gold (dimensional) →
 Ver diagrama ASCII completo en
 [`docs/arquitectura_lakehouse.txt`](docs/arquitectura_lakehouse.txt) y el
 diagrama del modelo estrella/constelación en
-[`docs/modelo_dimensional.dbml`](docs/modelo_dimensional.dbml) (pegar en
-[dbdiagram.io](https://dbdiagram.io) para exportar el PNG).
+[`docs/modelo_dimensional.png`](docs/modelo_dimensional.png) (fuente DBML
+en [`docs/modelo_dimensional.dbml`](docs/modelo_dimensional.dbml), editable
+en [dbdiagram.io](https://dbdiagram.io)):
+
+![Diagrama del modelo en constelación](docs/modelo_dimensional.png)
 
 Herramientas: **Python + pandas** (ETL), **DuckDB** (motor analítico
 columnar), **Parquet** (formato del lake), **cassandra-driver** (lectura
@@ -208,6 +211,7 @@ ENTREGA3/
 ├── docs/
 │   ├── modelo_dimensional.md    ← Paso 1: las 5 preguntas de diseño
 │   ├── modelo_dimensional.dbml  ← diagrama fuente para dbdiagram.io
+│   ├── modelo_dimensional.png   ← diagrama estrella/constelación exportado
 │   ├── arquitectura_lakehouse.txt
 │   └── reporte_calidad.txt      ← generado por transform_silver.py
 ├── requirements.txt
