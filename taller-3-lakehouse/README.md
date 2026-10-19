@@ -147,13 +147,14 @@ porque `estado` no es parte de la partition key).
 
 | Motor | Query | Tiempo | Filas |
 |---|---|---|---|
-| Cassandra (OLTP, `ALLOW FILTERING`) | Entregas fallidas, todo el dataset | ~60 ms | 24.002 |
-| DuckDB (columnar, sobre Gold) | misma consulta | ~1.5 ms | 24.002 |
+| Cassandra (OLTP, `ALLOW FILTERING`) | Entregas fallidas, todo el dataset | ~160 ms | 72.000 |
+| DuckDB (columnar, sobre Gold) | misma consulta | ~1.2 ms | 63.822 |
 
-**Factor de mejora: ~40-80x** (varía por corrida; ver salida real de
-`python scripts/analyze.py`).
+**Factor de mejora: ~100-150x** (varía por corrida; ver salida real de
+`python scripts/analyze.py`). La diferencia entre las dos cuentas de filas
+es la limpieza real de Silver, no un error de medición.
 
-Con ~24.000 filas la diferencia ya es significativa porque la consulta en
+Con decenas de miles de filas la diferencia ya es significativa porque la consulta en
 Cassandra fuerza un escaneo completo de todas las particiones del
 clúster (lo que el modelo NoSQL del Módulo 2 justamente evita para las
 consultas de servicio); DuckDB en cambio solo lee las dos columnas
