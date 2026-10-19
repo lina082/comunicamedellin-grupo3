@@ -48,7 +48,7 @@ import uuid
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "comunicamedellin-grupo3" / "demo" / "scripts"))
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "demo" / "scripts"))
 from _common import conectar  # noqa: E402
 from _datos import PLANTILLAS_ALERTA, VIAS, RIOS, INSTITUCIONES, COMUNAS, ZONAS  # noqa: E402
 
