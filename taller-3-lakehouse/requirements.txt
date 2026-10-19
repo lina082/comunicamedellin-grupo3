@@ -4,3 +4,4 @@ pyarrow>=15.0.0
 sqlalchemy>=2.0.0
 cassandra-driver>=3.29.0
 faker>=30.0.0
+pytz>=2024.1

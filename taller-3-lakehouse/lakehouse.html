@@ -251,6 +251,57 @@ h1, h2, h3, h4 { font-family: var(--font-display); margin: 0; line-height: 1.3; 
 .detail-run:disabled { background: var(--line-soft); cursor: not-allowed; box-shadow: none; }
 .detail-run.is-running { background: var(--yellow); color: var(--on-yellow); }
 
+/* tabla real: filas reales de la tabla de Cassandra/Parquet que ese paso toca */
+.tabla-real {
+  margin: 0 20px 16px;
+  border: 2px solid var(--line);
+  border-radius: 12px;
+  overflow: hidden;
+  background: var(--bg);
+}
+.tabla-real-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 14px;
+  background: var(--line-soft);
+  border-bottom: 2px solid var(--line);
+  flex-wrap: wrap;
+}
+.tabla-real-label {
+  font-family: 'Baloo 2', sans-serif;
+  font-weight: 700;
+  font-size: 13px;
+  color: var(--ink);
+}
+.tabla-real-fuente {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11.5px;
+  color: var(--ink-soft);
+}
+.tabla-real-cmd {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11.5px;
+  color: var(--ink-soft);
+  padding: 6px 14px;
+  border-bottom: 1px solid var(--line-soft);
+}
+.tabla-real-scroll { overflow-x: auto; max-height: 220px; overflow-y: auto; }
+.tabla-real-table { width: 100%; border-collapse: collapse; font-family: 'IBM Plex Mono', monospace; font-size: 11.5px; }
+.tabla-real-table th, .tabla-real-table td {
+  text-align: left;
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--line-soft);
+  white-space: nowrap;
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.tabla-real-table th { color: var(--ink-soft); background: var(--paper); position: sticky; top: 0; }
+.tabla-real-table td { color: var(--ink); }
+.tabla-real-empty { padding: 14px; font-family: 'Patrick Hand', cursive; font-size: 14px; color: var(--ink-soft); }
+
 /* duck explainer: solo visible en los pasos que de verdad usan DuckDB (consultas, benchmark) */
 .duck-explainer {
   display: none;
@@ -499,6 +550,14 @@ footer code { font-family: var(--font-mono); font-size: 12px; }
         <div class="detail-desc" id="detail-desc"></div>
       </div>
       <button type="button" class="detail-run" id="detail-run">ejecutar</button>
+    </div>
+    <div class="tabla-real" id="tabla-real">
+      <div class="tabla-real-head">
+        <span class="tabla-real-label">la tabla real que toca este paso</span>
+        <span class="tabla-real-fuente" id="tabla-real-fuente">cargando…</span>
+      </div>
+      <div class="tabla-real-cmd" id="tabla-real-cmd"></div>
+      <div class="tabla-real-scroll"><table class="tabla-real-table" id="tabla-real-table"></table></div>
     </div>
     <div class="duck-explainer" id="duck-explainer">
       <svg class="duck-explainer-doodle" viewBox="0 0 64 64" aria-hidden="true">
@@ -783,6 +842,7 @@ function openDetail(id) {
 
   document.getElementById("duck-explainer").classList.toggle("show", id === "l4" || id === "l5");
   document.getElementById("kpi-panel").classList.toggle("show", id === "l5");
+  cargarTablaReal(id);
 
   const lines = s.code.map((line, idx) => {
     const num = idx + 1;
@@ -967,6 +1027,40 @@ document.getElementById("btn-run-all").addEventListener("click", async () => {
     await new Promise(r => setTimeout(r, 500));
   }
 });
+
+let tablaRealReq = 0;
+async function cargarTablaReal(id) {
+  const miReq = ++tablaRealReq;
+  const fuenteEl = document.getElementById("tabla-real-fuente");
+  const cmdEl = document.getElementById("tabla-real-cmd");
+  const tableEl = document.getElementById("tabla-real-table");
+  fuenteEl.textContent = "cargando…";
+  cmdEl.textContent = "";
+  tableEl.innerHTML = "";
+  try {
+    const r = await fetch(`${API}/lakehouse/muestra/${id}`);
+    const d = await r.json();
+    if (miReq !== tablaRealReq) return;
+    if (d.error) {
+      fuenteEl.textContent = "sin datos";
+      tableEl.innerHTML = `<tr><td class="tabla-real-empty">${esc(d.error)}</td></tr>`;
+      return;
+    }
+    fuenteEl.textContent = `${d.fuente} · ${d.tabla}`;
+    cmdEl.textContent = d.cmd || "";
+    if (!d.filas || !d.filas.length) {
+      tableEl.innerHTML = `<tr><td class="tabla-real-empty">${d.aviso || "sin filas todavía — ejecuta un paso anterior primero"}</td></tr>`;
+      return;
+    }
+    const thead = `<thead><tr>${d.columnas.map(c => `<th>${esc(c)}</th>`).join("")}</tr></thead>`;
+    const tbody = `<tbody>${d.filas.map(fila => `<tr>${fila.map(v => `<td title="${esc(v)}">${esc(v)}</td>`).join("")}</tr>`).join("")}</tbody>`;
+    tableEl.innerHTML = thead + tbody;
+  } catch (e) {
+    if (miReq !== tablaRealReq) return;
+    fuenteEl.textContent = "sin conexión";
+    tableEl.innerHTML = `<tr><td class="tabla-real-empty">no se pudo conectar con la API :8765</td></tr>`;
+  }
+}
 
 async function cargarSalud() {
   const strip = document.getElementById("status-strip");

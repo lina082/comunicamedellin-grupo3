@@ -29,6 +29,8 @@ ctx: dict = {}
 TALLER3 = Path(__file__).resolve().parents[1] / "taller-3-lakehouse"
 PYTHON = sys.executable
 
+DEMO_SCRIPTS = Path(__file__).resolve().parents[1] / "demo" / "scripts"
+
 
 # ─────────────────────────────────────────────────────────────
 # Utilidades de emision (mismo contrato que api/taller.py)
@@ -63,6 +65,76 @@ def correr(script: str) -> tuple[str, float, int]:
 def extraer_numero(patron: str, texto: str, default="0"):
     m = re.search(patron, texto)
     return m.group(1) if m else default
+
+
+# ═════════════════════════════════════════════════════════════
+# Muestra en vivo: la tabla real que cada paso toca, para mostrar
+# en el frontend junto al codigo anotado. L0/L1/L5 consultan
+# Cassandra real (CQL); L2/L3 leen el Parquet que ese paso acaba
+# de producir (DuckDB); L4 corre una de las 5 queries reales.
+# ═════════════════════════════════════════════════════════════
+TABLA_POR_PASO = {
+    "l0": {"fuente": "cassandra", "tabla": "alertas"},
+    "l1": {"fuente": "cassandra", "tabla": "historial_usuario"},
+    "l2": {"fuente": "parquet", "tabla": "estado_entrega_silver", "zona": "silver"},
+    "l3": {"fuente": "parquet", "tabla": "fact_entregas", "zona": "gold"},
+    "l4": {"fuente": "duckdb_query"},
+    "l5": {"fuente": "cassandra", "tabla": "estado_entrega"},
+}
+
+
+def muestra_cassandra(tabla: str, limite: int = 5):
+    sys.path.insert(0, str(DEMO_SCRIPTS))
+    from _common import conectar  # noqa: E402
+    cluster, session = conectar("cass1")
+    try:
+        filas = list(session.execute(f"SELECT * FROM {tabla} LIMIT {limite}"))
+        columnas = list(filas[0]._fields) if filas else []
+        datos = [[str(getattr(f, c)) for c in columnas] for f in filas]
+        return {"fuente": "Cassandra (CQL)", "tabla": tabla,
+                "cmd": f"SELECT * FROM {tabla} LIMIT {limite};",
+                "columnas": columnas, "filas": datos}
+    finally:
+        cluster.shutdown()
+
+
+def muestra_parquet(tabla: str, zona: str, limite: int = 5):
+    import duckdb
+    ruta = TALLER3 / "lakehouse" / zona / f"{tabla}.parquet"
+    if not ruta.exists():
+        return {"fuente": f"Parquet ({zona})", "tabla": tabla,
+                "cmd": f"SELECT * FROM read_parquet('{tabla}.parquet') LIMIT {limite};",
+                "columnas": [], "filas": [], "aviso": "aun no generado"}
+    con = duckdb.connect()
+    r = con.execute(f"SELECT * FROM read_parquet('{ruta}') LIMIT {limite}")
+    columnas = [d[0] for d in r.description]
+    datos = [[str(v) for v in fila] for fila in r.fetchall()]
+    return {"fuente": f"Parquet ({zona})", "tabla": tabla,
+            "cmd": f"SELECT * FROM read_parquet('{tabla}.parquet') LIMIT {limite};",
+            "columnas": columnas, "filas": datos}
+
+
+def muestra_duckdb_query(limite: int = 5):
+    import duckdb
+    ruta = TALLER3 / "lakehouse" / "gold" / "fact_entregas.parquet"
+    dim_alerta = TALLER3 / "lakehouse" / "gold" / "dim_alerta.parquet"
+    if not ruta.exists() or not dim_alerta.exists():
+        return {"fuente": "DuckDB (Gold)", "tabla": "fact_entregas + dim_alerta",
+                "cmd": "", "columnas": [], "filas": [], "aviso": "aun no generado"}
+    con = duckdb.connect()
+    sql = f"""
+        SELECT a.severidad, COUNT(*) AS total, SUM(f.fallido_flag) AS fallidas
+        FROM read_parquet('{ruta}') f
+        JOIN read_parquet('{dim_alerta}') a ON f.alerta_sk = a.alerta_sk
+        GROUP BY a.severidad ORDER BY total DESC LIMIT {limite}
+    """
+    r = con.execute(sql)
+    columnas = [d[0] for d in r.description]
+    datos = [[str(v) for v in fila] for fila in r.fetchall()]
+    return {"fuente": "DuckDB (Gold, Q1 real)", "tabla": "fact_entregas × dim_alerta",
+            "cmd": "SELECT severidad, COUNT(*), SUM(fallido_flag) FROM fact_entregas "
+                   "JOIN dim_alerta ... GROUP BY severidad;",
+            "columnas": columnas, "filas": datos}
 
 
 # ═════════════════════════════════════════════════════════════
@@ -341,6 +413,25 @@ async def ws_pipeline(sock: WebSocket, punto: str):
             await sock.close()
         except Exception:
             pass
+
+
+@router.get("/muestra/{paso}")
+def muestra(paso: str):
+    """Filas reales (hasta 5) de la tabla que ese paso toca, para el
+    panel del frontend: Cassandra via CQL en L0/L1/L5, Parquet via
+    DuckDB en L2/L3, y el resultado real de una query en L4."""
+    cfg = TABLA_POR_PASO.get(paso)
+    if not cfg:
+        return {"error": f"paso desconocido: {paso}"}
+    try:
+        if cfg["fuente"] == "cassandra":
+            return muestra_cassandra(cfg["tabla"])
+        if cfg["fuente"] == "parquet":
+            return muestra_parquet(cfg["tabla"], cfg["zona"])
+        if cfg["fuente"] == "duckdb_query":
+            return muestra_duckdb_query()
+    except Exception as e:
+        return {"error": f"{type(e).__name__}: {e}"}
 
 
 @router.get("/estado")
