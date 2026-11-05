@@ -1,0 +1,116 @@
+┌─────────────────────────────────────┐
+│┌───────────────────────────────────┐│
+││    Query Profiling Information    ││
+│└───────────────────────────────────┘│
+└─────────────────────────────────────┘
+EXPLAIN ANALYZE  SELECT a.severidad, a.zona_destino,        COUNT(*) AS fallidas,        ROUND(AVG(f.latencia_entrega_seg), 2) AS latencia_prom_seg FROM fact_entregas_por_estado f JOIN dim_alerta a ON f.alerta_sk = a.alerta_sk WHERE f.estado = 'fallido' GROUP BY a.severidad, a.zona_destino ORDER BY fallidas DESC 
+┌────────────────────────────────────────────────┐
+│┌──────────────────────────────────────────────┐│
+││              Total Time: 0.0026s             ││
+│└──────────────────────────────────────────────┘│
+└────────────────────────────────────────────────┘
+┌───────────────────────────┐
+│           QUERY           │
+└─────────────┬─────────────┘
+┌─────────────┴─────────────┐
+│      EXPLAIN_ANALYZE      │
+│    ────────────────────   │
+│                           │
+│           0 rows          │
+│           0.00s           │
+└─────────────┬─────────────┘
+┌─────────────┴─────────────┐
+│          ORDER_BY         │
+│    ────────────────────   │
+│     count_star() DESC     │
+│                           │
+│                           │
+│                           │
+│           9 rows          │
+│           0.00s           │
+└─────────────┬─────────────┘
+┌─────────────┴─────────────┐
+│         PROJECTION        │
+│    ────────────────────   │
+│         severidad         │
+│        zona_destino       │
+│          fallidas         │
+│     latencia_prom_seg     │
+│                           │
+│                           │
+│                           │
+│           9 rows          │
+│           0.00s           │
+└─────────────┬─────────────┘
+┌─────────────┴─────────────┐
+│       HASH_GROUP_BY       │
+│    ────────────────────   │
+│          Groups:          │
+│             #0            │
+│             #1            │
+│                           │
+│        Aggregates:        │
+│        count_star()       │
+│          avg(#2)          │
+│                           │
+│                           │
+│                           │
+│           9 rows          │
+│           0.00s           │
+└─────────────┬─────────────┘
+┌─────────────┴─────────────┐
+│         PROJECTION        │
+│    ────────────────────   │
+│         severidad         │
+│        zona_destino       │
+│    latencia_entrega_seg   │
+│                           │
+│                           │
+│                           │
+│         5,405 rows        │
+│           0.00s           │
+└─────────────┬─────────────┘
+┌─────────────┴─────────────┐
+│         HASH_JOIN         │
+│    ────────────────────   │
+│      Join Type: INNER     │
+│                           │
+│        Conditions:        │
+│   alerta_sk = alerta_sk   ├──────────────┐
+│                           │              │
+│                           │              │
+│                           │              │
+│         5,405 rows        │              │
+│           0.00s           │              │
+└─────────────┬─────────────┘              │
+┌─────────────┴─────────────┐┌─────────────┴─────────────┐
+│         TABLE_SCAN        ││         TABLE_SCAN        │
+│    ────────────────────   ││    ────────────────────   │
+│         Function:         ││         Function:         │
+│        READ_PARQUET       ││        READ_PARQUET       │
+│                           ││                           │
+│        Projections:       ││        Projections:       │
+│         alerta_sk         ││         alerta_sk         │
+│    latencia_entrega_seg   ││         severidad         │
+│                           ││        zona_destino       │
+│          Filters:         ││                           │
+│      estado='fallido'     ││    Total Files Read: 1    │
+│                           ││                           │
+│      Dynamic Filters:     ││        Filename(s):       │
+│ optional: alerta_sk>=1 AND││   /home/linass/Downloads  │
+│  optional: alerta_sk<=300 ││     /TOPICOSBDAVANZADO    │
+│                           ││/ENTREGA4/lakehouse_optimiz│
+│    Total Files Read: 1    ││   ado/dim_alerta.parquet  │
+│                           ││                           │
+│        Filename(s):       ││                           │
+│   /home/linass/Downloads  ││                           │
+│     /TOPICOSBDAVANZADO    ││                           │
+│/ENTREGA4/lakehouse_optimiz││           0.00s           │
+│ado/fact_entregas_por_estad││                           │
+│         o.parquet         ││                           │
+│                           ││                           │
+│                           ││                           │
+│                           ││                           │
+│         5,405 rows        ││          300 rows         │
+│           0.00s           ││          (0.00s)          │
+└───────────────────────────┘└───────────────────────────┘

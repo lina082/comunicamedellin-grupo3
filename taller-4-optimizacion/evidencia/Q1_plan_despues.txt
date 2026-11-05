@@ -1,0 +1,144 @@
+┌─────────────────────────────────────┐
+│┌───────────────────────────────────┐│
+││    Query Profiling Information    ││
+│└───────────────────────────────────┘│
+└─────────────────────────────────────┘
+EXPLAIN ANALYZE  SELECT t.fecha, a.severidad,        COUNT(*) AS total_entregas,        SUM(f.entregado_flag) AS entregadas,        SUM(f.fallido_flag) AS fallidas,        ROUND(SUM(f.fallido_flag) * 100.0 / COUNT(*), 2) AS tasa_fallo_pct FROM fact_entregas f JOIN dim_tiempo t ON f.tiempo_sk = t.tiempo_sk JOIN dim_alerta a ON f.alerta_sk = a.alerta_sk WHERE t.fecha >= '2026-10-12' GROUP BY t.fecha, a.severidad ORDER BY t.fecha 
+┌────────────────────────────────────────────────┐
+│┌──────────────────────────────────────────────┐│
+││              Total Time: 0.0071s             ││
+│└──────────────────────────────────────────────┘│
+└────────────────────────────────────────────────┘
+┌───────────────────────────┐
+│           QUERY           │
+└─────────────┬─────────────┘
+┌─────────────┴─────────────┐
+│      EXPLAIN_ANALYZE      │
+│    ────────────────────   │
+│                           │
+│           0 rows          │
+│           0.00s           │
+└─────────────┬─────────────┘
+┌─────────────┴─────────────┐
+│          ORDER_BY         │
+│    ────────────────────   │
+│        t.fecha ASC        │
+│                           │
+│                           │
+│                           │
+│          16 rows          │
+│           0.00s           │
+└─────────────┬─────────────┘
+┌─────────────┴─────────────┐
+│         PROJECTION        │
+│    ────────────────────   │
+│           fecha           │
+│         severidad         │
+│       total_entregas      │
+│         entregadas        │
+│          fallidas         │
+│       tasa_fallo_pct      │
+│                           │
+│                           │
+│                           │
+│          16 rows          │
+│           0.00s           │
+└─────────────┬─────────────┘
+┌─────────────┴─────────────┐
+│       HASH_GROUP_BY       │
+│    ────────────────────   │
+│          Groups:          │
+│             #0            │
+│             #1            │
+│                           │
+│        Aggregates:        │
+│        count_star()       │
+│          sum(#2)          │
+│          sum(#3)          │
+│                           │
+│                           │
+│                           │
+│          16 rows          │
+│           0.01s           │
+└─────────────┬─────────────┘
+┌─────────────┴─────────────┐
+│         PROJECTION        │
+│    ────────────────────   │
+│           fecha           │
+│         severidad         │
+│       entregado_flag      │
+│        fallido_flag       │
+│                           │
+│                           │
+│                           │
+│        29,412 rows        │
+│           0.00s           │
+└─────────────┬─────────────┘
+┌─────────────┴─────────────┐
+│         HASH_JOIN         │
+│    ────────────────────   │
+│      Join Type: INNER     │
+│                           │
+│        Conditions:        │
+│   alerta_sk = alerta_sk   ├───────────────────────────────────────────┐
+│                           │                                           │
+│                           │                                           │
+│                           │                                           │
+│        29,412 rows        │                                           │
+│           0.00s           │                                           │
+└─────────────┬─────────────┘                                           │
+┌─────────────┴─────────────┐                             ┌─────────────┴─────────────┐
+│         HASH_JOIN         │                             │         TABLE_SCAN        │
+│    ────────────────────   │                             │    ────────────────────   │
+│      Join Type: INNER     │                             │         Function:         │
+│                           │                             │        READ_PARQUET       │
+│        Conditions:        │                             │                           │
+│   tiempo_sk = tiempo_sk   │                             │        Projections:       │
+│                           │                             │         alerta_sk         │
+│                           │                             │         severidad         │
+│                           │                             │                           │
+│                           │                             │    Total Files Read: 1    │
+│           0.00s           ├──────────────┐              │                           │
+│                           │              │              │        Filename(s):       │
+│                           │              │              │   /home/linass/Downloads  │
+│                           │              │              │     /TOPICOSBDAVANZADO    │
+│                           │              │              │/ENTREGA4/lakehouse_optimiz│
+│                           │              │              │   ado/dim_alerta.parquet  │
+│                           │              │              │                           │
+│                           │              │              │                           │
+│                           │              │              │                           │
+│        29,412 rows        │              │              │          300 rows         │
+│          (0.00s)          │              │              │           0.00s           │
+└─────────────┬─────────────┘              │              └───────────────────────────┘
+┌─────────────┴─────────────┐┌─────────────┴─────────────┐
+│         TABLE_SCAN        ││         TABLE_SCAN        │
+│    ────────────────────   ││    ────────────────────   │
+│         Function:         ││         Function:         │
+│        READ_PARQUET       ││        READ_PARQUET       │
+│                           ││                           │
+│        Projections:       ││        Projections:       │
+│         tiempo_sk         ││         tiempo_sk         │
+│         alerta_sk         ││           fecha           │
+│       entregado_flag      ││                           │
+│        fallido_flag       ││          Filters:         │
+│                           ││  fecha>='2026-10-12 00:00 │
+│      Dynamic Filters:     ││     :00'::TIMESTAMP_NS    │
+│  optional: tiempo_sk>=25  ││                           │
+│  AND optional: tiempo_sk< ││    Total Files Read: 1    │
+│            =31            ││                           │
+│ optional: alerta_sk>=1 AND││        Filename(s):       │
+│  optional: alerta_sk<=300 ││   /home/linass/Downloads  │
+│                           ││     /TOPICOSBDAVANZADO    │
+│    Total Files Read: 1    ││/ENTREGA4/lakehouse_optimiz│
+│                           ││   ado/dim_tiempo.parquet  │
+│        Filename(s):       ││                           │
+│   /home/linass/Downloads  ││                           │
+│     /TOPICOSBDAVANZADO    ││                           │
+│/ENTREGA4/lakehouse_optimiz││                           │
+│ ado/fact_entregas.parquet ││           0.00s           │
+│                           ││                           │
+│                           ││                           │
+│                           ││                           │
+│        29,412 rows        ││           7 rows          │
+│           0.00s           ││          (0.00s)          │
+└───────────────────────────┘└───────────────────────────┘
