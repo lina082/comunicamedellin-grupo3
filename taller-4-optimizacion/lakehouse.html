@@ -1,0 +1,1167 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="claude:viewport-fit-sides" content="cover">
+<title>Mini-Lakehouse ComunicaMedellín</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=Patrick+Hand&family=Caveat:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+/* Direccion: cuaderno de laboratorio claro, flujo HORIZONTAL (tira de
+   comic: ejecuto esto -> pasa esto -> esto -> esto), cada paso con su
+   propio doodle (no el mismo pato repetido). Fondo blanco real para
+   contraste; azul como acento principal; amarillo solo para detalle. */
+:root {
+  --bg: #ffffff;
+  --paper: #f5f7fc;
+  --ink: #15181f;
+  --ink-soft: #4b5166;
+  --line: #15181f;
+  --line-soft: #ccd3e6;
+  --blue: #2f5fd6;
+  --blue-soft: #e4ebfc;
+  --blue-dark: #1d3c91;
+  --on-blue: #ffffff;
+  --yellow: #ffd23f;
+  --on-yellow: #241f12;
+  --teal: #1f9e8f;
+  --teal-soft: #d9f2ee;
+  --red: #d6453c;
+  --red-soft: #fbe3e0;
+  --font-display: 'Baloo 2', system-ui, sans-serif;
+  --font-hand: 'Caveat', cursive;
+  --font-hand2: 'Patrick Hand', cursive;
+  --font-mono: 'IBM Plex Mono', 'SF Mono', Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0e1117;
+    --paper: #171b24;
+    --ink: #eef0f6;
+    --ink-soft: #aab1c8;
+    --line: #eef0f6;
+    --line-soft: #333a4d;
+    --blue: #6f96f5;
+    --blue-soft: #1c2742;
+    --blue-dark: #c3d3fb;
+    --on-blue: #0e1117;
+    --yellow: #ffd23f;
+    --on-yellow: #241f12;
+    --teal: #199e70;
+    --teal-soft: #163330;
+    --red: #e66767;
+    --red-soft: #3a211e;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0e1117;
+  --paper: #171b24;
+  --ink: #eef0f6;
+  --ink-soft: #aab1c8;
+  --line: #eef0f6;
+  --line-soft: #333a4d;
+  --blue: #6f96f5;
+  --blue-soft: #1c2742;
+  --blue-dark: #c3d3fb;
+  --on-blue: #0e1117;
+  --yellow: #ffd23f;
+  --on-yellow: #241f12;
+  --teal: #199e70;
+  --teal-soft: #163330;
+  --red: #e66767;
+  --red-soft: #3a211e;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+button { line-height: 1.3; font-family: inherit; }
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-hand2);
+  font-size: 16px;
+  line-height: 1.5;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+::selection { background: var(--yellow); color: var(--on-yellow); }
+h1, h2, h3, h4 { font-family: var(--font-display); margin: 0; line-height: 1.3; }
+
+.wrap { max-width: 1180px; margin: 0 auto; padding-block: 24px 70px; }
+
+/* ───────── header ───────── */
+.topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin-bottom: 22px;
+}
+.brand { display: flex; align-items: center; gap: 10px; }
+.brand svg { width: 44px; height: 44px; flex-shrink: 0; }
+.brand-text h1 { font-size: 21px; font-weight: 700; letter-spacing: -0.01em; }
+.brand-text .sub { font-family: var(--font-hand); font-size: 15px; color: var(--ink-soft); margin-top: -2px; }
+.topbar-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.btn-paper {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 13px;
+  background: var(--bg);
+  color: var(--ink);
+  border: 2.5px solid var(--line);
+  border-radius: 10px;
+  padding: 7px 14px;
+  cursor: pointer;
+  box-shadow: 3px 3px 0 var(--line);
+  transition: transform 0.08s ease, box-shadow 0.08s ease;
+}
+.btn-paper:hover { transform: translate(-1px, -1px); box-shadow: 4px 4px 0 var(--line); }
+.btn-paper:active { transform: translate(1px, 1px); box-shadow: 1px 1px 0 var(--line); }
+.btn-paper:focus-visible { outline: 3px solid var(--blue); outline-offset: 2px; }
+.btn-paper.primary { background: var(--blue); color: var(--on-blue); }
+
+/* ───────── hero ───────── */
+.hero {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 20px;
+  align-items: center;
+  margin-bottom: 26px;
+  padding-bottom: 20px;
+  border-bottom: 3px solid var(--line);
+}
+.hero h2 { font-size: clamp(24px, 3.6vw, 34px); line-height: 1.3; max-width: 16ch; }
+.hero .mark { background: var(--blue-soft); color: var(--blue-dark); padding: 0 6px; border-radius: 6px; }
+.hero p { font-family: var(--font-hand2); font-size: 15.5px; color: var(--ink-soft); max-width: 50ch; margin-top: 9px; }
+.hero-duck { width: 130px; height: 130px; flex-shrink: 0; }
+@media (max-width: 680px) { .hero { grid-template-columns: 1fr; } .hero-duck { width: 100px; height: 100px; justify-self: center; } }
+
+/* ───────── status ───────── */
+.status-strip { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 24px; }
+.status-chip {
+  font-family: var(--font-hand2);
+  font-size: 14px;
+  background: var(--paper);
+  border: 2px solid var(--line);
+  border-radius: 999px;
+  padding: 5px 13px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.status-chip .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--ink-soft); }
+.status-chip.up .dot { background: var(--teal); }
+.status-chip.down .dot { background: var(--red); }
+.banner {
+  display: none;
+  font-family: var(--font-hand2);
+  font-size: 15px;
+  background: var(--yellow);
+  color: var(--on-yellow);
+  border: 2px solid var(--line);
+  border-radius: 12px;
+  padding: 10px 16px;
+  margin-bottom: 24px;
+}
+.banner.show { display: block; }
+
+/* ───────── horizontal flow strip ───────── */
+.flow-scroll { overflow-x: auto; padding-bottom: 8px; margin: 0 -4px 30px; }
+.flow {
+  display: flex;
+  align-items: stretch;
+  gap: 0;
+  min-width: max-content;
+  padding: 4px;
+}
+.flow-node {
+  width: 168px;
+  flex-shrink: 0;
+  background: var(--paper);
+  border: 2.5px solid var(--line);
+  border-radius: 16px;
+  padding: 14px 12px 12px;
+  text-align: center;
+  cursor: pointer;
+  box-shadow: 4px 4px 0 var(--line);
+  transition: transform 0.1s ease, box-shadow 0.1s ease, background 0.15s ease;
+}
+.flow-node:hover { transform: translate(-2px, -2px); box-shadow: 6px 6px 0 var(--line); }
+.flow-node:focus-visible { outline: 3px solid var(--blue); outline-offset: 2px; }
+.flow-node[data-active="true"] { background: var(--blue-soft); border-color: var(--blue); box-shadow: 4px 4px 0 var(--blue); }
+.flow-node[data-state="running"] { animation: pulse 1s ease-in-out infinite; }
+@keyframes pulse { 0%, 100% { box-shadow: 4px 4px 0 var(--yellow); } 50% { box-shadow: 4px 4px 0 var(--blue); } }
+@media (prefers-reduced-motion: reduce) { .flow-node[data-state="running"] { animation: none; } }
+.flow-node[data-state="done"] .flow-badge::after { content: " ✓"; color: var(--teal); }
+.flow-doodle { width: 56px; height: 56px; margin: 0 auto 6px; }
+.flow-badge { font-family: var(--font-display); font-weight: 700; font-size: 11px; color: var(--ink-soft); display: block; letter-spacing: 0.02em; }
+.flow-label { font-family: var(--font-display); font-weight: 700; font-size: 15px; margin-top: 2px; }
+.flow-count { font-family: var(--font-hand2); font-size: 12.5px; color: var(--ink-soft); min-height: 16px; margin-top: 1px; }
+.flow-arrow { width: 44px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
+.flow-arrow svg { width: 40px; height: 24px; }
+@media (max-width: 600px) { .flow-node { width: 136px; } .flow-arrow { width: 28px; } }
+
+/* ───────── detail panel: appears below the flow when a node is open ───────── */
+.detail {
+  display: none;
+  background: var(--paper);
+  border: 2.5px solid var(--line);
+  border-radius: 18px;
+  box-shadow: 6px 6px 0 var(--line);
+  overflow: hidden;
+  margin-bottom: 28px;
+}
+.detail.open { display: block; }
+.detail-top {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+  padding: 20px 22px 16px;
+  border-bottom: 2px dashed var(--line-soft);
+}
+.detail-doodle { width: 64px; height: 64px; flex-shrink: 0; }
+.detail-main { flex: 1; min-width: 0; }
+.detail-main h3 { font-size: 20px; }
+.detail-script { font-family: var(--font-mono); font-size: 12.5px; color: var(--ink-soft); margin-top: 3px; }
+.detail-script::before { content: "▸ "; }
+.detail-desc { font-family: var(--font-hand2); font-size: 15px; color: var(--ink-soft); margin-top: 8px; max-width: 64ch; line-height: 1.5; }
+.detail-run {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 14px;
+  background: var(--blue);
+  color: var(--on-blue);
+  border: 2.5px solid var(--line);
+  border-radius: 10px;
+  padding: 9px 18px;
+  cursor: pointer;
+  box-shadow: 3px 3px 0 var(--line);
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: transform 0.08s ease, box-shadow 0.08s ease;
+}
+.detail-run:hover:not(:disabled) { transform: translate(-1px, -1px); box-shadow: 4px 4px 0 var(--line); }
+.detail-run:active:not(:disabled) { transform: translate(1px, 1px); box-shadow: 1px 1px 0 var(--line); }
+.detail-run:focus-visible { outline: 3px solid var(--blue-dark); outline-offset: 2px; }
+.detail-run:disabled { background: var(--line-soft); cursor: not-allowed; box-shadow: none; }
+.detail-run.is-running { background: var(--yellow); color: var(--on-yellow); }
+
+/* tabla real: filas reales de la tabla de Cassandra/Parquet que ese paso toca */
+.tabla-real {
+  margin: 0 20px 16px;
+  border: 2px solid var(--line);
+  border-radius: 12px;
+  overflow: hidden;
+  background: var(--bg);
+}
+.tabla-real-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 14px;
+  background: var(--line-soft);
+  border-bottom: 2px solid var(--line);
+  flex-wrap: wrap;
+}
+.tabla-real-label {
+  font-family: 'Baloo 2', sans-serif;
+  font-weight: 700;
+  font-size: 13px;
+  color: var(--ink);
+}
+.tabla-real-fuente {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11.5px;
+  color: var(--ink-soft);
+}
+.tabla-real-cmd {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11.5px;
+  color: var(--ink-soft);
+  padding: 6px 14px;
+  border-bottom: 1px solid var(--line-soft);
+}
+.tabla-real-scroll { overflow-x: auto; max-height: 220px; overflow-y: auto; }
+.tabla-real-table { width: 100%; border-collapse: collapse; font-family: 'IBM Plex Mono', monospace; font-size: 11.5px; }
+.tabla-real-table th, .tabla-real-table td {
+  text-align: left;
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--line-soft);
+  white-space: nowrap;
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.tabla-real-table th { color: var(--ink-soft); background: var(--paper); position: sticky; top: 0; }
+.tabla-real-table td { color: var(--ink); }
+.tabla-real-empty { padding: 14px; font-family: 'Patrick Hand', cursive; font-size: 14px; color: var(--ink-soft); }
+
+/* duck explainer: solo visible en los pasos que de verdad usan DuckDB (consultas, benchmark) */
+.duck-explainer {
+  display: none;
+  gap: 14px;
+  align-items: flex-start;
+  padding: 14px 22px;
+  margin: 0 20px 16px;
+  background: var(--teal-soft);
+  border: 2px dashed var(--teal);
+  border-radius: 12px;
+}
+.duck-explainer.show { display: flex; }
+.duck-explainer-doodle { width: 52px; height: 52px; flex-shrink: 0; }
+.duck-explainer-text { flex: 1; min-width: 0; }
+.duck-explainer-text h4 {
+  font-family: var(--font-display);
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--ink);
+  margin-bottom: 8px;
+}
+.duck-explainer-row { margin-bottom: 8px; }
+.duck-mini-diagram { width: 100%; max-width: 420px; height: auto; display: block; }
+.duck-explainer-text p {
+  font-family: var(--font-hand2);
+  font-size: 14px;
+  color: var(--ink-soft);
+  line-height: 1.5;
+  max-width: 70ch;
+  margin: 0;
+}
+.duck-explainer-text p code {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  background: var(--bg);
+  border: 1px solid var(--line-soft);
+  border-radius: 4px;
+  padding: 1px 5px;
+}
+@media (max-width: 600px) { .duck-explainer { flex-direction: column; padding: 12px 16px; margin: 0 16px 14px; } }
+
+/* ───────── KPI panel (L5 benchmark): dataviz, not a log — the result
+   readable in one glance, no code involved. Sans for every number
+   (hero figure + stat tiles), doodle fonts stay for labels/prose only. */
+.kpi-panel {
+  display: none;
+  margin: 0 20px 16px;
+  padding: 18px 22px 20px;
+  background: var(--bg);
+  border: 2.5px solid var(--line);
+  border-radius: 14px;
+}
+.kpi-panel.show { display: block; }
+.kpi-empty {
+  font-family: var(--font-hand);
+  font-size: 18px;
+  line-height: 1.5;
+  color: var(--ink-soft);
+  text-align: center;
+  padding: 18px 10px;
+}
+.kpi-grid { display: grid; grid-template-columns: auto 1fr; gap: 24px; align-items: center; }
+@media (max-width: 720px) { .kpi-grid { grid-template-columns: 1fr; } }
+
+.kpi-hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 2px;
+  padding: 10px 22px;
+  border-right: 2px dashed var(--line-soft);
+}
+@media (max-width: 720px) { .kpi-hero { border-right: none; border-bottom: 2px dashed var(--line-soft); padding-bottom: 16px; } }
+.kpi-hero-label { font-family: var(--font-hand2); font-size: 13px; color: var(--ink-soft); }
+.kpi-hero-value {
+  font-family: 'IBM Plex Sans', system-ui, sans-serif;
+  font-size: 52px;
+  font-weight: 700;
+  color: var(--teal);
+  line-height: 1.3;
+  font-variant-numeric: proportional-nums;
+}
+
+.kpi-bars { display: flex; flex-direction: column; gap: 14px; }
+.kpi-bar-row { display: grid; grid-template-columns: 150px 1fr 70px; align-items: center; gap: 10px; }
+@media (max-width: 560px) { .kpi-bar-row { grid-template-columns: 1fr; gap: 4px; } }
+.kpi-bar-label { font-family: var(--font-hand2); font-size: 14px; color: var(--ink); }
+.kpi-bar-sub { font-family: var(--font-mono); font-size: 11px; color: var(--ink-soft); display: block; }
+.kpi-bar-track { background: var(--paper); border-radius: 4px; height: 24px; overflow: hidden; border: 1.5px solid var(--line-soft); }
+.kpi-bar-fill {
+  height: 100%;
+  width: 0%;
+  border-radius: 0 4px 4px 0;
+  transition: width 0.6s cubic-bezier(.2,.8,.2,1);
+}
+@media (prefers-reduced-motion: reduce) { .kpi-bar-fill { transition: none; } }
+.kpi-bar-fill.cass { background: var(--red); }
+.kpi-bar-fill.duck { background: var(--teal); }
+.kpi-bar-value { font-family: 'IBM Plex Mono', monospace; font-size: 13px; font-weight: 600; color: var(--ink); text-align: right; font-variant-numeric: tabular-nums; }
+
+.kpi-tiles { grid-column: 1 / -1; display: flex; gap: 14px; margin-top: 4px; flex-wrap: wrap; }
+.kpi-tile {
+  flex: 1;
+  min-width: 140px;
+  background: var(--paper);
+  border: 1.5px solid var(--line-soft);
+  border-radius: 10px;
+  padding: 10px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.kpi-tile-value {
+  font-family: 'IBM Plex Sans', system-ui, sans-serif;
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--ink);
+  font-variant-numeric: proportional-nums;
+}
+.kpi-tile-label { font-family: var(--font-hand2); font-size: 12.5px; color: var(--ink-soft); }
+
+.kpi-table { width: 100%; border-collapse: collapse; margin-top: 14px; font-size: 13px; }
+.kpi-table caption { font-family: var(--font-hand2); font-size: 12.5px; color: var(--ink-soft); text-align: left; padding-bottom: 6px; }
+.kpi-table th, .kpi-table td { text-align: left; padding: 6px 10px; border-bottom: 1px solid var(--line-soft); font-family: var(--font-mono); font-size: 12px; }
+.kpi-table th { color: var(--ink-soft); font-weight: 600; }
+
+.detail-body { display: grid; grid-template-columns: 1fr 1fr; gap: 0; }
+@media (max-width: 820px) { .detail-body { grid-template-columns: 1fr; } }
+
+/* annotated code */
+.code-card { margin: 18px; border: 2px solid var(--line); border-radius: 12px; overflow: hidden; background: var(--bg); }
+.code-bar { display: flex; align-items: center; gap: 6px; padding: 7px 12px; background: var(--line-soft); border-bottom: 2px solid var(--line); font-family: var(--font-mono); font-size: 11.5px; color: var(--ink-soft); }
+.dot3 { width: 8px; height: 8px; border-radius: 50%; background: var(--ink-soft); opacity: 0.5; }
+.code-pre { font-family: var(--font-mono); font-size: 12.5px; line-height: 1.75; padding: 12px 0; overflow-x: auto; }
+.code-line { display: grid; grid-template-columns: 30px 1fr; padding: 0 12px; white-space: pre; }
+.code-line .ln { color: var(--ink-soft); opacity: 0.5; text-align: right; padding-right: 8px; user-select: none; }
+.code-line.hl { background: var(--yellow); }
+.code-line.hl .ln { opacity: 1; color: var(--on-yellow); font-weight: 600; }
+.code-line.hl span:last-child { color: var(--on-yellow); }
+.code-annot { position: relative; margin: 2px 12px 10px; padding-left: 40px; min-height: 34px; }
+.code-annot svg { position: absolute; left: -4px; top: -14px; width: 46px; height: 42px; overflow: visible; }
+.code-annot .note { font-family: var(--font-hand); font-size: 18px; font-weight: 600; color: var(--blue-dark); line-height: 1.3; display: inline-block; transform: rotate(-1deg); }
+
+/* console */
+.console-wrap { margin: 18px 18px 18px 0; }
+@media (max-width: 820px) { .console-wrap { margin: 0 18px 18px; } }
+.console-label { font-family: var(--font-display); font-weight: 700; font-size: 12px; color: var(--ink-soft); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 6px; }
+.console { border: 2px dashed var(--line); border-radius: 12px; padding: 4px 14px; background: var(--bg); max-height: 360px; overflow-y: auto; min-height: 90px; }
+.console-empty { font-family: var(--font-hand); font-size: 17px; color: var(--ink-soft); padding: 14px 2px; }
+.logline { display: grid; grid-template-columns: 20px 1fr; gap: 8px; padding: 7px 0; font-family: var(--font-hand2); font-size: 14px; border-bottom: 1px solid var(--line-soft); animation: appear 0.14s linear; }
+.logline:last-child { border-bottom: none; }
+@keyframes appear { from { opacity: 0; } to { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .logline { animation: none; } }
+.logline .mk { font-weight: 700; color: var(--ink-soft); }
+.logline.ok .mk { color: var(--teal); }
+.logline.warn .mk { color: #a87a1f; }
+.logline.err .mk { color: var(--red); }
+.logline .ttl { color: var(--ink); font-weight: 600; }
+.logline.err .ttl { color: var(--red); }
+.logline .dtl { font-family: var(--font-mono); font-size: 11.5px; color: var(--ink-soft); margin-top: 2px; line-height: 1.5; }
+.logline .out { font-family: var(--font-mono); font-size: 11px; color: var(--ink); background: var(--blue-soft); border: 1.5px solid var(--line-soft); border-radius: 6px; padding: 6px 9px; margin-top: 4px; white-space: pre-wrap; word-break: break-word; }
+.logline .mets { margin-top: 4px; display: flex; gap: 10px; flex-wrap: wrap; font-family: var(--font-mono); font-size: 11px; color: var(--ink-soft); }
+.logline .mets b { color: var(--ink); }
+.logline .mets .hi { color: var(--teal); font-weight: 700; }
+.console-done { font-family: var(--font-hand); font-size: 17px; color: var(--teal); padding: 6px 0 4px; }
+.console-done.err { color: var(--red); }
+
+footer {
+  margin-top: 40px;
+  padding-top: 16px;
+  border-top: 3px solid var(--line);
+  font-family: var(--font-hand2);
+  font-size: 13.5px;
+  color: var(--ink-soft);
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+footer code { font-family: var(--font-mono); font-size: 12px; }
+
+@media (max-width: 600px) {
+  .detail-top { flex-direction: column; }
+  .detail-run { align-self: flex-start; }
+  body { font-size: 15px; }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="topbar">
+    <div class="brand">
+      <svg viewBox="0 0 64 64" role="img" aria-label="Pato, la mascota del lakehouse">
+        <ellipse cx="32" cy="42" rx="20" ry="15" fill="var(--yellow)" stroke="var(--line)" stroke-width="2.5"/>
+        <circle cx="40" cy="20" r="13" fill="var(--yellow)" stroke="var(--line)" stroke-width="2.5"/>
+        <path d="M50,20 Q58,19 57,24 Q56,27 49,25 Z" fill="var(--blue)" stroke="var(--line)" stroke-width="2"/>
+        <circle cx="44" cy="17" r="2" fill="var(--line)"/>
+        <path d="M14,38 Q22,30 30,37" fill="none" stroke="var(--line)" stroke-width="2" stroke-linecap="round"/>
+      </svg>
+      <div class="brand-text">
+        <h1>Mini-Lakehouse ComunicaMedellín</h1>
+        <div class="sub">ComunicaMedellín · Taller 3</div>
+      </div>
+    </div>
+    <div class="topbar-actions">
+      <button type="button" class="btn-paper primary" id="btn-run-all">correr todo →</button>
+      <button type="button" class="btn-paper" id="btn-clear">borrar notas</button>
+      <button type="button" class="btn-paper" id="btn-theme">◐</button>
+    </div>
+  </div>
+
+  <div class="hero">
+    <div>
+      <h2>Mira: yo ejecuto <span class="mark">esto</span>, y pasa esto, y esto, y esto.</h2>
+      <p>Un flujo horizontal de verdad: toca cada parada para ver el código real que corre ahí y lo que contesta el clúster.</p>
+    </div>
+    <svg class="hero-duck" viewBox="0 0 160 160" role="img" aria-label="El pato de DuckDB pensando">
+      <ellipse cx="82" cy="108" rx="52" ry="38" fill="var(--yellow)" stroke="var(--line)" stroke-width="3"/>
+      <circle cx="104" cy="54" r="34" fill="var(--yellow)" stroke="var(--line)" stroke-width="3"/>
+      <path d="M130,52 Q150,48 147,60 Q144,68 126,63 Z" fill="var(--blue)" stroke="var(--line)" stroke-width="2.5"/>
+      <circle cx="114" cy="46" r="4.5" fill="var(--line)"/>
+      <circle cx="116" cy="44" r="1.6" fill="var(--bg)"/>
+      <path d="M38,96 Q55,78 74,94" fill="none" stroke="var(--line)" stroke-width="2.5" stroke-linecap="round"/>
+      <path d="M35,118 Q50,128 68,120" fill="none" stroke="var(--line)" stroke-width="2.5" stroke-linecap="round"/>
+      <path d="M86,22 Q92,8 104,14" fill="none" stroke="var(--teal)" stroke-width="2.5" stroke-linecap="round"/>
+    </svg>
+  </div>
+
+  <div class="status-strip" id="status-strip">
+    <span class="status-chip"><span class="dot"></span>conectando…</span>
+  </div>
+  <div class="banner" id="banner"></div>
+
+  <div class="flow-scroll">
+    <div class="flow" id="flow"></div>
+  </div>
+
+  <div class="detail" id="detail">
+    <div class="detail-top">
+      <svg class="detail-doodle" id="detail-doodle" viewBox="0 0 64 64"></svg>
+      <div class="detail-main">
+        <h3 id="detail-name"></h3>
+        <div class="detail-script" id="detail-script"></div>
+        <div class="detail-desc" id="detail-desc"></div>
+      </div>
+      <button type="button" class="detail-run" id="detail-run">ejecutar</button>
+    </div>
+    <div class="tabla-real" id="tabla-real">
+      <div class="tabla-real-head">
+        <span class="tabla-real-label">la tabla real que toca este paso</span>
+        <span class="tabla-real-fuente" id="tabla-real-fuente">cargando…</span>
+      </div>
+      <div class="tabla-real-cmd" id="tabla-real-cmd"></div>
+      <div class="tabla-real-scroll"><table class="tabla-real-table" id="tabla-real-table"></table></div>
+    </div>
+    <div class="duck-explainer" id="duck-explainer">
+      <svg class="duck-explainer-doodle" viewBox="0 0 64 64" aria-hidden="true">
+        <ellipse cx="32" cy="42" rx="20" ry="15" fill="var(--yellow)" stroke="var(--line)" stroke-width="2.5"/>
+        <circle cx="42" cy="22" r="11" fill="var(--yellow)" stroke="var(--line)" stroke-width="2.5"/>
+        <path d="M51,22 Q58,21 57,25 Q56,28 50,26 Z" fill="var(--blue)" stroke="var(--line)" stroke-width="2"/>
+        <circle cx="46" cy="19" r="1.8" fill="var(--line)"/>
+      </svg>
+      <div class="duck-explainer-text">
+        <h4>¿cómo lo hace DuckDB por dentro?</h4>
+        <div class="duck-explainer-row">
+          <svg class="duck-mini-diagram" viewBox="0 0 400 130" role="img" aria-label="Comparación: motor de filas lee toda la fila, motor columnar lee solo la columna que se pide">
+            <text x="6" y="16" font-family="IBM Plex Mono, monospace" font-size="12" fill="var(--ink-soft)">filas (Cassandra)</text>
+            <g>
+              <rect x="6" y="24" width="34" height="22" fill="var(--red-soft)" stroke="var(--line)" stroke-width="1.6"/>
+              <rect x="40" y="24" width="34" height="22" fill="var(--red-soft)" stroke="var(--line)" stroke-width="1.6"/>
+              <rect x="74" y="24" width="34" height="22" fill="var(--red-soft)" stroke="var(--line)" stroke-width="1.6"/>
+              <rect x="108" y="24" width="34" height="22" fill="var(--red-soft)" stroke="var(--line)" stroke-width="1.6"/>
+              <rect x="6" y="46" width="34" height="22" fill="var(--red-soft)" stroke="var(--line)" stroke-width="1.6"/>
+              <rect x="40" y="46" width="34" height="22" fill="var(--red-soft)" stroke="var(--line)" stroke-width="1.6"/>
+              <rect x="74" y="46" width="34" height="22" fill="var(--red-soft)" stroke="var(--line)" stroke-width="1.6"/>
+              <rect x="108" y="46" width="34" height="22" fill="var(--red-soft)" stroke="var(--line)" stroke-width="1.6"/>
+            </g>
+            <text x="6" y="88" font-family="Patrick Hand, cursive" font-size="13" fill="var(--red)">lee la fila</text>
+            <text x="6" y="104" font-family="Patrick Hand, cursive" font-size="13" fill="var(--red)">ENTERA aunque</text>
+            <text x="6" y="120" font-family="Patrick Hand, cursive" font-size="13" fill="var(--red)">pida solo 1 dato</text>
+
+            <line x1="178" y1="0" x2="178" y2="130" stroke="var(--line-soft)" stroke-width="1" stroke-dasharray="3,3"/>
+
+            <text x="196" y="16" font-family="IBM Plex Mono, monospace" font-size="12" fill="var(--ink-soft)">columnas (DuckDB)</text>
+            <g>
+              <rect x="196" y="24" width="34" height="22" fill="var(--line-soft)" stroke="var(--line)" stroke-width="1.6"/>
+              <rect x="230" y="24" width="34" height="22" fill="var(--teal-soft)" stroke="var(--teal)" stroke-width="2.2"/>
+              <rect x="264" y="24" width="34" height="22" fill="var(--line-soft)" stroke="var(--line)" stroke-width="1.6"/>
+              <rect x="298" y="24" width="34" height="22" fill="var(--line-soft)" stroke="var(--line)" stroke-width="1.6"/>
+              <rect x="196" y="46" width="34" height="22" fill="var(--line-soft)" stroke="var(--line)" stroke-width="1.6"/>
+              <rect x="230" y="46" width="34" height="22" fill="var(--teal-soft)" stroke="var(--teal)" stroke-width="2.2"/>
+              <rect x="264" y="46" width="34" height="22" fill="var(--line-soft)" stroke="var(--line)" stroke-width="1.6"/>
+              <rect x="298" y="46" width="34" height="22" fill="var(--line-soft)" stroke="var(--line)" stroke-width="1.6"/>
+            </g>
+            <text x="196" y="88" font-family="Patrick Hand, cursive" font-size="13" fill="var(--teal)">lee SOLO la</text>
+            <text x="196" y="104" font-family="Patrick Hand, cursive" font-size="13" fill="var(--teal)">columna pedida,</text>
+            <text x="196" y="120" font-family="Patrick Hand, cursive" font-size="13" fill="var(--teal)">salta el resto</text>
+          </svg>
+        </div>
+        <p>Los Parquet de Gold guardan cada columna por separado (no fila por fila). Cuando pides <code>SUM(fallido_flag)</code>, DuckDB va directo a esa columna sin tocar título, cuerpo ni las demás — por eso una consulta que en Cassandra barre todo el clúster aquí tarda milisegundos. También <b>vectoriza</b>: procesa miles de valores de esa columna de una sola pasada por CPU, no fila por fila.</p>
+      </div>
+    </div>
+    <div class="kpi-panel viz-root" id="kpi-panel" data-palette="#e34948,#1baf7a">
+      <div class="kpi-empty" id="kpi-empty">ejecuta el benchmark para ver el resultado aquí, sin leer una sola línea de código ↓</div>
+      <div class="kpi-grid" id="kpi-grid" hidden>
+        <div class="kpi-hero">
+          <span class="kpi-hero-label">DuckDB respondió</span>
+          <span class="kpi-hero-value"><span id="kpi-factor">—</span>×</span>
+          <span class="kpi-hero-label">más rápido que Cassandra</span>
+        </div>
+        <div class="kpi-bars">
+          <div class="kpi-bar-row">
+            <span class="kpi-bar-label">Cassandra <span class="kpi-bar-sub">(ALLOW FILTERING)</span></span>
+            <div class="kpi-bar-track"><div class="kpi-bar-fill cass" id="kpi-bar-cass"></div></div>
+            <span class="kpi-bar-value" id="kpi-val-cass">— ms</span>
+          </div>
+          <div class="kpi-bar-row">
+            <span class="kpi-bar-label">DuckDB <span class="kpi-bar-sub">(columnar)</span></span>
+            <div class="kpi-bar-track"><div class="kpi-bar-fill duck" id="kpi-bar-duck"></div></div>
+            <span class="kpi-bar-value" id="kpi-val-duck">— ms</span>
+          </div>
+        </div>
+        <div class="kpi-tiles">
+          <div class="kpi-tile">
+            <span class="kpi-tile-value" id="kpi-filas">—</span>
+            <span class="kpi-tile-label">entregas escaneadas</span>
+          </div>
+          <div class="kpi-tile">
+            <span class="kpi-tile-value" id="kpi-fallidas">—</span>
+            <span class="kpi-tile-label">fallidas encontradas</span>
+          </div>
+        </div>
+      </div>
+      <table class="kpi-table" id="kpi-table" hidden>
+        <caption>Vista en tabla del mismo resultado</caption>
+        <thead><tr><th>Motor</th><th>Tiempo</th><th>Filas</th><th>Fallidas</th></tr></thead>
+        <tbody>
+          <tr><td>Cassandra (ALLOW FILTERING)</td><td id="kpi-t-cass-ms"></td><td id="kpi-t-filas-a"></td><td id="kpi-t-fallidas-a"></td></tr>
+          <tr><td>DuckDB (columnar)</td><td id="kpi-t-duck-ms"></td><td id="kpi-t-filas-b"></td><td id="kpi-t-fallidas-b"></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="detail-body">
+      <div id="detail-code"></div>
+      <div class="console-wrap">
+        <div class="console-label">lo que contesta el clúster</div>
+        <div class="console" id="detail-console"><div class="console-empty" id="detail-empty">toca «ejecutar» para ver el log real aquí ↑</div><div id="detail-loglines"></div></div>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    <span>API en <code>http://localhost:8765</code> — levántala con <code>make api</code> en comunicamedellin-grupo3</span>
+    <span>Tópicos Avanzados en Bases de Datos · ITM 2026</span>
+  </footer>
+
+</div>
+
+<script>
+const API = (location.hostname === "localhost" || location.hostname === "127.0.0.1")
+  ? `http://${location.hostname}:8765` : "http://localhost:8765";
+const WS = API.replace(/^http/, "ws");
+
+/* Un doodle SVG distinto por paso — nada de repetir el mismo icono.
+   Cada uno es trazo simple, mismo peso de linea que el resto de la pagina. */
+const DOODLES = {
+  l0: `<circle cx="32" cy="40" r="10" fill="var(--teal-soft)" stroke="var(--line)" stroke-width="2.5"/>
+       <path d="M32,30 L32,12" stroke="var(--line)" stroke-width="2.5" stroke-linecap="round"/>
+       <path d="M24,18 Q32,8 40,18" fill="none" stroke="var(--teal)" stroke-width="2.5" stroke-linecap="round"/>
+       <path d="M20,46 Q32,54 44,46" fill="none" stroke="var(--line)" stroke-width="2" stroke-linecap="round" stroke-dasharray="1,5"/>`,
+  l1: `<rect x="14" y="26" width="36" height="26" rx="3" fill="var(--yellow)" stroke="var(--line)" stroke-width="2.5"/>
+       <path d="M14,34 L50,34" stroke="var(--line)" stroke-width="2"/>
+       <path d="M32,6 L32,24" stroke="var(--line)" stroke-width="2.5" stroke-linecap="round"/>
+       <path d="M24,16 L32,24 L40,16" fill="none" stroke="var(--line)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>`,
+  l2: `<path d="M14,14 L50,14 L34,34 L34,52 L28,52 L28,34 Z" fill="var(--blue-soft)" stroke="var(--line)" stroke-width="2.5" stroke-linejoin="round"/>
+       <circle cx="20" cy="44" r="2" fill="var(--blue)"/>
+       <circle cx="44" cy="46" r="2" fill="var(--blue)"/>
+       <circle cx="32" cy="56" r="2" fill="var(--blue)"/>`,
+  l3: `<path d="M32,8 L38,24 L55,24 L41,34 L46,50 L32,40 L18,50 L23,34 L9,24 L26,24 Z" fill="var(--yellow)" stroke="var(--line)" stroke-width="2.5" stroke-linejoin="round"/>`,
+  l4: `<circle cx="27" cy="27" r="15" fill="var(--teal-soft)" stroke="var(--line)" stroke-width="2.5"/>
+       <path d="M38,38 L52,52" stroke="var(--line)" stroke-width="3.5" stroke-linecap="round"/>
+       <path d="M20,27 L34,27 M27,20 L27,34" stroke="var(--teal)" stroke-width="2" stroke-linecap="round"/>`,
+  l5: `<path d="M32,10 L32,50" stroke="var(--line)" stroke-width="2.5" stroke-linecap="round"/>
+       <path d="M12,50 L52,50" stroke="var(--line)" stroke-width="2.5" stroke-linecap="round"/>
+       <path d="M14,18 L10,30 Q10,34 14,34 Q18,34 18,30 Z" fill="var(--red-soft)" stroke="var(--line)" stroke-width="2"/>
+       <path d="M50,18 L46,30 Q46,34 50,34 Q54,34 54,30 Z" fill="var(--teal-soft)" stroke="var(--line)" stroke-width="2"/>
+       <path d="M8,18 L20,18 M44,18 L56,18" stroke="var(--line)" stroke-width="2" stroke-linecap="round"/>
+       <path d="M32,10 L24,16 M32,10 L40,16" fill="none" stroke="var(--line)" stroke-width="2" stroke-linecap="round"/>`,
+  l6: `<circle cx="32" cy="32" r="18" fill="none" stroke="var(--line)" stroke-width="2.5"/>
+       <path d="M45,45 L55,55" stroke="var(--line)" stroke-width="3.5" stroke-linecap="round"/>
+       <rect x="23" y="24" width="18" height="4" fill="var(--red-soft)" stroke="var(--line)" stroke-width="1.5"/>
+       <rect x="23" y="31" width="10" height="4" fill="var(--red-soft)" stroke="var(--line)" stroke-width="1.5"/>
+       <path d="M23,24 L23,35" stroke="var(--red)" stroke-width="2" stroke-linecap="round"/>`,
+  l7: `<rect x="12" y="14" width="16" height="36" rx="2" fill="var(--blue-soft)" stroke="var(--line)" stroke-width="2.5"/>
+       <rect x="36" y="14" width="16" height="36" rx="2" fill="var(--teal-soft)" stroke="var(--line)" stroke-width="2.5"/>
+       <path d="M28,20 L36,20 M28,30 L36,30 M28,40 L36,40" stroke="var(--line)" stroke-width="2" stroke-linecap="round" marker-end="url(#arrowhead)"/>
+       <path d="M30,16 L34,20 L30,24" fill="none" stroke="var(--blue)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>`,
+  l8: `<path d="M12,46 L22,30 L32,36 L42,16 L52,22" fill="none" stroke="var(--teal)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+       <circle cx="42" cy="16" r="3" fill="var(--teal)"/>
+       <path d="M10,52 L54,52" stroke="var(--line)" stroke-width="2" stroke-linecap="round"/>
+       <path d="M10,52 L10,10" stroke="var(--line)" stroke-width="2" stroke-linecap="round"/>`,
+};
+
+const STEPS = [
+  {
+    id: "l0", label: "sembrar", badge: "00 · SEED",
+    name: "Poblar alertas reales en Cassandra",
+    script: "../taller-3-lakehouse/scripts/seed_alertas.py",
+    desc: "El Módulo 1 solo siembra usuarios. Esto publica 60 alertas variadas con fan-out real a una muestra de usuarios, escribiendo historial_usuario y estado_entrega.",
+    code: [
+      "session.execute(ins_alerta, (",
+      "    alerta[\"alerta_id\"], alerta[\"titulo\"],",
+      "    alerta[\"severidad\"], publicada_en, ...))",
+      "",
+      "for usuario_id in destinatarios:",
+      "    fallo = rng.random() < tasa_fallo",
+    ],
+    hl: 5,
+    note: "¡aquí se decide quién falla y quién no!",
+  },
+  {
+    id: "l1", label: "bronze", badge: "01 · BRONZE",
+    name: "Extracción desde Cassandra",
+    script: "../taller-3-lakehouse/scripts/extract.py",
+    desc: "Copia presencia, alertas, historial_usuario y estado_entrega tal cual a Parquet. Bronze es inmutable: nunca se sobreescribe.",
+    code: [
+      "def extraer_tabla(session, query, nombre):",
+      "    filas = list(session.execute(query))",
+      "    df = pd.DataFrame(filas)",
+      "    ruta = BRONZE / f\"{nombre}_{FECHA}.parquet\"",
+      "    df.to_parquet(ruta, index=False)",
+      "    return df",
+    ],
+    hl: 5,
+    note: "aquí se guarda SIN transformar nada",
+  },
+  {
+    id: "l2", label: "silver", badge: "02 · SILVER",
+    name: "Limpieza de calidad",
+    script: "../taller-3-lakehouse/scripts/transform_silver.py",
+    desc: "Tipos correctos, nulos resueltos, duplicados eliminados. Genera el reporte de calidad obligatorio.",
+    code: [
+      "def limpiar_presencia():",
+      "    df = df_raw.copy()",
+      "    df[\"estado\"] = df[\"estado\"].fillna(\"offline\")",
+      "    df = df.dropna(subset=[\"usuario_id\"])",
+      "    df = df.drop_duplicates(subset=[\"usuario_id\"])",
+      "    reporte_calidad(\"presencia\", df_raw, df)",
+    ],
+    hl: 5,
+    note: "¡aquí desaparecen los duplicados!",
+  },
+  {
+    id: "l3", label: "gold", badge: "03 · GOLD",
+    name: "Modelo dimensional",
+    script: "../taller-3-lakehouse/scripts/transform_gold.py",
+    desc: "Construye 4 dimensiones conformadas y 2 tablas de hechos en esquema de constelación.",
+    code: [
+      "df = estado_entrega.merge(historial, ...)",
+      "df = df.merge(tiempo_lookup, ...)",
+      "df = df.merge(dim_usuario[",
+      "    [\"usuario_sk\",\"usuario_id\"]], on=\"usuario_id\")",
+      "df = df.merge(dim_zona[[\"zona_sk\",\"zona\"]], ...)",
+    ],
+    hl: 3,
+    note: "aquí el hecho se conecta con la dimensión",
+  },
+  {
+    id: "l4", label: "consultas", badge: "04 · QUERY",
+    name: "Las 5 consultas analíticas",
+    script: "../taller-3-lakehouse/scripts/analyze.py",
+    desc: "DuckDB lee Gold directamente: volumen y fallos de entrega por tiempo, severidad, zona y usuario.",
+    code: [
+      "con = duckdb.connect()",
+      "registrar_vistas(con)",
+      "",
+      "resultado = con.execute(query).fetchdf()",
+      "print(f'{len(resultado)} filas en {ms:.1f} ms')",
+    ],
+    hl: 4,
+    note: "¡esto corre en milisegundos, no segundos!",
+  },
+  {
+    id: "l5", label: "benchmark", badge: "05 · BENCH",
+    name: "Benchmark: Cassandra vs DuckDB",
+    script: "../taller-3-lakehouse/scripts/analyze.py — benchmark()",
+    desc: "Misma pregunta, dos motores. Cassandra exige ALLOW FILTERING; DuckDB solo lee la columna que necesita.",
+    code: [
+      "filas_cass = session.execute(",
+      "    \"SELECT estado FROM estado_entrega \"",
+      "    \"ALLOW FILTERING\")",
+      "",
+      "r = con_duck.execute(",
+      "    \"SELECT COUNT(*), SUM(fallido_flag) \"",
+      "    \"FROM fact_entregas\").fetchone()",
+    ],
+    hl: 2,
+    note: "aquí Cassandra barre TODO el clúster",
+  },
+  {
+    id: "l6", label: "diagnóstico", badge: "06 · DIAG", pipeline: "optimizacion",
+    name: "Diagnóstico: EXPLAIN ANALYZE antes de intervenir",
+    script: "scripts/diagnostico.py",
+    desc: "Taller 4. Se adaptan Q1, Q3 y Q5 con un WHERE realista y se corre EXPLAIN ANALYZE contra el Gold sin ninguna intervención todavía. Busca la causa raíz, no solo el síntoma.",
+    code: [
+      "n = con.execute(",
+      "    \"SELECT COUNT(DISTINCT row_group_id) \"",
+      "    \"FROM parquet_metadata(...)\").fetchone()[0]",
+      "",
+      "plan = con.execute(",
+      "    f\"EXPLAIN ANALYZE {query}\").fetchall()",
+    ],
+    hl: 2,
+    note: "¡un solo row group = cero data skipping!",
+  },
+  {
+    id: "l7", label: "intervención", badge: "07 · FIX", pipeline: "optimizacion",
+    name: "Intervención I-3: reordenar Parquet",
+    script: "scripts/intervencion.py",
+    desc: "Una sola técnica por problema diagnosticado: reescribir el Parquet ordenado por la columna que cada query filtra, con ROW_GROUP_SIZE pequeño, para que el planificador pueda descartar bloques completos.",
+    code: [
+      "con.execute(f\"\"\"",
+      "  COPY (SELECT * FROM read_parquet('{GOLD}/fact_entregas.parquet')",
+      "        ORDER BY tiempo_sk)",
+      "  TO '{GOLD_OPT}/fact_entregas.parquet'",
+      "  (FORMAT PARQUET, ROW_GROUP_SIZE 5000)",
+      "\"\"\")",
+    ],
+    hl: 3,
+    note: "ordenar físico = la clave de I-3",
+  },
+  {
+    id: "l8", label: "medición", badge: "08 · BENCH", pipeline: "optimizacion",
+    name: "Medición DESPUÉS de la intervención",
+    script: "scripts/medicion_despues.py",
+    desc: "Mismo protocolo del diagnóstico (3 calentamientos + 5 corridas medidas), ahora contra lakehouse_optimizado/. Se compara mediana contra mediana, no una corrida suelta contra otra.",
+    code: [
+      "for _ in range(3):",
+      "    con.execute(query).fetchall()  # warm-up",
+      "tiempos = []",
+      "for _ in range(5):",
+      "    t0 = time.perf_counter()",
+      "    con.execute(query).fetchall()",
+    ],
+    hl: 1,
+    note: "la mediana manda, no el mínimo",
+  },
+];
+
+function esc(s) {
+  return String(s ?? "").replace(/[&<>]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]));
+}
+
+/* ───────── render horizontal flow ───────── */
+const flowEl = document.getElementById("flow");
+const arrowSvg = `<svg viewBox="0 0 40 24"><path d="M2,12 H32" fill="none" stroke="var(--line-soft)" stroke-width="2.5" stroke-dasharray="1,6" stroke-linecap="round"/><path d="M25,5 L34,12 L25,19" fill="none" stroke="var(--line-soft)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+
+STEPS.forEach((s, i) => {
+  if (i > 0) {
+    const arrow = document.createElement("div");
+    arrow.className = "flow-arrow";
+    arrow.innerHTML = arrowSvg;
+    flowEl.appendChild(arrow);
+  }
+  const node = document.createElement("button");
+  node.type = "button";
+  node.className = "flow-node";
+  node.id = `node-${s.id}`;
+  node.dataset.state = "idle";
+  node.dataset.active = "false";
+  node.innerHTML = `
+    <svg class="flow-doodle" viewBox="0 0 64 64">${DOODLES[s.id]}</svg>
+    <span class="flow-badge">${s.badge}</span>
+    <span class="flow-label">${s.label}</span>
+    <span class="flow-count" id="count-${s.id}"></span>
+  `;
+  node.addEventListener("click", () => openDetail(s.id));
+  flowEl.appendChild(node);
+});
+
+/* ───────── detail panel ───────── */
+const detailEl = document.getElementById("detail");
+let currentId = null;
+
+function openDetail(id) {
+  const s = STEPS.find(x => x.id === id);
+  currentId = id;
+  STEPS.forEach(x => {
+    const n = document.getElementById(`node-${x.id}`);
+    n.dataset.active = String(x.id === id);
+  });
+
+  document.getElementById("detail-doodle").innerHTML = DOODLES[id];
+  document.getElementById("detail-name").textContent = s.name;
+  document.getElementById("detail-script").textContent = s.script;
+  document.getElementById("detail-desc").textContent = s.desc;
+
+  document.getElementById("duck-explainer").classList.toggle("show", id === "l4" || id === "l5");
+  document.getElementById("kpi-panel").classList.toggle("show", id === "l5");
+  cargarTablaReal(id);
+
+  const lines = s.code.map((line, idx) => {
+    const num = idx + 1;
+    const isHl = num === s.hl;
+    return `<div class="code-line${isHl ? ' hl' : ''}"><span class="ln">${num}</span><span>${esc(line)}</span></div>`;
+  }).join("");
+  document.getElementById("detail-code").innerHTML = `
+    <div class="code-card">
+      <div class="code-bar"><span class="dot3"></span><span class="dot3"></span><span class="dot3"></span>&nbsp;${esc(s.script)}</div>
+      <div class="code-pre">${lines}</div>
+      <div class="code-annot">
+        <svg viewBox="0 0 46 42"><path d="M4,38 Q2,16 38,8" fill="none" stroke="var(--blue)" stroke-width="2.3" stroke-linecap="round"/><path d="M31,4 L39,8 L32,14" fill="none" stroke="var(--blue)" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <span class="note">${esc(s.note)}</span>
+      </div>
+    </div>`;
+
+  const loglines = document.getElementById("detail-loglines");
+  const prevLines = detailEl.dataset.linesFor === id ? loglines.innerHTML : "";
+  loglines.innerHTML = prevLines;
+  document.getElementById("detail-empty").style.display = prevLines ? "none" : "block";
+  detailEl.dataset.linesFor = id;
+
+  const runBtn = document.getElementById("detail-run");
+  runBtn.textContent = "ejecutar";
+  runBtn.classList.remove("is-running");
+  runBtn.onclick = () => ejecutar(id);
+
+  detailEl.classList.add("open");
+  detailEl.scrollIntoView({ behavior: "smooth", block: "nearest" });
+}
+
+function setStageState(id, state, countText) {
+  const node = document.getElementById(`node-${id}`);
+  const count = document.getElementById(`count-${id}`);
+  if (node) node.dataset.state = state;
+  if (count && countText !== undefined) count.textContent = countText;
+}
+
+function pushLog(id, d) {
+  const box = document.getElementById("detail-loglines");
+  document.getElementById("detail-empty").style.display = "none";
+  const el = document.createElement("div");
+  const estado = d.estado || "ok";
+  el.className = `logline ${estado}`;
+  const mk = estado === "error" ? "✕" : estado === "aviso" ? "!" : "•";
+  let html = `<span class="mk">${mk}</span><div>`;
+  html += `<div class="ttl">${esc(d.titulo)}</div>`;
+  if (d.detalle) html += `<div class="dtl">${esc(d.detalle)}</div>`;
+  if (d.salida) html += `<div class="out">${esc(d.salida)}</div>`;
+  const dd = d.datos || {};
+  const mets = [];
+  if (dd.filas !== undefined) mets.push(`<b>${Number(dd.filas).toLocaleString("es-CO")}</b> filas`);
+  if (dd.ms !== undefined) mets.push(`<b>${dd.ms}</b> ms`);
+  if (dd.retenido_pct !== undefined) mets.push(`<b>${dd.retenido_pct}%</b> retenido`);
+  if (dd.factor !== undefined) mets.push(`<span class="hi">${dd.factor}× más rápido</span>`);
+  if (dd.alertas !== undefined) mets.push(`<b>${dd.alertas}</b> alertas`);
+  if (dd.entregas !== undefined) mets.push(`<b>${Number(dd.entregas).toLocaleString("es-CO")}</b> entregas`);
+  if (dd.row_groups !== undefined) mets.push(`<b>${dd.row_groups}</b> row group${dd.row_groups === 1 ? "" : "s"}`);
+  if (mets.length) html += `<div class="mets">${mets.join(" · ")}</div>`;
+  html += `</div>`;
+  el.innerHTML = html;
+  box.appendChild(el);
+  box.parentElement.scrollTop = box.parentElement.scrollHeight;
+}
+
+function pushDone(id, resumen, isErr) {
+  const box = document.getElementById("detail-loglines");
+  const el = document.createElement("div");
+  el.className = "console-done" + (isErr ? " err" : "");
+  el.textContent = (isErr ? "✕ se interrumpió — " : "✓ ¡listo! — ") + resumen;
+  box.appendChild(el);
+  box.parentElement.scrollTop = box.parentElement.scrollHeight;
+}
+
+/* Panel de KPIs del benchmark (L5): la misma data del WebSocket, sin
+   codigo de por medio. Barras en escala logaritmica porque el factor
+   real ronda 50-150x: en escala lineal la barra de DuckDB desaparece. */
+function poblarKpis(met) {
+  if (met.ms_cassandra === undefined || met.ms_duckdb === undefined) return;
+  document.getElementById("kpi-empty").hidden = true;
+  document.getElementById("kpi-grid").hidden = false;
+  document.getElementById("kpi-table").hidden = false;
+
+  const msCass = met.ms_cassandra, msDuck = met.ms_duckdb, factor = met.factor;
+  document.getElementById("kpi-factor").textContent = factor.toFixed(1);
+
+  const logCass = Math.log10(msCass + 1);
+  const logDuck = Math.log10(msDuck + 1);
+  const maxLog = Math.max(logCass, logDuck, 1);
+  const pctCass = Math.max((logCass / maxLog) * 100, 6);
+  const pctDuck = Math.max((logDuck / maxLog) * 100, 6);
+  requestAnimationFrame(() => {
+    document.getElementById("kpi-bar-cass").style.width = pctCass + "%";
+    document.getElementById("kpi-bar-duck").style.width = pctDuck + "%";
+  });
+  document.getElementById("kpi-val-cass").textContent = msCass.toFixed(1) + " ms";
+  document.getElementById("kpi-val-duck").textContent = msDuck.toFixed(1) + " ms";
+
+  const filas = met.filas, fallidas = met.fallidas;
+  document.getElementById("kpi-filas").textContent = filas !== undefined ? filas.toLocaleString("es-CO") : "—";
+  document.getElementById("kpi-fallidas").textContent = fallidas !== undefined ? fallidas.toLocaleString("es-CO") : "—";
+
+  document.getElementById("kpi-t-cass-ms").textContent = msCass.toFixed(1) + " ms";
+  document.getElementById("kpi-t-duck-ms").textContent = msDuck.toFixed(1) + " ms";
+  document.getElementById("kpi-t-filas-a").textContent = filas !== undefined ? filas.toLocaleString("es-CO") : "—";
+  document.getElementById("kpi-t-filas-b").textContent = filas !== undefined ? filas.toLocaleString("es-CO") : "—";
+  document.getElementById("kpi-t-fallidas-a").textContent = fallidas !== undefined ? fallidas.toLocaleString("es-CO") : "—";
+  document.getElementById("kpi-t-fallidas-b").textContent = fallidas !== undefined ? fallidas.toLocaleString("es-CO") : "—";
+}
+
+function ejecutar(id) {
+  if (currentId !== id) openDetail(id);
+  const runBtn = document.getElementById("detail-run");
+  const box = document.getElementById("detail-loglines");
+  if (runBtn.classList.contains("is-running")) return;
+  box.innerHTML = "";
+  document.getElementById("detail-empty").style.display = "none";
+  runBtn.classList.add("is-running");
+  runBtn.textContent = "corriendo…";
+  setStageState(id, "running");
+
+  const pipe = (STEPS.find(x => x.id === id) || {}).pipeline || "lakehouse";
+  let sock;
+  try {
+    sock = new WebSocket(`${WS}/${pipe}/ws/${id}`);
+  } catch (e) {
+    pushDone(id, `error de conexión: ${e.message}`, true);
+    finalizar(false);
+    return;
+  }
+
+  function finalizar(ok) {
+    runBtn.classList.remove("is-running");
+    runBtn.textContent = "ejecutar";
+    setStageState(id, ok ? "done" : "idle");
+    cargarSalud();
+  }
+
+  let terminoOk = true;
+  sock.onopen = () => sock.send(JSON.stringify({}));
+  sock.onmessage = ev => {
+    const d = JSON.parse(ev.data);
+    if (d.tipo === "paso") {
+      pushLog(id, d);
+      if (d.estado === "error") terminoOk = false;
+    } else if (d.tipo === "fin") {
+      pushDone(id, d.resumen, false);
+      const met = d.metricas || {};
+      const v = met.filas ?? met.tablas ?? met.consultas ?? met.alertas ?? met.factor;
+      setStageState(id, "done", v !== undefined ? `${v}` : "");
+      if (id === "l5") poblarKpis(met);
+    } else if (d.tipo === "error") {
+      pushDone(id, d.mensaje, true);
+      terminoOk = false;
+    }
+  };
+  sock.onclose = () => finalizar(terminoOk);
+  sock.onerror = () => {
+    pushDone(id, "sin conexión con la API :8765 — corre make api en comunicamedellin-grupo3", true);
+    finalizar(false);
+  };
+}
+
+document.getElementById("btn-clear").addEventListener("click", () => {
+  STEPS.forEach(s => setStageState(s.id, "idle", ""));
+  document.getElementById("detail-loglines").innerHTML = "";
+  document.getElementById("detail-empty").style.display = "block";
+  detailEl.classList.remove("open");
+  detailEl.removeAttribute("data-lines-for");
+  STEPS.forEach(x => document.getElementById(`node-${x.id}`).dataset.active = "false");
+  currentId = null;
+});
+
+document.getElementById("btn-run-all").addEventListener("click", async () => {
+  for (const s of STEPS) {
+    openDetail(s.id);
+    ejecutar(s.id);
+    await new Promise(resolve => {
+      const iv = setInterval(() => {
+        const btn = document.getElementById("detail-run");
+        if (!btn.classList.contains("is-running")) { clearInterval(iv); resolve(); }
+      }, 400);
+    });
+    await new Promise(r => setTimeout(r, 500));
+  }
+});
+
+let tablaRealReq = 0;
+async function cargarTablaReal(id) {
+  const miReq = ++tablaRealReq;
+  const fuenteEl = document.getElementById("tabla-real-fuente");
+  const cmdEl = document.getElementById("tabla-real-cmd");
+  const tableEl = document.getElementById("tabla-real-table");
+  fuenteEl.textContent = "cargando…";
+  cmdEl.textContent = "";
+  tableEl.innerHTML = "";
+  const pipe = (STEPS.find(x => x.id === id) || {}).pipeline || "lakehouse";
+  try {
+    const r = await fetch(`${API}/${pipe}/muestra/${id}`);
+    const d = await r.json();
+    if (miReq !== tablaRealReq) return;
+    if (d.error) {
+      fuenteEl.textContent = "sin datos";
+      tableEl.innerHTML = `<tr><td class="tabla-real-empty">${esc(d.error)}</td></tr>`;
+      return;
+    }
+    fuenteEl.textContent = `${d.fuente} · ${d.tabla}`;
+    cmdEl.textContent = d.cmd || "";
+    if (!d.filas || !d.filas.length) {
+      tableEl.innerHTML = `<tr><td class="tabla-real-empty">${d.aviso || "sin filas todavía — ejecuta un paso anterior primero"}</td></tr>`;
+      return;
+    }
+    const thead = `<thead><tr>${d.columnas.map(c => `<th>${esc(c)}</th>`).join("")}</tr></thead>`;
+    const tbody = `<tbody>${d.filas.map(fila => `<tr>${fila.map(v => `<td title="${esc(v)}">${esc(v)}</td>`).join("")}</tr>`).join("")}</tbody>`;
+    tableEl.innerHTML = thead + tbody;
+  } catch (e) {
+    if (miReq !== tablaRealReq) return;
+    fuenteEl.textContent = "sin conexión";
+    tableEl.innerHTML = `<tr><td class="tabla-real-empty">no se pudo conectar con la API :8765</td></tr>`;
+  }
+}
+
+async function cargarSalud() {
+  const strip = document.getElementById("status-strip");
+  const banner = document.getElementById("banner");
+  try {
+    const r = await fetch(`${API}/lakehouse/estado`);
+    const d = await r.json();
+    strip.innerHTML = `
+      <span class="status-chip ${d.cassandra_vivo ? 'up' : 'down'}"><span class="dot"></span>cassandra ${d.cassandra_vivo ? 'arriba' : 'abajo'}</span>
+      <span class="status-chip"><span class="dot"></span>bronze: ${d.bronze}</span>
+      <span class="status-chip"><span class="dot"></span>silver: ${d.silver}</span>
+      <span class="status-chip"><span class="dot"></span>gold: ${d.gold}</span>
+    `;
+    if (!d.cassandra_vivo) {
+      banner.classList.add("show");
+      banner.textContent = "el clúster no está arriba — corre \"make up\" en comunicamedellin-grupo3 antes de ejecutar seed/bronze.";
+    } else {
+      banner.classList.remove("show");
+    }
+  } catch (e) {
+    strip.innerHTML = `<span class="status-chip down"><span class="dot"></span>api :8765 desconectada</span>`;
+    banner.classList.add("show");
+    banner.textContent = "sin conexión con la API — corre \"make api\" en comunicamedellin-grupo3 para conectar en vivo.";
+  }
+}
+cargarSalud();
+setInterval(cargarSalud, 12000);
+
+document.getElementById("btn-theme").addEventListener("click", () => {
+  const cur = document.documentElement.getAttribute("data-theme");
+  const next = cur === "light" ? "dark" : cur === "dark" ? null : "light";
+  if (next) document.documentElement.setAttribute("data-theme", next);
+  else document.documentElement.removeAttribute("data-theme");
+});
+
+openDetail("l0");
+</script>
+
+</body>
+</html>

@@ -32,6 +32,26 @@ python3 scripts/generar_informe_pdf.py
 python3 scripts/generar_slides.py    # genera Taller4_ComunicaMedellin.pptx
 ```
 
+## Demo en vivo (front conectado por API)
+
+Igual que el resto del proyecto, la sustentación no se hace desde la
+terminal: se corre desde [`lakehouse.html`](lakehouse.html), el mismo
+panel del Taller 3 extendido con 3 pasos nuevos (L6 diagnóstico, L7
+intervención, L8 medición), que ejecutan los scripts reales de esta
+carpeta vía WebSocket.
+
+```bash
+cd ../api && uvicorn main:app --port 8765   # levanta la API (puerto 8765)
+```
+
+Luego abre `lakehouse.html` en el navegador y entra a los pasos **06 ·
+DIAG**, **07 · FIX** y **08 · BENCH** al final de la franja de pasos.
+Cada botón "ejecutar" corre el script real (`diagnostico.py`,
+`intervencion.py`, `medicion_despues.py`) contra `gold_taller3/` y
+muestra en vivo el plan EXPLAIN ANALYZE, los row groups generados y las
+medianas, exactamente como en `informe_tecnico.pdf`. El router de estos
+endpoints está en [`../api/optimizacion.py`](../api/optimizacion.py).
+
 ## Estructura
 
 ```
@@ -49,6 +69,7 @@ taller-4-optimizacion/
 │   └── resumen_despues.md
 ├── gold_taller3/                ← copia congelada de la Gold diagnosticada
 ├── lakehouse_optimizado/        ← copia de la Gold con la intervención aplicada
+├── lakehouse.html                ← demo en vivo (front conectado a ../api/optimizacion.py)
 ├── informe_tecnico.md           ← fuente del informe
 ├── informe_tecnico.pdf          ← entregable final
 ├── Taller4_ComunicaMedellin.pptx ← diapositivas de sustentación

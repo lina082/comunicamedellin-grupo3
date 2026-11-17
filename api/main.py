@@ -65,6 +65,11 @@ app.include_router(taller_router)
 from lakehouse import router as lakehouse_router  # noqa: E402
 app.include_router(lakehouse_router)
 
+# Pipeline de Optimizacion (Taller 4): diagnostico/intervencion/medicion
+# reales en ../taller-4-optimizacion/scripts/, continuando L0-L5.
+from optimizacion import router as optimizacion_router  # noqa: E402
+app.include_router(optimizacion_router)
+
 
 def leer(nodo: str, usuario: str, nivel: str):
     """Lee la presencia de un usuario desde un nodo concreto."""
