@@ -460,6 +460,43 @@ Demo interactiva igual a `frontend/taller.html` del Módulo 2:
 
 ---
 
+## Taller 4 — Optimización de Rendimiento
+
+Diagnostica con `EXPLAIN ANALYZE` las tres consultas más representativas del
+Taller 3, aplica una sola intervención por problema encontrado (reordenar el
+Parquet de Gold y reducir `ROW_GROUP_SIZE` para habilitar *data skipping*), y
+mide el resultado real antes y después. Ver
+[`taller-4-optimizacion/README.md`](taller-4-optimizacion/README.md) para el
+detalle completo, incluyendo los planes de ejecución íntegros en
+`taller-4-optimizacion/evidencia/`.
+
+Para reproducir la demo sin depender de que el entorno siga corriendo en la
+máquina de quien sustenta, cualquier persona con acceso al repositorio puede
+levantarla por su cuenta:
+
+```bash
+git clone https://github.com/lina082/comunicamedellin-grupo3.git
+cd comunicamedellin-grupo3
+make up                                  # ~4 min la primera vez
+make api                                 # terminal 1 → API en :8765
+```
+
+Luego abrir `taller-4-optimizacion/lakehouse.html` en el navegador. Ya trae
+incorporados, al final de la franja de pasos del Taller 3, tres pasos nuevos
+que ejecutan los scripts reales de esta carpeta contra `gold_taller3/`:
+
+| Paso | Qué ejecuta de verdad |
+|---|---|
+| 06 · DIAG | `scripts/diagnostico.py`: `EXPLAIN ANALYZE` de Q1, Q3 y Q5 sobre la Gold original, con calentamiento y mediana de 5 corridas |
+| 07 · FIX | `scripts/intervencion.py`: reescribe el Parquet ordenado por la columna de filtro de cada consulta, con `ROW_GROUP_SIZE` reducido |
+| 08 · BENCH | `scripts/medicion_despues.py`: repite el mismo protocolo de medición contra la Gold ya optimizada |
+
+Cada paso muestra el comando real y su salida en vivo por WebSocket; no son
+capturas de pantalla ni una grabación. El router que expone estos tres
+endpoints está en [`api/optimizacion.py`](api/optimizacion.py).
+
+---
+
 ## Notas de operación
 
 **El arranque tarda ~4 minutos.** Los nodos de Cassandra arrancan en
